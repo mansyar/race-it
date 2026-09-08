@@ -8,7 +8,7 @@ export default defineConfig({
       provider: 'v8',
       reporter: ['text'],
       include: ['src/**/*.ts'],
-      exclude: ['src/**/*.test.ts', 'src/main.ts'],
+      exclude: ['src/**/*.test.ts', 'src/main.ts', 'src/render/scene.ts'],
     },
   },
 });

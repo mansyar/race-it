@@ -12,7 +12,12 @@ const GRID_LINE_COLOR = 0xa87f52;
  * 12x12 grid, lit softly, viewed from a fixed tilted camera. Handles responsive
  * resizing. Rendering is verified manually; all math lives in layout.ts.
  */
-export function createBuildScene(container: HTMLElement): { dispose: () => void } {
+export function createBuildScene(container: HTMLElement): {
+  scene: THREE.Scene;
+  camera: THREE.PerspectiveCamera;
+  renderer: THREE.WebGLRenderer;
+  dispose: () => void;
+} {
   const renderer = new THREE.WebGLRenderer({ antialias: true });
   renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
   renderer.domElement.style.display = 'block';
@@ -81,6 +86,9 @@ export function createBuildScene(container: HTMLElement): { dispose: () => void 
   loop();
 
   return {
+    scene,
+    camera,
+    renderer,
     dispose: () => {
       cancelAnimationFrame(frame);
       observer.disconnect();
