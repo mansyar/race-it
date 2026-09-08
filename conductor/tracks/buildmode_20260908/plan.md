@@ -37,7 +37,7 @@ pnpm build                   # production build
 - [x] Task 3.1: Three.js scene — wooden table, faint etched 12×12 grid, fixed tilted camera, responsive portrait/landscape layout. *(camera/layout math unit-tested; rendering verified manually)* (3d04e0f)
 - [x] Task 3.2: GLB piece meshes rendered from grid state; bright toy tinting; checkered detail on start/finish. (23bfd06)
 - [x] Task 3.3: Raycast interaction — cell highlight under finger; tap-place, tap-rotate, remove-mode delete wired to grid store. *(picking math unit-tested; touch verified manually)* (b7eb3f0)
-- [ ] Task: Phase Verification & Checkpoint (Refer to workflow.md)
+- [~] Task: Phase Verification & Checkpoint (Refer to workflow.md)
 
 ### Phase 4 — Build UI & Integration
 
