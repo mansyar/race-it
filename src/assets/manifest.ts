@@ -1,5 +1,5 @@
 import finishFlagUrl from './models/flagCheckers.glb?url';
-import cornerUrl from './models/roadCornerLarge.glb?url';
+import cornerUrl from './models/roadCornerSmall.glb?url';
 import startUrl from './models/roadStart.glb?url';
 import straightUrl from './models/roadStraight.glb?url';
 import clickUrl from './sfx/click_001.ogg?url';

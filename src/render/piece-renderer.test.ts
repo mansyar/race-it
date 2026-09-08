@@ -49,9 +49,20 @@ describe('buildPiece', () => {
     expect(
       buildPiece(template(), { type: 'start', orientation: 90 }, 1, 1, checkers).children.length,
     ).toBe(2);
+    // Finish = road + checker overlay + accessory flag.
     expect(
-      buildPiece(template(), { type: 'finish', orientation: 90 }, 1, 1, checkers).children.length,
-    ).toBe(2);
+      buildPiece(template(), { type: 'finish', orientation: 90 }, 1, 1, checkers, template())
+        .children.length,
+    ).toBe(3);
+  });
+
+  it('fits the model to the cell (scale + recentering offset on the clone)', () => {
+    const source = template();
+    const piece = buildPiece(source, { type: 'straight', orientation: 0 }, 1, 1, checkerTexture());
+    const model = piece.children[0] as THREE.Object3D;
+    expect(model.scale.x).toBe(2);
+    expect(model.position.x).toBe(-0.3);
+    expect(model.position.z).toBe(2.3);
   });
 });
 
@@ -62,11 +73,11 @@ describe('PieceRenderer', () => {
     renderer = new PieceRenderer();
   });
 
-  it('loads one tinted template per piece type', async () => {
+  it('loads one tinted template per piece type plus the finish flag', async () => {
     const loaded: string[] = [];
     await renderer.load(fakeLoaderFactory(loaded));
-    expect(loaded.length).toBe(4);
-    expect(renderer.templates.size).toBe(4);
+    expect(loaded.length).toBe(5);
+    expect(renderer.templates.size).toBe(5);
     // Bright toy tint: lightness boosted above the source's 0.5.
     const sourceMesh = template().children[0] as THREE.Mesh;
     const tintedMesh = renderer.templates.get('straight')?.children[0] as THREE.Mesh;

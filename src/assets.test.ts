@@ -4,7 +4,7 @@ import { MODELS, SFX } from './assets/manifest';
 describe('asset import pipeline', () => {
   it('resolves every track piece model to a URL', () => {
     expect(MODELS.straight).toMatch(/roadStraight.*\.glb$/);
-    expect(MODELS.corner).toMatch(/roadCornerLarge.*\.glb$/);
+    expect(MODELS.corner).toMatch(/roadCornerSmall.*\.glb$/);
     expect(MODELS.start).toMatch(/roadStart.*\.glb$/);
     expect(MODELS.finishFlag).toMatch(/flagCheckers.*\.glb$/);
   });

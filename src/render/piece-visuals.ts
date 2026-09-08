@@ -7,8 +7,13 @@ export const MODEL_FOR_PIECE: Record<PieceType, string> = {
   straight: MODELS.straight,
   curve: MODELS.corner,
   start: MODELS.start,
-  finish: MODELS.finishFlag,
+  // The finish cell uses the straight road; the checkered flag is added as an
+  // accessory on top (the flag model alone has no road under it).
+  finish: MODELS.straight,
 };
+
+/** Checkered flag accessory for finish cells. */
+export const FLAG_URL: string = MODELS.finishFlag;
 
 /**
  * Y rotation (radians) for a piece orientation. Positive Y rotation is

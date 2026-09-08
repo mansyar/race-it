@@ -8,7 +8,7 @@ describe('MODEL_FOR_PIECE', () => {
     expect(MODEL_FOR_PIECE.straight).toBe(MODELS.straight);
     expect(MODEL_FOR_PIECE.curve).toBe(MODELS.corner);
     expect(MODEL_FOR_PIECE.start).toBe(MODELS.start);
-    expect(MODEL_FOR_PIECE.finish).toBe(MODELS.finishFlag);
+    expect(MODEL_FOR_PIECE.finish).toBe(MODELS.straight);
   });
 });
 
