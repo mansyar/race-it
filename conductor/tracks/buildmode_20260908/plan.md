@@ -53,4 +53,4 @@ pnpm build                   # production build
 
 ## Phase: Review Fixes
 
-- [~] Task: Apply review suggestions
+- [x] Task: Apply review suggestions (2a0bdf8)
