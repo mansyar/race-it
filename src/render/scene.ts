@@ -120,7 +120,11 @@ export function createBuildScene(
     if (width === 0 || height === 0) {
       return;
     }
-    renderer.setSize(width, height, false);
+    // updateStyle (default true) is REQUIRED: it sets the canvas CSS size to
+    // the container size. Without it the canvas displays at its pixel-buffer
+    // size (clientWidth * devicePixelRatio), overflowing and cropping the view
+    // whenever the browser zoom or OS display scaling is not 100%.
+    renderer.setSize(width, height);
     const aspect = width / height;
     camera.aspect = aspect;
     const placement = computeCameraPlacement(aspect);
