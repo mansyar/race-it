@@ -1,0 +1,117 @@
+:root {
+  --toy-red: #e63946;
+  --toy-cream: #f6f1e7;
+  --toy-wood: #c99a6b;
+  --toy-ink: #4a3728;
+}
+
+html,
+body {
+  margin: 0;
+  padding: 0;
+  overflow: hidden;
+  background: var(--toy-cream);
+  font-family: "Trebuchet MS", "Comic Sans MS", sans-serif;
+  -webkit-tap-highlight-color: transparent;
+  user-select: none;
+  -webkit-user-select: none;
+}
+
+#app {
+  position: relative;
+}
+
+/* Large wordless touch buttons (product guideline: >=64px targets). */
+.big-button {
+  box-sizing: border-box;
+  min-width: 64px;
+  min-height: 64px;
+  padding: 10px;
+  border: 3px solid var(--toy-ink);
+  border-radius: 16px;
+  background: #fff;
+  color: var(--toy-ink);
+  box-shadow: 0 4px 0 var(--toy-ink);
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  touch-action: manipulation;
+}
+
+.big-button svg {
+  width: 36px;
+  height: 36px;
+  pointer-events: none;
+}
+
+.big-button:active {
+  transform: translateY(3px);
+  box-shadow: 0 1px 0 var(--toy-ink);
+}
+
+.big-button.selected {
+  background: var(--toy-red);
+  color: #fff;
+  border-color: #a02430;
+  box-shadow: 0 4px 0 #a02430;
+}
+
+.big-button:disabled {
+  opacity: 0.35;
+  box-shadow: none;
+}
+
+.build-bar {
+  position: fixed;
+  left: 50%;
+  bottom: calc(12px + env(safe-area-inset-bottom));
+  transform: translateX(-50%);
+  display: flex;
+  gap: 10px;
+  padding: 10px;
+  background: var(--toy-wood);
+  border: 3px solid var(--toy-ink);
+  border-radius: 24px;
+  z-index: 10;
+}
+
+.corner-cluster {
+  position: fixed;
+  top: calc(12px + env(safe-area-inset-top));
+  right: 12px;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  z-index: 10;
+}
+
+.cluster-button {
+  min-width: 56px;
+  min-height: 56px;
+}
+
+.confirm-overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(74, 55, 40, 0.55);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 24px;
+  z-index: 20;
+}
+
+.confirm-overlay[hidden] {
+  display: none;
+}
+
+.confirm-question {
+  font-size: 64px;
+  font-weight: bold;
+  color: #fff;
+}
+
+.confirm-no {
+  transform: rotate(45deg);
+}
