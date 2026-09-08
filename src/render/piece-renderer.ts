@@ -54,7 +54,11 @@ export function buildPiece(
   }
 
   holder.position.set(gridToWorld(x, y).x, 0, gridToWorld(x, y).z);
-  holder.rotation.y = rotationY(cell.orientation);
+  // roadCornerSmall's raw road connects the full W and N edges; the grid
+  // convention (piece-visuals/track-validator) expects curve 0 deg to connect
+  // N + E, so curve pieces carry a built-in 90-degree clockwise turn. Added
+  // on the holder so the fit recentering offset rotates with it.
+  holder.rotation.y = rotationY(cell.orientation) + (cell.type === 'curve' ? rotationY(90) : 0);
   return holder;
 }
 

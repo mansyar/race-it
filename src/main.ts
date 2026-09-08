@@ -108,6 +108,37 @@ if (root && appReady()) {
           });
           return { holder: holder.position.toArray(), rotY: holder.rotation.y, parts };
         }),
+      roadMap: (index: number) => {
+        const holder = pieces.group.children[index];
+        if (!holder) return null;
+        holder.updateWorldMatrix(true, true);
+        const N = 16;
+        const grid: Array<Array<number>> = Array.from({ length: N }, () =>
+          Array<number>(N).fill(0),
+        );
+        const v = new THREE.Vector3();
+        holder.traverse((o) => {
+          const mesh = o as THREE.Mesh;
+          if ((mesh as unknown as { isMesh?: boolean }).isMesh !== true || !mesh.geometry) return;
+          const mat = Array.isArray(mesh.material) ? mesh.material[0] : mesh.material;
+          const colored = mat as { color?: THREE.Color };
+          const hex = colored.color ? colored.color.getHexString() : '';
+          if (hex !== 'b0b2b5') return; // road-gray material only
+          const pos = mesh.geometry.getAttribute('position');
+          if (!pos) return;
+          for (let i = 0; i < pos.count; i++) {
+            v.fromBufferAttribute(pos, i).applyMatrix4(mesh.matrixWorld);
+            if (v.y > 0.1) continue;
+            const gx = Math.floor(((v.x - holder.position.x) / 2 + 0.5) * N);
+            const gz = Math.floor(((v.z - holder.position.z) / 2 + 0.5) * N);
+            const row = grid[gz];
+            if (gx >= 0 && gx < N && gz >= 0 && gz < N && row) {
+              row[gx] = 1;
+            }
+          }
+        });
+        return grid.map((row) => row.join(''));
+      },
     };
   }
 

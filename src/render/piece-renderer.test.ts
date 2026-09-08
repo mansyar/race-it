@@ -34,6 +34,20 @@ describe('buildPiece', () => {
     expect(piece.rotation.y).toBe(-Math.PI / 2);
   });
 
+  it('pre-rotates curve pieces 90 degrees (raw asset connects W+N, validator expects N+E)', () => {
+    const piece = buildPiece(template(), { type: 'curve', orientation: 0 }, 3, 5, checkerTexture());
+    expect(piece.rotation.y).toBeCloseTo(-Math.PI / 2);
+    // Non-curve pieces keep the plain orientation rotation.
+    const straight = buildPiece(
+      template(),
+      { type: 'straight', orientation: 0 },
+      3,
+      5,
+      checkerTexture(),
+    );
+    expect(straight.rotation.y).toBe(0);
+  });
+
   it('does not mutate the source template', () => {
     const source = template();
     buildPiece(source, { type: 'curve', orientation: 180 }, 0, 0, checkerTexture());
