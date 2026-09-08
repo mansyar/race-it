@@ -41,7 +41,7 @@ pnpm build                   # production build
 
 ### Phase 4 — Build UI & Integration
 
-- [~] Task 4.1: Bottom bar — 4 piece buttons + undo + remove toggle (≥64px targets, wordless icons); corner cluster — shelf stub, mute, clear-table with confirm.
+- [x] Task 4.1: Bottom bar — 4 piece buttons + undo + remove toggle (≥64px targets, wordless icons); corner cluster — shelf stub, mute, clear-table with confirm. (0f5f6ac)
 - [ ] Task 4.2: GO button — disabled by default, pulsing when track valid (state-driven, unit-tested).
 - [ ] Task 4.3: Integration — demo loop on first launch, auto-save wiring, UI click sounds, mute toggle.
 - [ ] Task 4.4: Performance pass — 60 fps with 150 pieces on device floor; document draw-call and triangle budgets here. *(measured, manual verification)*
