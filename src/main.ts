@@ -10,6 +10,7 @@ import { createBuildScene } from './render/scene';
 import './style.css';
 import { createBuildBar } from './ui/build-bar';
 import { createCornerCluster } from './ui/corner-cluster';
+import { createGoButton } from './ui/go-button';
 
 // Referenced so the production build emits every GLB/OGG for service-worker
 // precaching; the race-mode renderer (Track 2) and audio (Track 3) consume
@@ -34,6 +35,7 @@ if (root && appReady()) {
   const rerender = (): void => {
     pieces.update(model.toSnapshot());
     bar.setUndoEnabled(editor.canUndo());
+    go.setValid(validateTrack(model).valid);
     if (validateTrack(model).valid) {
       saveTrack(model);
     }
@@ -42,6 +44,11 @@ if (root && appReady()) {
   const view = createBuildScene(root, (x, y) => {
     handleCellTap(editor, tool, x, y);
     rerender();
+  });
+
+  const go = createGoButton({
+    // Race mode starts in Track 2; GO is wired but inert until then.
+    onGo: () => {},
   });
 
   const bar = createBuildBar({
@@ -87,8 +94,10 @@ if (root && appReady()) {
   });
 
   const appUi = document.createElement('div');
-  appUi.append(cluster.root, bar.root, cluster.confirm);
+  appUi.append(cluster.root, go.root, bar.root, cluster.confirm);
   root.append(appUi);
+
+  go.setValid(validateTrack(model).valid);
 
   pieces
     .load()

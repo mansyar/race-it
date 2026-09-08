@@ -115,3 +115,47 @@ body {
 .confirm-no {
   transform: rotate(45deg);
 }
+
+/* GO button - giant pulsing pill, appears when the track is race-ready */
+.go-button {
+  position: fixed;
+  left: 50%;
+  bottom: calc(112px + env(safe-area-inset-bottom, 0px));
+  transform: translateX(-50%);
+  z-index: 5;
+}
+
+.go-button button {
+  min-width: 160px;
+  min-height: 72px;
+  padding: 0 32px;
+  border: 4px solid #fff;
+  border-radius: 36px;
+  background: var(--toy-red, #e63946);
+  color: #fff;
+  font-size: 40px;
+  font-weight: bold;
+  letter-spacing: 2px;
+  font-family: inherit;
+  box-shadow: 0 6px 0 rgba(0, 0, 0, 0.25);
+  cursor: pointer;
+  touch-action: manipulation;
+}
+
+.go-button button:disabled {
+  opacity: 0.25;
+}
+
+.go-button button.pulsing {
+  animation: go-pulse 1.2s ease-in-out infinite;
+}
+
+@keyframes go-pulse {
+  0%,
+  100% {
+    transform: scale(1);
+  }
+  50% {
+    transform: scale(1.08);
+  }
+}
