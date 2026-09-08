@@ -39,7 +39,7 @@ pnpm build                   # production build
 - [x] Task 3.3: Raycast interaction — cell highlight under finger; tap-place, tap-rotate, remove-mode delete wired to grid store. *(picking math unit-tested; touch verified manually)* (b7eb3f0)
 - [x] Task: Phase Verification & Checkpoint (Refer to workflow.md)
 
-### Phase 4 - Build UI & Integration [checkpoint: pending]
+### Phase 4 - Build UI & Integration [checkpoint: 84863de]
 
 - [x] Task 4.1: Bottom bar — 4 piece buttons + undo + remove toggle (≥64px targets, wordless icons); corner cluster — shelf stub, mute, clear-table with confirm. (0f5f6ac)
 - [x] Task 4.2: GO button - disabled by default, pulsing when track valid (state-driven, unit-tested). (2ecaa60)
