@@ -1,5 +1,6 @@
 import { appReady } from './app';
 import { MODELS, SFX } from './assets/manifest';
+import { createSfx } from './audio/sfx';
 import type { GridModel, PieceType } from './grid/grid-model';
 import { TrackEditor } from './grid/track-editor';
 import { loadOrSeedTrack, saveTrack } from './grid/track-store';
@@ -31,6 +32,8 @@ if (root && appReady()) {
   let selectedType: PieceType | null = null;
 
   const pieces = new PieceRenderer();
+  const sfx = createSfx();
+  sfx.setMuted(localStorage.getItem('race-it:muted') === 'true');
 
   const rerender = (): void => {
     pieces.update(model.toSnapshot());
@@ -53,6 +56,7 @@ if (root && appReady()) {
 
   const bar = createBuildBar({
     onPieceSelect: (type) => {
+      sfx.play('click');
       selectedType = selectedType === type ? null : type;
       tool = selectedType ? { kind: 'piece', type: selectedType } : { kind: 'none' };
       bar.setSelected(selectedType);
@@ -61,10 +65,12 @@ if (root && appReady()) {
       }
     },
     onUndo: () => {
+      sfx.play('click');
       editor.undo();
       rerender();
     },
     onRemoveToggle: () => {
+      sfx.play('click');
       const active = tool.kind !== 'remove';
       tool = active ? { kind: 'remove' } : { kind: 'none' };
       bar.setRemoveActive(active);
@@ -80,9 +86,11 @@ if (root && appReady()) {
       // Shelf UI is Track 3 scope; stub is inert for now.
     },
     onMuteToggle: (muted) => {
+      sfx.setMuted(muted);
       localStorage.setItem('race-it:muted', String(muted));
     },
     onClearConfirmed: () => {
+      sfx.play('confirmB');
       for (let y = 0; y < 12; y++) {
         for (let x = 0; x < 12; x++) {
           model.setCell(x, y, null);
