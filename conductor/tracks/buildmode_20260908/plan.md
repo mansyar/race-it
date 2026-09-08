@@ -17,12 +17,12 @@ pnpm build                   # production build
 
 ## Phases
 
-### Phase 1 — Project Scaffolding & Foundations
+### Phase 1 — Project Scaffolding & Foundations [checkpoint: 7105913]
 
 - [x] Task 1.1: Scaffold Vite 8 + TypeScript strict + pnpm project; Biome config aligned to `conductor/code_styleguides/` (single quotes, semicolons, named exports only, no `any`); Vitest wired with coverage. **TDD:** smoke test first (Red → Green). (ff2aa8b)
 - [x] Task 1.2: Import Kenney Racing Kit GLBs (straight, curve) + SFX into `src/assets`; verify Vite import pipeline. *(manual verification)* (77fab30)
 - [x] Task 1.3: PWA setup — vite-plugin-pwa manifest, generated icons, offline precache of all assets. *(manual verification)* (84de083)
-- [ ] Task: Phase Verification & Checkpoint (Refer to workflow.md)
+- [x] Task: Phase Verification & Checkpoint (Refer to workflow.md)
 
 ### Phase 2 — Grid State & Track Logic (pure TDD, no rendering)
 
