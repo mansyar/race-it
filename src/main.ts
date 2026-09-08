@@ -1,3 +1,4 @@
+import * as THREE from 'three';
 import { appReady } from './app';
 import { MODELS, SFX } from './assets/manifest';
 import { createSfx } from './audio/sfx';
@@ -56,6 +57,58 @@ if (root && appReady()) {
   if (new URLSearchParams(window.location.search).has('perf')) {
     fillPerfPattern(model);
     (window as unknown as Record<string, unknown>).__raceItPerf = () => view.renderer.info.render;
+  }
+
+  // Debug mode: `?debug` exposes per-piece world transforms and road-level
+  // vertex extents for in-engine geometry verification.
+  if (new URLSearchParams(window.location.search).has('debug')) {
+    (window as unknown as Record<string, unknown>).__raceItDebug = {
+      view,
+      pieces: () =>
+        pieces.group.children.map((holder) => {
+          holder.updateWorldMatrix(true, true);
+          const parts: Array<{
+            name: string;
+            color: string;
+            minX: number;
+            maxX: number;
+            minZ: number;
+            maxZ: number;
+          }> = [];
+          holder.traverse((o) => {
+            const mesh = o as THREE.Mesh;
+            if ((mesh as unknown as { isMesh?: boolean }).isMesh !== true || !mesh.geometry) {
+              return;
+            }
+            const pos = mesh.geometry.getAttribute('position');
+            if (!pos) return;
+            const mat = Array.isArray(mesh.material) ? mesh.material[0] : mesh.material;
+            const colored = mat as { color?: THREE.Color };
+            const v = new THREE.Vector3();
+            let minX = Number.POSITIVE_INFINITY;
+            let maxX = Number.NEGATIVE_INFINITY;
+            let minZ = Number.POSITIVE_INFINITY;
+            let maxZ = Number.NEGATIVE_INFINITY;
+            for (let i = 0; i < pos.count; i++) {
+              v.fromBufferAttribute(pos, i).applyMatrix4(mesh.matrixWorld);
+              if (v.y > 0.1) continue;
+              minX = Math.min(minX, v.x);
+              maxX = Math.max(maxX, v.x);
+              minZ = Math.min(minZ, v.z);
+              maxZ = Math.max(maxZ, v.z);
+            }
+            parts.push({
+              name: mesh.name,
+              color: colored.color ? `#${colored.color.getHexString()}` : '?',
+              minX: +minX.toFixed(2),
+              maxX: +maxX.toFixed(2),
+              minZ: +minZ.toFixed(2),
+              maxZ: +maxZ.toFixed(2),
+            });
+          });
+          return { holder: holder.position.toArray(), rotY: holder.rotation.y, parts };
+        }),
+    };
   }
 
   const go = createGoButton({

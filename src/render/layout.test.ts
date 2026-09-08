@@ -4,6 +4,7 @@ import {
   CELL_WORLD_SIZE,
   computeCameraPlacement,
   gridToWorld,
+  maxCornerNdc,
   worldToGrid,
 } from './layout';
 
@@ -64,11 +65,22 @@ describe('worldToGrid', () => {
 });
 
 describe('computeCameraPlacement', () => {
-  it('looks at the board center from above and behind (diorama tilt)', () => {
+  it('looks at the board center nudged toward the near edge (diorama tilt)', () => {
     const cam = computeCameraPlacement(1);
     expect(cam.target.x).toBeCloseTo(0);
-    expect(cam.target.z).toBeCloseTo(0);
+    expect(cam.target.z).toBeCloseTo(1.2); // halfBoard * 0.1: centers the tilted board on screen
     expect(cam.position.y).toBeGreaterThan(0);
+  });
+
+  it('fits every board corner inside the frustum at any aspect', () => {
+    for (const aspect of [0.6, 1, 1.78, 2.2]) {
+      const cam = computeCameraPlacement(aspect);
+      const dist = Math.hypot(cam.position.x, cam.position.y, cam.position.z);
+      const worst = maxCornerNdc(aspect, dist);
+      expect(worst).toBeLessThanOrEqual(0.94 + 1e-6);
+      // And the board is not shrunken away: it fills a meaningful part of the view.
+      expect(worst).toBeGreaterThan(0.5);
+    }
   });
 
   it('keeps the same viewing angle regardless of aspect ratio (only distance adjusts)', () => {
