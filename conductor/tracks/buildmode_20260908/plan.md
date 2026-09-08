@@ -50,3 +50,7 @@ pnpm build                   # production build
   - Debug tooling: `?perf` URL param fills the whole board via `fillPerfPattern` (TDD) and exposes `window.__raceItPerf()` returning renderer draw/triangle stats
   - Fallback (only if on-device fps < 60): batch tile types into InstancedMesh instances
 - [x] Task: Phase Verification & Checkpoint (Refer to workflow.md)
+
+## Phase: Review Fixes
+
+- [~] Task: Apply review suggestions
