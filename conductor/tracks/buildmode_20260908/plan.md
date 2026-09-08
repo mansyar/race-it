@@ -28,7 +28,7 @@ pnpm build                   # production build
 
 - [x] Task 2.1: Grid model — 12×12 cell state, piece types (straight/curve/start/finish), 4 orientations. **TDD:** Red → Green. (89af7ed)
 - [x] Task 2.2: Edit operations — place, rotate 90° steps, delete, undo history. **TDD:** Red → Green. (1ac7c60)
-- [ ] Task 2.3: Loop validation — valid iff exactly one connected closed circuit containing start AND finish; dangling/unused pieces ignored; rejects open paths, two loops, missing start/finish. **TDD:** Red → Green.
+- [x] Task 2.3: Loop validation — valid iff exactly one connected closed circuit containing start AND finish; dangling/unused pieces ignored; rejects open paths, two loops, missing start/finish. **TDD:** Red → Green. (b7c1bf0)
 - [ ] Task 2.4: Persistence — localStorage auto-save on transition-to-valid, load, first-launch demo loop seed. **TDD:** Red → Green.
 - [ ] Task: Phase Verification & Checkpoint (Refer to workflow.md)
 
