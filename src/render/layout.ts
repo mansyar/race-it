@@ -15,11 +15,17 @@ export function gridToWorld(x: number, y: number): { x: number; z: number } {
   };
 }
 
+/** A grid cell coordinate. */
+export interface GridCoord {
+  x: number;
+  y: number;
+}
+
 /**
  * Grid cell under a world-space ground-plane point, or null when the point
  * lies outside the board.
  */
-export function worldToGrid(wx: number, wz: number): { x: number; y: number } | null {
+export function worldToGrid(wx: number, wz: number): GridCoord | null {
   const half = BOARD_WORLD_SIZE / 2;
   if (wx < -half || wx >= half || wz < -half || wz >= half) {
     return null;

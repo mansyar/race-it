@@ -58,6 +58,13 @@ export class TrackEditor {
   }
 
   /**
+   * Reads the piece in a cell (null when empty).
+   */
+  getCell(x: number, y: number): import('./grid-model').CellState {
+    return this.grid.getCell(x, y);
+  }
+
+  /**
    * Reverts the most recent edit. No-op when the history is empty.
    */
   undo(): void {

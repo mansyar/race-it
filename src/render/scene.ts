@@ -1,6 +1,7 @@
 import * as THREE from 'three';
 import { GRID_SIZE } from '../grid/grid-model';
-import { BOARD_WORLD_SIZE, CELL_WORLD_SIZE, computeCameraPlacement } from './layout';
+import { BOARD_WORLD_SIZE, CELL_WORLD_SIZE, computeCameraPlacement, gridToWorld } from './layout';
+import { pickCell } from './picking';
 
 /** Warm wood tone of the toy table. */
 const TABLE_COLOR = 0xc99a6b;
@@ -12,7 +13,10 @@ const GRID_LINE_COLOR = 0xa87f52;
  * 12x12 grid, lit softly, viewed from a fixed tilted camera. Handles responsive
  * resizing. Rendering is verified manually; all math lives in layout.ts.
  */
-export function createBuildScene(container: HTMLElement): {
+export function createBuildScene(
+  container: HTMLElement,
+  onCellTap?: (x: number, y: number) => void,
+): {
   scene: THREE.Scene;
   camera: THREE.PerspectiveCamera;
   renderer: THREE.WebGLRenderer;
@@ -60,6 +64,56 @@ export function createBuildScene(container: HTMLElement): {
   );
   scene.add(gridLines);
 
+  // Soft highlight quad shown under the finger while a cell is pressed.
+  const highlightGeometry = new THREE.PlaneGeometry(CELL_WORLD_SIZE * 0.9, CELL_WORLD_SIZE * 0.9);
+  const highlight = new THREE.Mesh(
+    highlightGeometry,
+    new THREE.MeshBasicMaterial({ color: 0xffd166, transparent: true, opacity: 0.45 }),
+  );
+  highlight.rotation.x = -Math.PI / 2;
+  highlight.position.y = 0.01;
+  highlight.visible = false;
+  scene.add(highlight);
+
+  // Tap handling: report the picked cell on a clean tap (no drag).
+  let tapStart: { x: number; y: number } | null = null;
+  function eventToNdc(event: PointerEvent): { x: number; y: number } {
+    const rect = renderer.domElement.getBoundingClientRect();
+    return {
+      x: ((event.clientX - rect.left) / rect.width) * 2 - 1,
+      y: -((event.clientY - rect.top) / rect.height) * 2 + 1,
+    };
+  }
+  function onPointerDown(event: PointerEvent): void {
+    const cell = pickCell(eventToNdc(event), camera);
+    if (cell) {
+      const pos = gridToWorld(cell.x, cell.y);
+      highlight.position.set(pos.x, 0.01, pos.z);
+      highlight.visible = true;
+    }
+    tapStart = { x: event.clientX, y: event.clientY };
+  }
+  function onPointerUp(event: PointerEvent): void {
+    highlight.visible = false;
+    const start = tapStart;
+    tapStart = null;
+    if (!start) {
+      return;
+    }
+    // Only a clean tap (finger did not drag) counts as an edit.
+    const dx = event.clientX - start.x;
+    const dy = event.clientY - start.y;
+    if (dx * dx + dy * dy > 24 * 24) {
+      return;
+    }
+    const cell = pickCell(eventToNdc(event), camera);
+    if (cell && onCellTap) {
+      onCellTap(cell.x, cell.y);
+    }
+  }
+  renderer.domElement.addEventListener('pointerdown', onPointerDown);
+  renderer.domElement.addEventListener('pointerup', onPointerUp);
+
   function resize(): void {
     const width = container.clientWidth;
     const height = container.clientHeight;
@@ -92,7 +146,10 @@ export function createBuildScene(container: HTMLElement): {
     dispose: () => {
       cancelAnimationFrame(frame);
       observer.disconnect();
+      renderer.domElement.removeEventListener('pointerdown', onPointerDown);
+      renderer.domElement.removeEventListener('pointerup', onPointerUp);
       gridGeometry.dispose();
+      highlightGeometry.dispose();
       tableGeometry.dispose();
       renderer.dispose();
       renderer.domElement.remove();
