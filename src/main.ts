@@ -64,6 +64,19 @@ if (root && appReady()) {
   if (new URLSearchParams(window.location.search).has('debug')) {
     (window as unknown as Record<string, unknown>).__raceItDebug = {
       view,
+      holderInfo: (index: number) => {
+        const holder = pieces.group.children[index];
+        if (!holder) {
+          return null;
+        }
+        holder.updateWorldMatrix(true, true);
+        const child = holder.children[0];
+        return {
+          holderRotY: holder.rotation.y,
+          childRotY: child ? child.rotation.y : null,
+          childPos: child ? [child.position.x, child.position.y, child.position.z] : null,
+        };
+      },
       pieces: () =>
         pieces.group.children.map((holder) => {
           holder.updateWorldMatrix(true, true);
