@@ -2,6 +2,7 @@ import { appReady } from './app';
 import { MODELS, SFX } from './assets/manifest';
 import { createSfx } from './audio/sfx';
 import type { GridModel, PieceType } from './grid/grid-model';
+import { GRID_SIZE } from './grid/grid-model';
 import { TrackEditor } from './grid/track-editor';
 import { loadOrSeedTrack, saveTrack } from './grid/track-store';
 import { validateTrack } from './grid/track-validator';
@@ -99,8 +100,8 @@ if (root && appReady()) {
     },
     onClearConfirmed: () => {
       sfx.play('confirmB');
-      for (let y = 0; y < 12; y++) {
-        for (let x = 0; x < 12; x++) {
+      for (let y = 0; y < GRID_SIZE; y++) {
+        for (let x = 0; x < GRID_SIZE; x++) {
           model.setCell(x, y, null);
         }
       }

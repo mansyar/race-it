@@ -58,10 +58,15 @@ function isSnapshot(value: unknown): value is GridSnapshot {
  */
 
 /**
- * Saves the grid state to localStorage.
+ * Saves the grid state to localStorage. Best-effort: storage failures (quota,
+ * private-mode restrictions) must never crash the game.
  */
 export function saveTrack(grid: GridModel): void {
-  localStorage.setItem(STORAGE_KEY, JSON.stringify(grid.toSnapshot()));
+  try {
+    localStorage.setItem(STORAGE_KEY, JSON.stringify(grid.toSnapshot()));
+  } catch {
+    // Keep playing unsaved rather than interrupting the child.
+  }
 }
 
 /**

@@ -8,6 +8,9 @@ import { checkerTexture, MODEL_FOR_PIECE, rotationY } from './piece-visuals';
 /** Shared checker overlay geometry for start/finish cells. */
 const CHECKER_GEOMETRY = new THREE.PlaneGeometry(CELL_WORLD_SIZE, CELL_WORLD_SIZE);
 
+/** Shared checker overlay material; one instance avoids GPU material churn on rebuilds. */
+const CHECKER_MATERIAL = new THREE.MeshLambertMaterial({ transparent: true, opacity: 0.9 });
+
 /** Boosts a color toward the chunky bright toy look. */
 function tintBright(color: THREE.Color): void {
   color.offsetHSL(0, 0.25, 0.08);
@@ -31,10 +34,9 @@ export function buildPiece(
   piece.rotation.y = rotationY(cell.orientation);
 
   if (cell.type === 'start' || cell.type === 'finish') {
-    const overlay = new THREE.Mesh(
-      CHECKER_GEOMETRY,
-      new THREE.MeshLambertMaterial({ map: checkers, transparent: true, opacity: 0.9 }),
-    );
+    CHECKER_MATERIAL.map = checkers;
+    CHECKER_MATERIAL.needsUpdate = true;
+    const overlay = new THREE.Mesh(CHECKER_GEOMETRY, CHECKER_MATERIAL);
     overlay.rotation.x = -Math.PI / 2;
     overlay.position.y = 0.02;
     piece.add(overlay);
