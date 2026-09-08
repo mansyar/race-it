@@ -6,6 +6,7 @@ import { TrackEditor } from './grid/track-editor';
 import { loadOrSeedTrack, saveTrack } from './grid/track-store';
 import { validateTrack } from './grid/track-validator';
 import { type BuildTool, handleCellTap } from './render/interaction';
+import { fillPerfPattern } from './render/perf-harness';
 import { PieceRenderer } from './render/piece-renderer';
 import { createBuildScene } from './render/scene';
 import './style.css';
@@ -48,6 +49,13 @@ if (root && appReady()) {
     handleCellTap(editor, tool, x, y);
     rerender();
   });
+
+  // Debug mode: `?perf` fills the whole board (worst case, 144 pieces) and
+  // exposes renderer stats on the window for manual fps/draw-call measurement.
+  if (new URLSearchParams(window.location.search).has('perf')) {
+    fillPerfPattern(model);
+    (window as unknown as Record<string, unknown>).__raceItPerf = () => view.renderer.info.render;
+  }
 
   const go = createGoButton({
     // Race mode starts in Track 2; GO is wired but inert until then.
