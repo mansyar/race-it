@@ -43,6 +43,6 @@ pnpm build                   # production build
 
 - [x] Task 4.1: Bottom bar — 4 piece buttons + undo + remove toggle (≥64px targets, wordless icons); corner cluster — shelf stub, mute, clear-table with confirm. (0f5f6ac)
 - [x] Task 4.2: GO button - disabled by default, pulsing when track valid (state-driven, unit-tested). (2ecaa60)
-- [~] Task 4.3: Integration - demo loop on first launch, auto-save wiring, UI click sounds, mute toggle.
+- [x] Task 4.3: Integration - demo loop on first launch, auto-save wiring, UI click sounds, mute toggle. (cab195d)
 - [ ] Task 4.4: Performance pass — 60 fps with 150 pieces on device floor; document draw-call and triangle budgets here. *(measured, manual verification)*
 - [ ] Task: Phase Verification & Checkpoint (Refer to workflow.md)
