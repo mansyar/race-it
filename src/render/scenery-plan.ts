@@ -98,8 +98,8 @@ function cellKey(x: number, y: number): string {
 }
 
 function parseKey(key: string): [number, number] {
-  const [x, y] = key.split(',').map(Number);
-  return [x, y];
+  const parts = key.split(',');
+  return [Number(parts[0]), Number(parts[1])];
 }
 
 function isBorder(x: number, y: number): boolean {

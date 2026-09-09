@@ -42,6 +42,7 @@ export function contactShadowTexture(size = 64): THREE.CanvasTexture {
 export function createBuildScene(
   container: HTMLElement,
   onCellTap?: (x: number, y: number) => void,
+  onFrame?: (dtSeconds: number) => void,
 ): {
   scene: THREE.Scene;
   camera: THREE.PerspectiveCamera;
@@ -187,8 +188,13 @@ export function createBuildScene(
   observer.observe(container);
 
   let frame = 0;
+  let lastFrameTime = performance.now();
   function loop(): void {
     frame = requestAnimationFrame(loop);
+    const now = performance.now();
+    const dt = Math.min((now - lastFrameTime) / 1000, 0.1);
+    lastFrameTime = now;
+    onFrame?.(dt);
     renderer.render(scene, camera);
   }
   loop();

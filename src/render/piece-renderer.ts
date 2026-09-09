@@ -60,6 +60,8 @@ export function buildPiece(
   // N + E, so curve pieces carry a built-in 90-degree counter-clockwise turn
   // (+pi/2). Added on the holder so the fit recentering offset rotates with it.
   holder.rotation.y = rotationY(cell.orientation) + (cell.type === 'curve' ? Math.PI / 2 : 0);
+  holder.userData.cellIndex = y * GRID_SIZE + x;
+  holder.userData.baseRotY = holder.rotation.y;
   return holder;
 }
 
@@ -94,6 +96,12 @@ export class PieceRenderer {
           for (const material of materials) {
             if ('color' in material) {
               tintBright(material.color);
+              // Snapshot the bright-tinted base so remove-mode can pulse red
+              // without drifting the color permanently.
+              (material as { userData: Record<string, unknown> }).userData = {
+                ...(material.userData ?? {}),
+                baseColor: material.color.clone(),
+              };
             }
           }
         }

@@ -11,8 +11,11 @@ import { createRaceEngine, type RaceEngine } from './race/engine';
 import { extractLoopPath } from './race/path';
 import { type BuildTool, handleCellTap } from './render/interaction';
 import { fillPerfPattern } from './render/perf-harness';
+import { applyPieceFeedback } from './render/piece-feedback-apply';
 import { PieceRenderer } from './render/piece-renderer';
 import { createBuildScene } from './render/scene';
+import { SceneryRenderer } from './render/scenery-render';
+import { PieceFeedback } from './render/toy-feedback';
 import './style.css';
 import { createBuildBar } from './ui/build-bar';
 import { createCornerCluster } from './ui/corner-cluster';
@@ -42,11 +45,14 @@ if (root && appReady()) {
   let raceEngine: RaceEngine | null = null;
 
   const pieces = new PieceRenderer();
+  const scenery = new SceneryRenderer();
+  const feedback = new PieceFeedback();
   const sfx = createSfx();
   sfx.setMuted(localStorage.getItem('race-it:muted') === 'true');
 
   const rerender = (): void => {
     pieces.update(model.toSnapshot());
+    scenery.update(model.toSnapshot());
     bar.setUndoEnabled(editor.canUndo());
     go.setValid(validateTrack(model).valid);
     if (validateTrack(model).valid) {
@@ -54,10 +60,23 @@ if (root && appReady()) {
     }
   };
 
-  const view = createBuildScene(root, (x, y) => {
-    handleCellTap(editor, tool, x, y);
-    rerender();
-  });
+  const view = createBuildScene(
+    root,
+    (x, y) => {
+      const result = handleCellTap(editor, tool, x, y);
+      if (result === 'placed') {
+        feedback.notePlaced(y * GRID_SIZE + x);
+      }
+      rerender();
+    },
+    (dt) => {
+      feedback.tick(dt);
+      applyPieceFeedback(pieces.group, feedback, feedback.time);
+      if (raceEngine) {
+        raceEngine.tick(dt);
+      }
+    },
+  );
 
   // Debug mode: `?perf` fills the whole board (worst case, 144 pieces) and
   // exposes renderer stats on the window for manual fps/draw-call measurement.
@@ -207,6 +226,7 @@ if (root && appReady()) {
       bar.setSelected(selectedType);
       if (selectedType) {
         bar.setRemoveActive(false);
+        feedback.setRemoveMode(false);
       }
     },
     onUndo: () => {
@@ -219,6 +239,7 @@ if (root && appReady()) {
       const active = tool.kind !== 'remove';
       tool = active ? { kind: 'remove' } : { kind: 'none' };
       bar.setRemoveActive(active);
+      feedback.setRemoveMode(active);
       if (active) {
         selectedType = null;
         bar.setSelected(null);
@@ -256,21 +277,14 @@ if (root && appReady()) {
     .load()
     .then(() => {
       view.scene.add(pieces.update(model.toSnapshot()));
+      return scenery.load();
+    })
+    .then(() => {
+      view.scene.add(scenery.update(model.toSnapshot()));
     })
     .catch((error: unknown) => {
-      console.error('Failed to load track pieces', error);
+      console.error('Failed to load track pieces or scenery', error);
     });
-  // App loop: ticks the active race engine each frame (no-op outside a race).
-  let lastFrame = performance.now();
-  const frame = (now: number): void => {
-    const dt = Math.min((now - lastFrame) / 1000, 0.1);
-    lastFrame = now;
-    if (raceEngine) {
-      raceEngine.tick(dt);
-    }
-    requestAnimationFrame(frame);
-  };
-  requestAnimationFrame(frame);
 
   window.addEventListener('pagehide', () => view.dispose(), { once: true });
 }

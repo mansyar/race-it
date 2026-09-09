@@ -47,6 +47,11 @@ export class PieceFeedback {
   private clock = 0;
   removeMode = false;
 
+  /** Accumulated animation time in seconds. */
+  get time(): number {
+    return this.clock;
+  }
+
   /** Marks a cell as newly placed so it pops in. */
   notePlaced(cellIndex: number): void {
     this.pops.set(cellIndex, this.clock);
