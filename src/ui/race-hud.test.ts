@@ -24,7 +24,9 @@ describe('createRaceHud', () => {
 
   it('starts hidden in build mode', () => {
     expect(hud.root.classList.contains('hidden')).toBe(true);
-    expect(hud.root.querySelector('[data-action="pause"]')?.classList.contains('hidden')).toBe(true);
+    expect(hud.root.querySelector('[data-action="pause"]')?.classList.contains('hidden')).toBe(
+      true,
+    );
     expect(hud.overlay.hidden).toBe(true);
     expect(hud.confirm.hidden).toBe(true);
   });
@@ -32,7 +34,9 @@ describe('createRaceHud', () => {
   it('showPause reveals the pause button only', () => {
     hud.showPause();
     expect(hud.root.classList.contains('hidden')).toBe(false);
-    expect(hud.root.querySelector('[data-action="pause"]')?.classList.contains('hidden')).toBe(false);
+    expect(hud.root.querySelector('[data-action="pause"]')?.classList.contains('hidden')).toBe(
+      false,
+    );
     expect(hud.overlay.hidden).toBe(true);
   });
 
@@ -81,7 +85,9 @@ describe('createRaceHud', () => {
     click(hud.root, 'button[data-action="pause"]').click();
     hud.hide();
     expect(hud.root.classList.contains('hidden')).toBe(true);
-    expect(hud.root.querySelector('[data-action="pause"]')?.classList.contains('hidden')).toBe(true);
+    expect(hud.root.querySelector('[data-action="pause"]')?.classList.contains('hidden')).toBe(
+      true,
+    );
     expect(hud.overlay.hidden).toBe(true);
   });
 
@@ -90,7 +96,9 @@ describe('createRaceHud', () => {
     click(hud.root, 'button[data-action="pause"]').click();
     hud.reset();
     expect(hud.root.classList.contains('hidden')).toBe(true);
-    expect(hud.root.querySelector('[data-action="pause"]')?.classList.contains('hidden')).toBe(true);
+    expect(hud.root.querySelector('[data-action="pause"]')?.classList.contains('hidden')).toBe(
+      true,
+    );
     expect(hud.overlay.hidden).toBe(true);
     expect(hud.confirm.hidden).toBe(true);
   });
