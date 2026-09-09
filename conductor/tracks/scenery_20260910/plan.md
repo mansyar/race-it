@@ -21,14 +21,14 @@
 
 ## Phase 3 — Micro-Feedback & Table Polish
 
-- [ ] Task 3.1: feedback math tests first (Red) — `src/render/toy-feedback.test.ts`: pop-in scale curve over ~180 ms with overshoot ends at 1.0; remove-mode wiggle amplitude ~±4°; tint pulse flag; state clear when remove mode off.
-- [ ] Task 3.2: implement `src/render/toy-feedback.ts` — pure easing + small `PieceFeedback` tracker (pending pops, remove-mode flag) (Green).
-- [ ] Task 3.3: table polish — contact-shadow plane + rim accent in `scene.ts` (visual; keep scene tests green; dispose paths updated). Manual browser check portrait/landscape.
-- [ ] Task: Phase Verification & Checkpoint (Refer to workflow.md)
+- [x] Task 3.1: feedback math tests first (Red) — `src/render/toy-feedback.test.ts`: pop-in scale curve over ~180 ms with overshoot ends at 1.0; remove-mode wiggle amplitude ~±4°; tint pulse flag; state clear when remove mode off. `(6a720d0)`
+- [x] Task 3.2: implement `src/render/toy-feedback.ts` — pure easing + small `PieceFeedback` tracker (pending pops, remove-mode flag) (Green). `(6a720d0)`
+- [x] Task 3.3: table polish — contact-shadow plane + rim accent in `scene.ts` (visual; keep scene tests green; dispose paths updated). Manual browser check portrait/landscape. `(1fb6583)`
+- [x] Task: Phase Verification & Checkpoint (Refer to workflow.md) `(1fb6583)`
 
 ## Phase 4 — Integration
 
-- [ ] Task 4.1: wire `main.ts` — load `SceneryRenderer` alongside pieces; `rerender()` → `scenery.update`; place/remove tools drive feedback tracker; scene loop calls `feedback.tick(dt)` before render.
+- [~] Task 4.1: wire `main.ts` — load `SceneryRenderer` alongside pieces; `rerender()` → `scenery.update`; place/remove tools drive feedback tracker; scene loop calls `feedback.tick(dt)` before render.
 - [ ] Task 4.2: remove-mode 3D feedback — tint/wiggle pieces while tool is remove; clear on toggle off (unit + browser).
 - [ ] Task 4.3: regression — `?race`, `?perf`, `?debug` hooks still work; build tests unchanged; document new `?perf` numbers with full board + scenery.
 - [ ] Task: Phase Verification & Checkpoint (Refer to workflow.md)
