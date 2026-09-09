@@ -19,7 +19,7 @@ function build(tuples: Array<[number, number, string, number]>): GridModel {
  * - straight / start / finish: two opposite ends (0deg = N+S, 90deg = E+W).
  * - curve: two adjacent ends (0deg = N+E, 90deg = E+S, 180deg = S+W, 270deg = W+N).
  * Minimal valid loop is a 3x2 ring: 4 curves + start & finish as the edge through-pieces.
- * Since the race-engine track, the finish piece is optional decoration.
+ * Since the race-engine track landed, the finish piece is optional decoration.
  */
 function minimalLoop(x0 = 1, y0 = 1): Array<[number, number, string, number]> {
   return [

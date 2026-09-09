@@ -68,6 +68,8 @@ export interface RaceEngine {
   readonly result: RaceResult | null;
   on(event: 'stateChange', listener: (state: RaceState) => void): void;
   on(event: 'kartFinish', listener: (payload: { index: number; time: number }) => void): void;
+  /** NOTE: the payload is the LIVE result — photoFinish/finishTimes are
+   * provisional until every kart crosses. Use engine.result once finished. */
   on(event: 'finish', listener: (result: RaceResult) => void): void;
   /** Advances the simulation by dt seconds (no-op while paused). */
   tick(dt: number): void;
@@ -239,6 +241,8 @@ export function createRaceEngine(path: LoopCell[], options: RaceEngineOptions = 
       return result;
     },
     on(event, listener) {
+      // Type-erased on purpose: the overloads above guarantee the payload
+      // shape per event at the call site; the registry stores one callback.
       listeners[event].push(listener as (payload: unknown) => void);
     },
     tick,
