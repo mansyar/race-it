@@ -26,8 +26,8 @@ pnpm build                   # production build
 
 ### Phase 2 — Loop Path Extraction (pure TDD)
 
-- [ ] Task 2.1: Path tests first — known 8-cell rectangular loop starting at the start piece; mixed curves/orientations; dangling pieces excluded; throws on no-loop / missing-start; deterministic direction (first step = start piece's side[0] neighbor). **Red.**
-- [ ] Task 2.2: Implement `src/race/path.ts` — `extractLoopPath(grid)` returning ordered cells (coords, type, orientation). **Green.**
+- [x] Task 2.1: Path tests first — known 8-cell rectangular loop starting at the start piece; mixed curves/orientations; dangling pieces excluded; throws on no-loop / missing-start; deterministic direction (first step = start piece's side[0] neighbor). **Red.** `(a6d201a)`
+- [x] Task 2.2: Implement `src/race/path.ts` — `extractLoopPath(grid)` returning ordered cells (coords, type, orientation). **Green.** `(a6d201a)`
 - [ ] Task: Phase Verification & Checkpoint (Refer to workflow.md)
 
 ### Phase 3 — Race Engine Core (pure TDD)
