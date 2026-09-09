@@ -47,12 +47,16 @@ export function createTrafficLight(): TrafficLight {
     },
     setGo() {
       root.classList.remove('hidden');
-      lights.forEach((light) => light.classList.remove('lit'));
+      lights.forEach((light) => {
+        light.classList.remove('lit');
+      });
       go.classList.add('lit');
     },
     reset() {
       root.classList.add('hidden');
-      lights.forEach((light) => light.classList.remove('lit'));
+      lights.forEach((light) => {
+        light.classList.remove('lit');
+      });
       go.classList.remove('lit');
     },
   };

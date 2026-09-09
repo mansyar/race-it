@@ -17,6 +17,7 @@ function mockLoader(scenes: THREE.Object3D[]): { loadAsync: (url: string) => Pro
   let index = 0;
   return {
     loadAsync: async (url: string) => {
+      void url;
       const scene = scenes[index] ?? new THREE.Object3D();
       index += 1;
       return { scene: scene.clone(true) };
