@@ -295,6 +295,15 @@ describe('createRaceEngine', () => {
       expect(states).toEqual(['countdown', 'idle']);
     });
 
+    it('abandon while idle is a silent no-op', () => {
+      const engine = createRaceEngine(loopOfLength(8), { seed: 6 });
+      const states: RaceState[] = [];
+      engine.on('stateChange', (state) => states.push(state));
+      engine.abandon();
+      expect(engine.state).toBe('idle');
+      expect(states).toEqual([]);
+    });
+
     it('restart re-rolls speeds and returns to idle for a fresh race', () => {
       const engine = createRaceEngine(loopOfLength(48), { seed: 42 });
       const firstRoll = engine.karts.map((kart) => kart.speed);
