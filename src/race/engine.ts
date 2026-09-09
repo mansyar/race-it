@@ -73,6 +73,14 @@ export interface RaceEngine {
   tick(dt: number): void;
   /** Starts the countdown; no-op unless the race is idle. */
   start(): void;
+  /** Freezes the simulation; idempotent. */
+  pause(): void;
+  /** Unfreezes the simulation; no-op when not paused. */
+  resume(): void;
+  /** Discards the current race and returns to idle. */
+  abandon(): void;
+  /** Discards the current race, re-rolls kart speeds, and returns to idle. */
+  restart(): void;
 }
 
 /**
@@ -97,13 +105,13 @@ export function createRaceEngine(path: LoopCell[], options: RaceEngineOptions = 
   const baseSpeed = lapLength / TARGET_RACE_SECONDS;
 
   let state: RaceState = 'idle';
-  const paused = false;
+  let paused = false;
   let countdownRemaining = 0;
   let elapsed = 0;
   let winnerIndex: number | null = null;
   let runnerUpIndex: number | null = null;
   let result: RaceResult | null = null;
-  const karts = rollKarts(kartCount, laneOffset, rowSpacing, baseSpeed, speedBand, rng);
+  let karts = rollKarts(kartCount, laneOffset, rowSpacing, baseSpeed, speedBand, rng);
 
   const listeners: Record<RaceEvent, Array<(payload: unknown) => void>> = {
     stateChange: [],
@@ -184,6 +192,39 @@ export function createRaceEngine(path: LoopCell[], options: RaceEngineOptions = 
     emit('stateChange', state);
   }
 
+  function pause(): void {
+    paused = true;
+  }
+
+  function resume(): void {
+    paused = false;
+  }
+
+  function abandon(): void {
+    if (state === 'idle') {
+      paused = false;
+      return;
+    }
+    paused = false;
+    state = 'idle';
+    countdownRemaining = countdownSeconds;
+    elapsed = 0;
+    winnerIndex = null;
+    runnerUpIndex = null;
+    result = null;
+    for (const kart of karts) {
+      kart.progress = kart.startProgress;
+      kart.finished = false;
+      kart.finishTime = null;
+    }
+    emit('stateChange', state);
+  }
+
+  function restart(): void {
+    abandon();
+    karts = rollKarts(kartCount, laneOffset, rowSpacing, baseSpeed, speedBand, rng);
+  }
+
   return {
     get state() {
       return state;
@@ -202,6 +243,10 @@ export function createRaceEngine(path: LoopCell[], options: RaceEngineOptions = 
     },
     tick,
     start,
+    pause,
+    resume,
+    abandon,
+    restart,
   };
 }
 

@@ -229,6 +229,99 @@ describe('createRaceEngine', () => {
     });
   });
 
+  describe('lifecycle API', () => {
+    it('pause freezes the countdown and kart progress; resume continues', () => {
+      const engine = createRaceEngine(loopOfLength(48), { seed: 1 });
+      engine.start();
+      engine.tick(1.0);
+      engine.pause();
+      engine.tick(5.0);
+      expect(engine.state).toBe('countdown');
+      for (const kart of engine.karts) {
+        expect(kart.progress).toBe(kart.startProgress);
+      }
+      engine.resume();
+      engine.tick(2.5);
+      expect(engine.state).toBe('running');
+      expect(kartAt(engine, 0).progress).toBeGreaterThan(0);
+    });
+
+    it('pause freezes karts mid-race and resume continues from the same progress', () => {
+      const engine = createRaceEngine(loopOfLength(48), { seed: 2 });
+      engine.start();
+      tickUntilFinished(engine, 0.1, 10); // run 10 s (through countdown into the race)
+      const before = engine.karts.map((kart) => kart.progress);
+      engine.pause();
+      engine.tick(3.0);
+      expect(engine.karts.map((kart) => kart.progress)).toEqual(before);
+      engine.resume();
+      engine.tick(1.0);
+      expect(kartAt(engine, 0).progress).toBeGreaterThan(
+        requireNumber(before[0], 'progress before'),
+      );
+    });
+
+    it('resume without pause is a no-op', () => {
+      const engine = createRaceEngine(loopOfLength(48), { seed: 3 });
+      engine.start();
+      engine.resume();
+      engine.tick(3.0);
+      expect(engine.state).toBe('running');
+    });
+
+    it('abandon resets an in-progress race to idle and discards the result', () => {
+      const engine = createRaceEngine(loopOfLength(48), { seed: 4 });
+      engine.start();
+      tickUntilFinished(engine, 0.1, 10);
+      engine.abandon();
+      expect(engine.state).toBe('idle');
+      expect(engine.result).toBeNull();
+      for (const kart of engine.karts) {
+        expect(kart.progress).toBe(kart.startProgress);
+        expect(kart.finished).toBe(false);
+        expect(kart.finishTime).toBeNull();
+      }
+      engine.tick(5.0);
+      expect(engine.state).toBe('idle');
+      expect(kartAt(engine, 0).progress).toBe(0);
+    });
+
+    it('abandon emits a stateChange back to idle', () => {
+      const engine = createRaceEngine(loopOfLength(8), { seed: 5 });
+      const states: RaceState[] = [];
+      engine.on('stateChange', (state) => states.push(state));
+      engine.start();
+      engine.abandon();
+      expect(states).toEqual(['countdown', 'idle']);
+    });
+
+    it('restart re-rolls speeds and returns to idle for a fresh race', () => {
+      const engine = createRaceEngine(loopOfLength(48), { seed: 42 });
+      const firstRoll = engine.karts.map((kart) => kart.speed);
+      engine.start();
+      tickUntilFinished(engine);
+      engine.restart();
+      expect(engine.state).toBe('idle');
+      expect(engine.result).toBeNull();
+      const secondRoll = engine.karts.map((kart) => kart.speed);
+      expect(secondRoll).not.toEqual(firstRoll);
+      for (const kart of engine.karts) {
+        expect(kart.progress).toBe(kart.startProgress);
+        expect(kart.finished).toBe(false);
+      }
+    });
+
+    it('restart followed by start runs a complete new race', () => {
+      const engine = createRaceEngine(loopOfLength(48), { seed: 7 });
+      engine.start();
+      tickUntilFinished(engine);
+      engine.restart();
+      engine.start();
+      tickUntilFinished(engine);
+      expect(requireResult(engine).winnerIndex).toBeGreaterThanOrEqual(0);
+    });
+  });
+
   describe('typed events', () => {
     it('emits stateChange idle -> countdown -> running -> finished', () => {
       const engine = createRaceEngine(loopOfLength(8), { seed: 2 });
