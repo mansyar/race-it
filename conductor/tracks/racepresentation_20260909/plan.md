@@ -16,10 +16,10 @@
 
 ## Phase 2 — Race Camera & Confetti
 
-- [ ] Task 2.1: `race-camera` tests first (Red) — `src/render/race-camera.test.ts`: returns build placement at countdown; drift bounded (≤~15° orbit, board mostly visible); lead-follow behavior; finish settle as karts near completion; resize blends back toward build placement.
-- [ ] Task 2.2: implement `src/render/race-camera.ts` — pure pose math `raceCameraPose(phase, leadProgress, finishProgress, aspect, buildPlacement)` + smoothing constants (Green).
-- [ ] Task 2.3: confetti math tests first (Red) — `src/render/confetti.test.ts`: deterministic seeded burst (count, positions above finish, velocities), gravity+fade update over ~2 s, all particles cleared.
-- [ ] Task 2.4: implement `src/render/confetti.ts` — pure particle math + thin Three.js Points wrapper (`burstAt`, `update(dt)`, `clear`), ~300 particles, 1 draw call (Green).
+- [x] Task 2.1: `race-camera` tests first (Red) — `src/render/race-camera.test.ts`: returns build placement at countdown; drift bounded (≤~15° orbit, board mostly visible); lead-follow behavior; finish settle as karts near completion; resize blends back toward build placement. `(a7a64c2)`
+- [x] Task 2.2: implement `src/render/race-camera.ts` — pure pose math `raceCameraPose(phase, leadProgress, finishProgress, aspect, buildPlacement)` + smoothing constants (Green). `(a7a64c2)`
+- [x] Task 2.3: confetti math tests first (Red) — `src/render/confetti.test.ts`: deterministic seeded burst (count, positions above finish, velocities), gravity+fade update over ~2 s, all particles cleared. `(e1765a9)`
+- [x] Task 2.4: implement `src/render/confetti.ts` — pure particle math + thin Three.js Points wrapper (`burstAt`, `update(dt)`, `clear`), ~300 particles, 1 draw call (Green). `(e1765a9)`
 - [ ] Task: Phase Verification & Checkpoint (Refer to workflow.md)
 
 ## Phase 3 — Race HUD Modules
