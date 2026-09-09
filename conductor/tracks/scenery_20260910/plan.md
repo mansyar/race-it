@@ -8,8 +8,8 @@
 
 ## Phase 1 — Scenery Assets & Placement Plan
 
-- [ ] Task 1.1: Download 3 Kenney Racing Kit scenery GLBs (tree, grandstand, barrier — CC0) into `src/assets/models/`; add `SCENERY` export to `assets/manifest.ts`. Red: extend `src/assets.test.ts` — `SCENERY` has exactly 3 `?url` strings matching expected filenames (fails until manifest updated). Green: assets + manifest land.
-- [ ] Task 1.2: `planScenery` tests first (Red) — `src/render/scenery-plan.test.ts`: empty board plan; never on occupied; never adjacent to pieces (N/E/S/W + diagonals); grandstands border-only; max 14; determinism with seed; demo-loop snapshot produces valid non-overlapping plan.
+- [x] Task 1.1: Download 3 Kenney Racing Kit scenery GLBs (tree, grandstand, barrier — CC0) into `src/assets/models/`; add `SCENERY` export to `assets/manifest.ts`. Red: extend `src/assets.test.ts` — `SCENERY` has exactly 3 `?url` strings matching expected filenames (fails until manifest updated). Green: assets + manifest land. `(728b4c0)`
+- [~] Task 1.2: `planScenery` tests first (Red) — `src/render/scenery-plan.test.ts`: empty board plan; never on occupied; never adjacent to pieces (N/E/S/W + diagonals); grandstands border-only; max 14; determinism with seed; demo-loop snapshot produces valid non-overlapping plan.
 - [ ] Task 1.3: implement `src/render/scenery-plan.ts` — pure `planScenery(snapshot, seed?)` using `mulberry32` from `src/race/rng.ts` (Green).
 - [ ] Task: Phase Verification & Checkpoint (Refer to workflow.md)
 
