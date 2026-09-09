@@ -8,9 +8,9 @@
 
 ## Phase 1 — Kart Assets & Rig
 
-- [ ] Task 1.1: Download 4 distinct Kenney Car Kit GLBs (CC0) into `src/assets/models/` + license file; add `KARTS` export to `assets/manifest.ts`. Red: extend `src/assets.test.ts` — `KARTS` has exactly 4 `?url` strings (fails until manifest updated). Green: manifest + assets land.
-- [ ] Task 1.2: `kartPose` tests first (Red) — `src/render/kart-rig.test.ts`: progress 0 → start-cell pose with side[0] heading; mid-segment interpolation; corner tangent; perpendicular lane offset (±`LANE_OFFSET`); loop-wrap continuity past `lapLength`; per-kart pose determinism.
-- [ ] Task 1.3: implement `src/render/kart-rig.ts` — `kartPose(path, progress, lane)` → `{ x, z, heading }` using `gridToWorld` + path cell orientation, lane applied perpendicular (Green).
+- [x] Task 1.1: Download 4 distinct Kenney Car Kit GLBs (CC0) into `src/assets/models/` + license file; add `KARTS` export to `assets/manifest.ts`. Red: extend `src/assets.test.ts` — `KARTS` has exactly 4 `?url` strings (fails until manifest updated). Green: manifest + assets land. `(8820109)`
+- [x] Task 1.2: `kartPose` tests first (Red) — `src/render/kart-rig.test.ts`: progress 0 → start-cell pose with side[0] heading; mid-segment interpolation; corner tangent; perpendicular lane offset (±`LANE_OFFSET`); loop-wrap continuity past `lapLength`; per-kart pose determinism. `(536b091)`
+- [x] Task 1.3: implement `src/render/kart-rig.ts` — `kartPose(path, progress, lane)` → `{ x, z, heading }` using `gridToWorld` + path cell orientation, lane applied perpendicular (Green). `(536b091)`
 - [ ] Task 1.4: `src/render/kart-meshes.ts` — load 4 GLBs (injectable loader per `piece-renderer` pattern), clone+tint materials (red/blue/green/yellow), per-model scale/orientation tuning, wheels on road (y ≈ 0). Tests with mocked loader asserting tint/scale application.
 - [ ] Task: Phase Verification & Checkpoint (Refer to workflow.md)
 
