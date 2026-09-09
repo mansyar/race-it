@@ -70,7 +70,11 @@ if (root && appReady()) {
   // exposes renderer stats on the window for manual fps/draw-call measurement.
   if (new URLSearchParams(window.location.search).has('perf')) {
     fillPerfPattern(model);
-    (window as unknown as Record<string, unknown>).__raceItPerf = () => view.renderer.info.render;
+    (window as unknown as Record<string, unknown>).__raceItPerf = () => ({
+      ...view.renderer.info.render,
+      kartMeshes: karts.group.children.length,
+      confettiVisible: confetti.points.visible,
+    });
   }
 
   // Debug mode: `?debug` exposes per-piece world transforms and road-level

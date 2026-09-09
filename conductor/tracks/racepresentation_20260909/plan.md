@@ -43,6 +43,6 @@
 
 ## Phase 5 — Verification
 
-- [ ] Task 5.1: quality gates — `pnpm build`, `$env:CI='true'; pnpm test` (full suite), coverage >80% on new/changed modules, `pnpm lint` clean.
-- [ ] Task 5.2: `?perf` sanity — draw calls / frame time with 4 karts + confetti during a seeded race; confirm 60 fps budget holds on the full board; tick-cost unchanged.
-- [ ] Task: Phase Verification & Checkpoint (Refer to workflow.md)
+- [x] Task 5.1: quality gates — `pnpm build`, `$env:CI='true'; pnpm test` (full suite), coverage >80% on new/changed modules, `pnpm lint` clean.
+- [x] Task 5.2: `?perf` sanity — draw calls / frame time with 4 karts + confetti during a seeded race; confirm 60 fps budget holds on the full board; tick-cost unchanged.
+- [~] Task: Phase Verification & Checkpoint (Refer to workflow.md)
