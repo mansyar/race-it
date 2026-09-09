@@ -73,7 +73,11 @@ function createHarness(options: { countdownSeconds?: number } = {}): Harness {
   const priorOnResume = vi.fn();
   const priorOnQuit = vi.fn();
   const priorOnAgain = vi.fn();
-  const hud = createRaceHud({ onPause: priorOnPause, onResume: priorOnResume, onQuit: priorOnQuit });
+  const hud = createRaceHud({
+    onPause: priorOnPause,
+    onResume: priorOnResume,
+    onQuit: priorOnQuit,
+  });
   const trophy = createTrophy({ onAgain: priorOnAgain });
   const confetti = {
     burst: vi.fn(),
