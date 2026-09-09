@@ -23,6 +23,14 @@ export function rotationY(orientation: Orientation): number {
   return orientation === 0 ? 0 : -(orientation * Math.PI) / 180;
 }
 
+/** Light toy-gray that brightens flat vertex colors without hue-shifting grays. */
+const TOY_TINT = new THREE.Color(0xdfe4ea);
+
+/** Pulls a material color toward the chunky bright toy look (no hue shift). */
+export function tintBright(color: THREE.Color): void {
+  color.lerp(TOY_TINT, 0.35);
+}
+
 const CHECKER_DARK: readonly [number, number, number, number] = [40, 40, 40, 255];
 const CHECKER_LIGHT: readonly [number, number, number, number] = [245, 245, 245, 255];
 

@@ -71,7 +71,10 @@ if (root && appReady()) {
     },
     (dt) => {
       feedback.tick(dt);
-      applyPieceFeedback(pieces.group, feedback, feedback.time);
+      // Keep piece feedback in build mode only — races stay a pure spectacle.
+      if (!raceEngine || raceEngine.state === 'idle') {
+        applyPieceFeedback(pieces.group, feedback, feedback.time);
+      }
       if (raceEngine) {
         raceEngine.tick(dt);
       }
@@ -214,6 +217,8 @@ if (root && appReady()) {
           (window as unknown as Record<string, unknown>).__raceItRace = raceEngine;
         }
       });
+      feedback.setRemoveMode(false);
+      bar.setRemoveActive(false);
       raceEngine.start();
     },
   });

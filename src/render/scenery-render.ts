@@ -3,10 +3,9 @@ import { GLTFLoader } from 'three/examples/jsm/loaders/GLTFLoader.js';
 import { SCENERY } from '../assets/manifest';
 import type { GridSnapshot } from '../grid/grid-model';
 import { gridToWorld } from './layout';
+import { applyModelFit, SCENERY_FIT } from './model-fit';
+import { tintBright } from './piece-visuals';
 import { planScenery, type SceneryItem, type SceneryKind } from './scenery-plan';
-
-/** Light toy-gray that brightens flat vertex colors without hue-shifting grays. */
-const TOY_TINT = new THREE.Color(0xdfe4ea);
 
 /** Manifest keys for the three decorative props. */
 export const SCENERY_KINDS: readonly SceneryKind[] = ['tree', 'grandstand', 'barrier'];
@@ -19,18 +18,14 @@ interface LoaderLike {
   loadAsync: (url: string) => Promise<GltfLike>;
 }
 
-/** Pulls a material color toward the chunky bright toy look (no hue shift). */
-function tintBright(color: THREE.Color): void {
-  color.lerp(TOY_TINT, 0.35);
-}
-
 /**
- * Builds one scenery holder: positioned at the cell center with yaw and
- * scale-jitter applied so props read as chunky toys, not uniform stamps.
+ * Builds one scenery holder: fit-adjusted clone at the cell center with yaw
+ * and scale-jitter so props read as chunky toys, not uniform stamps.
  */
 export function buildScenery(template: THREE.Object3D, item: SceneryItem): THREE.Object3D {
   const holder = new THREE.Object3D();
   const model = template.clone(true);
+  applyModelFit(model, SCENERY_FIT[item.kind]);
   holder.add(model);
   const world = gridToWorld(item.x, item.y);
   holder.position.set(world.x, 0, world.z);

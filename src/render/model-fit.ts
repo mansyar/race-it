@@ -1,5 +1,6 @@
 import type * as THREE from 'three';
 import type { PieceType } from '../grid/grid-model';
+import type { SceneryKind } from './scenery-plan';
 
 /**
  * Per-type transform that fits a Kenney Racing Kit model into one grid cell.
@@ -33,6 +34,22 @@ export const PIECE_FIT: Record<PieceType, ModelFit> = {
 
 /** Finish-cell accessory: checkered flag plate at the cell corner. */
 export const FLAG_FIT: ModelFit = { scale: [2, 2, 2], position: [1.25, 0, 0.59] };
+
+/**
+ * Fit transforms for decorative scenery. Measured world-space centers
+ * (scripts/measure-glb-world.mjs):
+ * - treeSmall: size (0.253, 1.070, 0.292), center (-0.350, 0.525, -0.650)
+ * - grandStand: size (1.000, 0.896, 1.000), center (0.150, 0.438, -1.150)
+ * - barrierWhite: size (0.250, 0.131, 0.123), center (-0.225, 0.056, -0.712)
+ *
+ * Offsets cancel scale * center on x/z so each prop sits on the cell origin;
+ * scale keeps props readable on a 2-unit cell. applyModelFit adds MODEL_LIFT_Y.
+ */
+export const SCENERY_FIT: Record<SceneryKind, ModelFit> = {
+  tree: { scale: [1.6, 1.6, 1.6], position: [0.56, 0, 1.04] },
+  grandstand: { scale: [1.4, 1.4, 1.4], position: [-0.21, 0, 1.61] },
+  barrier: { scale: [2.0, 2.0, 2.0], position: [0.45, 0, 1.424] },
+};
 
 /** Kenney tile roots sit at y=0 (coplanar with the table top); lift avoids z-fighting. */
 export const MODEL_LIFT_Y = 0.03;
