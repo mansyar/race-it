@@ -32,9 +32,9 @@ pnpm build                   # production build
 
 ### Phase 3 — Race Engine Core (pure TDD)
 
-- [ ] Task 3.1: Injectable seeded RNG utility (mulberry32) + tests (deterministic sequences, uniform band sampling).
-- [ ] Task 3.2: Engine tests first — lineup offsets for 2/3/4 karts (pairs, alternating lanes, odd-count centered); speed roll from seed; `baseSpeed = L / 37.5` auto-tune (8-cell and 48-cell loops → winner within 30–45 s); countdown freeze (no movement before GO, movement exactly at GO); finish detection at progress ≥ L; finish times for all karts; `photoFinish` true/false (seeded close & clear races); >1 distinct winner across seeds. **Red.**
-- [ ] Task 3.3: Implement `src/race/engine.ts` — kart model, state machine (`idle → countdown → running → finished` + paused), `tick(dt)`, results, typed events (`stateChange`, `kartFinish`, `finish`). **Green.**
+- [x] Task 3.1: Injectable seeded RNG utility (mulberry32) + tests (deterministic sequences, uniform band sampling). `(293affa)`
+- [x] Task 3.2: Engine tests first — lineup offsets for 2/3/4 karts (pairs, alternating lanes, odd-count centered); speed roll from seed; `baseSpeed = L / 37.5` auto-tune (8-cell and 48-cell loops → winner within 30–45 s); countdown freeze (no movement before GO, movement exactly at GO); finish detection at progress ≥ L; finish times for all karts; `photoFinish` true/false (seeded close & clear races); >1 distinct winner across seeds. **Red.** `(e5a9aa6)`
+- [x] Task 3.3: Implement `src/race/engine.ts` — kart model, state machine (`idle → countdown → running → finished` + paused), `tick(dt)`, results, typed events (`stateChange`, `kartFinish`, `finish`). **Green.** `(e5a9aa6)`
 - [ ] Task: Phase Verification & Checkpoint (Refer to workflow.md)
 
 ### Phase 4 — Race Lifecycle API (pure TDD)
