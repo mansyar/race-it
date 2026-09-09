@@ -32,8 +32,7 @@ export type InvalidReason =
   | 'empty'
   | 'no-loop'
   | 'multiple-loops'
-  | 'missing-start'
-  | 'missing-finish';
+  | 'missing-start';
 
 export interface ValidationResult {
   valid: boolean;
@@ -47,7 +46,8 @@ interface Piece {
 
 /**
  * Validates a build grid: race-ready iff the pieces form exactly one connected
- * closed circuit that contains both the start and the finish piece. Unconnected
+ * closed circuit that contains the start piece. The finish piece is optional
+ * decoration (F1-style: the start line is the start/finish line). Unconnected
  * leftover pieces are ignored.
  */
 export function validateTrack(grid: GridModel): ValidationResult {
@@ -68,9 +68,6 @@ export function validateTrack(grid: GridModel): ValidationResult {
   }
   if (![...pieces.values()].some((piece) => piece.type === 'start')) {
     return { valid: false, reason: 'missing-start' };
-  }
-  if (![...pieces.values()].some((piece) => piece.type === 'finish')) {
-    return { valid: false, reason: 'missing-finish' };
   }
 
   // Count mutual connections per piece (max 2 by construction).
@@ -101,7 +98,6 @@ export function validateTrack(grid: GridModel): ValidationResult {
   const visited = new Set<number>();
   let cycles = 0;
   let loopContainsStart = false;
-  let loopContainsFinish = false;
   for (const index of pieces.keys()) {
     if (visited.has(index)) {
       continue;
@@ -127,7 +123,6 @@ export function validateTrack(grid: GridModel): ValidationResult {
     if (isCycle) {
       cycles++;
       loopContainsStart ||= component.some((member) => pieces.get(member)?.type === 'start');
-      loopContainsFinish ||= component.some((member) => pieces.get(member)?.type === 'finish');
     }
   }
 
@@ -137,7 +132,7 @@ export function validateTrack(grid: GridModel): ValidationResult {
   if (cycles > 1) {
     return { valid: false, reason: 'multiple-loops' };
   }
-  if (!loopContainsStart || !loopContainsFinish) {
+  if (!loopContainsStart) {
     return { valid: false, reason: 'no-loop' };
   }
   return { valid: true };
