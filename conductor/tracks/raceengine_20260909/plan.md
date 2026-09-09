@@ -48,3 +48,7 @@ pnpm build                   # production build
 - [x] Task 5.1: Wire `onGo` in `main.ts` to start the engine + app-loop `tick`; `?race` debug hook runs a headless seeded race and prints the result (project debug convention: `?perf`, `?debug`). *(manual verification)* `(0c851c4, c7969f4)`
 - [x] Task 5.2: Quality gates — `pnpm build`, `CI=true pnpm test` (full suite), coverage >80% on `src/race/*` + validator, `pnpm lint`; tick-cost sanity (engine work ≪ 1 ms/frame). *(measured)* `(c00709f)`
 - [x] Task: Phase Verification & Checkpoint `(c7969f4)`
+
+## Phase: Review Fixes
+
+- [x] Task: Apply review suggestions `5ebfe5a`
