@@ -51,6 +51,10 @@ interface Harness {
     aspect: number;
   };
   onBuildUiChange: ReturnType<typeof vi.fn>;
+  priorOnPause: ReturnType<typeof vi.fn>;
+  priorOnResume: ReturnType<typeof vi.fn>;
+  priorOnQuit: ReturnType<typeof vi.fn>;
+  priorOnAgain: ReturnType<typeof vi.fn>;
   /** Advances presentation through a full countdown into running. */
   raceToRunning(seconds?: number): void;
   /** Ticks engine + presentation until the race is finished (all karts). */
@@ -65,8 +69,12 @@ function createHarness(options: { countdownSeconds?: number } = {}): Harness {
     countdownSeconds: options.countdownSeconds ?? 0.05,
   });
   const light = createTrafficLight();
-  const hud = createRaceHud({ onPause: vi.fn(), onResume: vi.fn(), onQuit: vi.fn() });
-  const trophy = createTrophy({ onAgain: vi.fn() });
+  const priorOnPause = vi.fn();
+  const priorOnResume = vi.fn();
+  const priorOnQuit = vi.fn();
+  const priorOnAgain = vi.fn();
+  const hud = createRaceHud({ onPause: priorOnPause, onResume: priorOnResume, onQuit: priorOnQuit });
+  const trophy = createTrophy({ onAgain: priorOnAgain });
   const confetti = {
     burst: vi.fn(),
     update: vi.fn(),
@@ -109,6 +117,10 @@ function createHarness(options: { countdownSeconds?: number } = {}): Harness {
     karts,
     camera,
     onBuildUiChange,
+    priorOnPause,
+    priorOnResume,
+    priorOnQuit,
+    priorOnAgain,
     raceToRunning(seconds = 0.06) {
       presentation.beginRace();
       presentation.update(seconds);
@@ -317,6 +329,14 @@ describe('createRacePresentation', () => {
   });
 
   describe('pause / resume / quit', () => {
+    it('composes prior HUD callbacks instead of replacing them', () => {
+      harness.raceToRunning();
+      click('button[data-action="pause"]', harness.hud.root);
+      expect(harness.priorOnPause).toHaveBeenCalledTimes(1);
+      click('button[data-action="resume"]', harness.hud.overlay);
+      expect(harness.priorOnResume).toHaveBeenCalledTimes(1);
+    });
+
     it('freezes the engine when pause is tapped', () => {
       harness.raceToRunning();
       harness.presentation.update(0.2);

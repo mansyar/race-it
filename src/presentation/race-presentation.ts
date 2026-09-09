@@ -128,16 +128,24 @@ export function createRacePresentation(options: RacePresentationOptions): RacePr
     options.onBuildUiChange?.(true);
   }
 
+  const priorPause = raceHud.callbacks.onPause;
+  const priorResume = raceHud.callbacks.onResume;
+  const priorQuit = raceHud.callbacks.onQuit;
+  const priorAgain = trophy.callbacks.onAgain;
   raceHud.callbacks.onPause = () => {
+    priorPause();
     engine.pause();
   };
   raceHud.callbacks.onResume = () => {
+    priorResume();
     engine.resume();
   };
   raceHud.callbacks.onQuit = () => {
+    priorQuit();
     engine.abandon();
   };
   trophy.callbacks.onAgain = () => {
+    priorAgain();
     resetCelebration();
     goFlashRemaining = 0;
     trafficLight.reset();
@@ -283,7 +291,6 @@ export function createRacePresentation(options: RacePresentationOptions): RacePr
     },
     resetToBuild() {
       engine.abandon();
-      resetToBuildVisuals();
     },
   };
 }
