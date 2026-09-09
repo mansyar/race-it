@@ -1,6 +1,6 @@
 import barrierUrl from './models/barrierWhite.glb?url';
-import grandstandUrl from './models/grandStand.glb?url';
 import finishFlagUrl from './models/flagCheckers.glb?url';
+import grandstandUrl from './models/grandStand.glb?url';
 import cornerUrl from './models/roadCornerSmall.glb?url';
 import startUrl from './models/roadStart.glb?url';
 import straightUrl from './models/roadStraight.glb?url';

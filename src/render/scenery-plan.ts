@@ -106,12 +106,7 @@ function isBorder(x: number, y: number): boolean {
   return x === 0 || y === 0 || x === GRID_SIZE - 1 || y === GRID_SIZE - 1;
 }
 
-function pickRotation(
-  kind: SceneryKind,
-  x: number,
-  y: number,
-  rng: () => number,
-): Orientation {
+function pickRotation(kind: SceneryKind, x: number, y: number, rng: () => number): Orientation {
   if (kind === 'grandstand') {
     // Face inward from the nearest board edge.
     if (y === 0) return 180;

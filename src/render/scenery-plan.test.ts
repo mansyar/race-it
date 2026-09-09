@@ -1,15 +1,13 @@
 import { describe, expect, it } from 'vitest';
 import { GRID_SIZE, type GridSnapshot } from '../grid/grid-model';
 import { createDemoLoop } from '../grid/track-store';
-import { planScenery, MAX_SCENERY, type SceneryItem } from './scenery-plan';
+import { MAX_SCENERY, planScenery, type SceneryItem } from './scenery-plan';
 
 function emptySnapshot(): GridSnapshot {
   return new Array<null>(GRID_SIZE * GRID_SIZE).fill(null);
 }
 
-function snapshotWith(
-  pieces: Array<[number, number]>,
-): GridSnapshot {
+function snapshotWith(pieces: Array<[number, number]>): GridSnapshot {
   const snap = emptySnapshot();
   for (const [x, y] of pieces) {
     snap[y * GRID_SIZE + x] = { type: 'straight', orientation: 0 };
@@ -21,11 +19,7 @@ function isBorder(x: number, y: number): boolean {
   return x === 0 || y === 0 || x === GRID_SIZE - 1 || y === GRID_SIZE - 1;
 }
 
-function isAdjacentToAnyPiece(
-  x: number,
-  y: number,
-  pieces: Array<[number, number]>,
-): boolean {
+function isAdjacentToAnyPiece(x: number, y: number, pieces: Array<[number, number]>): boolean {
   return pieces.some(([px, py]) => Math.abs(px - x) <= 1 && Math.abs(py - y) <= 1);
 }
 
