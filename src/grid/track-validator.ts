@@ -28,11 +28,7 @@ function connectedSides(type: PieceType, orientation: number): [Side, Side] {
 /**
  * Why the track is not race-ready (used for feedback hints).
  */
-export type InvalidReason =
-  | 'empty'
-  | 'no-loop'
-  | 'multiple-loops'
-  | 'missing-start';
+export type InvalidReason = 'empty' | 'no-loop' | 'multiple-loops' | 'missing-start';
 
 export interface ValidationResult {
   valid: boolean;
