@@ -1,0 +1,39 @@
+# Implementation Plan — CI/CD Pipeline & Containerized Deployment
+
+**Track ID:** `cicd_20260910` · **Type:** Chore · **Spec:** [spec.md](./spec.md)
+
+**TDD mandatory:** where testable (E2E smoke), implementation starts with failing tests (Red), confirmed failing, then minimal config (Green). Phase checkpoints per `workflow.md`.
+
+**Dev commands:** `pnpm install` · `$env:CI='true'; pnpm test` · `$env:CI='true'; pnpm test -- --coverage` (target >80%) · `pnpm lint` (Biome) · `pnpm build` · `pnpm exec playwright test`
+
+## Phase 1 — Toolchain Pins & Stack Documentation
+
+- [ ] Task 1.1: Document CI/CD stack in `conductor/tech-stack.md` — GitHub Actions, Docker multi-stage (node:24-alpine → nginx:alpine), GHCR public registry, Playwright E2E, pins Node 24.16.0 / pnpm 12.3.4 (per workflow: tech-stack changes documented *before* implementation)
+- [ ] Task 1.2: Add `.nvmrc` (24.16.0) + `"packageManager": "pnpm@12.3.4"` in `package.json`; verify `pnpm install` still resolves cleanly
+- [ ] Task: Phase Verification & Checkpoint (Refer to workflow.md)
+
+## Phase 2 — Playwright E2E Smoke Suite (TDD)
+
+- [ ] Task 2.1: Add `@playwright/test` (exact pin) + `playwright.config.ts` (chromium only, `vite preview` webServer). **Red:** write `e2e/smoke.spec.ts` — app boots, build UI renders, demo loop seeds → GO enabled, GO click → race reaches `running` (pause button visible). Confirm failing locally
+- [ ] Task 2.2: **Green:** install chromium, run suite locally, confirm passes; commit `test(e2e): add boot-and-race smoke suite`
+- [ ] Task: Phase Verification & Checkpoint (Refer to workflow.md)
+
+## Phase 3 — CI Workflow (push & PR checks)
+
+- [ ] Task 3.1: `.github/workflows/ci.yml` — 4 parallel jobs, fail-fast: **check** (Biome lint+format) · **unit** (Vitest + coverage ≥80% gate) · **build** (`tsc --noEmit && vite build`, upload dist artifact) · **e2e** (download artifact, Playwright). pnpm store cache + Playwright browser cache; concurrency cancel-in-progress
+- [ ] Task 3.2: Push branch, verify CI green on GitHub (all 4 jobs)
+- [ ] Task: Phase Verification & Checkpoint (Refer to workflow.md)
+
+## Phase 4 — Docker Image & Release Pipeline
+
+- [ ] Task 4.1: `Dockerfile` (node:24-alpine build stage → nginx:alpine; nginx.conf: SPA fallback + PWA-friendly cache headers) + `.dockerignore`
+- [ ] Task 4.2: Local verification — `docker build`, run container, curl smoke (if Docker available locally)
+- [ ] Task 4.3: `.github/workflows/release.yml` — on `v*` tags: build → build-push-action → `ghcr.io/mansyar/race-it:vX.Y.Z` + `:latest` (public) → POST deploy webhook with `Authorization: Bearer $COOLIFY_API_TOKEN` (`$COOLIFY_DEPLOY_WEBHOOK`); deploy runs serialized
+- [ ] Task 4.4: User adds 2 repo secrets (`COOLIFY_DEPLOY_WEBHOOK`, `COOLIFY_API_TOKEN`); verify via `gh secret list`
+- [ ] Task: Phase Verification & Checkpoint (Refer to workflow.md)
+
+## Phase 5 — End-to-End Pipeline Verification
+
+- [ ] Task 5.1: Merge branch to `master`; bump `package.json` to 0.2.0; tag `v0.2.0` and push → release workflow runs: GHCR image published (both tags), Coolify deploy triggered via authenticated webhook
+- [ ] Task 5.2: Verify deployed PWA at Coolify URL (SW registered, offline boots, race runs); confirm efficiency — second pipeline run hits caches (no full reinstall)
+- [ ] Task: Phase Verification & Checkpoint (Refer to workflow.md)
