@@ -167,14 +167,13 @@ if (root && appReady()) {
       raceEngine.on('kartFinish', ({ index, time }) => {
         console.info(`[race] kart ${index} finished at ${time.toFixed(2)}s`);
       });
-      raceEngine.on('finish', (result) => {
-        console.info('[race] result', result);
-      });
+      raceEngine.start();
       let guard = 0;
-      while (raceEngine.state !== 'finished' && guard < 60 * 60) {
+      while (!raceEngine.karts.every((kart) => kart.finished) && guard < 60 * 60) {
         raceEngine.tick(1 / 60);
         guard += 1;
       }
+      console.info('[race] result', raceEngine.result);
       console.info('[race] headless run complete');
       (window as unknown as Record<string, unknown>).__raceItRace = raceEngine;
     } catch (error) {
@@ -187,10 +186,10 @@ if (root && appReady()) {
       raceEngine = createRaceEngine(extractLoopPath(model));
       raceEngine.on('kartFinish', ({ index, time }) => {
         console.info(`[race] kart ${index} finished at ${time.toFixed(2)}s`);
-      });
-      raceEngine.on('finish', (result) => {
-        console.info('[race] result', result);
-        (window as unknown as Record<string, unknown>).__raceItRace = raceEngine;
+        if (raceEngine?.karts.every((kart) => kart.finished)) {
+          console.info('[race] result', raceEngine.result);
+          (window as unknown as Record<string, unknown>).__raceItRace = raceEngine;
+        }
       });
       raceEngine.start();
     },
