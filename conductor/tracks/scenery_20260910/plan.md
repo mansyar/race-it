@@ -28,13 +28,13 @@
 
 ## Phase 4 — Integration
 
-- [~] Task 4.1: wire `main.ts` — load `SceneryRenderer` alongside pieces; `rerender()` → `scenery.update`; place/remove tools drive feedback tracker; scene loop calls `feedback.tick(dt)` before render.
-- [ ] Task 4.2: remove-mode 3D feedback — tint/wiggle pieces while tool is remove; clear on toggle off (unit + browser).
-- [ ] Task 4.3: regression — `?race`, `?perf`, `?debug` hooks still work; build tests unchanged; document new `?perf` numbers with full board + scenery.
-- [ ] Task: Phase Verification & Checkpoint (Refer to workflow.md)
+- [x] Task 4.1: wire `main.ts` — load `SceneryRenderer` alongside pieces; `rerender()` → `scenery.update`; place/remove tools drive feedback tracker; scene loop calls `feedback.tick(dt)` before render. `(4ea6c11)`
+- [x] Task 4.2: remove-mode 3D feedback — tint/wiggle pieces while tool is remove; clear on toggle off (unit + browser). `(4ea6c11)`
+- [x] Task 4.3: regression — `?race`, `?perf`, `?debug` hooks still work; build tests unchanged; document new `?perf` numbers with full board + scenery. `(4ea6c11)`
+- [x] Task: Phase Verification & Checkpoint (Refer to workflow.md) `(4ea6c11)`
 
 ## Phase 5 — Verification
 
-- [ ] Task 5.1: quality gates — `pnpm build`, `$env:CI='true'; pnpm test` (full suite), coverage >80% on new/changed modules, `pnpm lint` clean.
+- [~] Task 5.1: quality gates — `pnpm build`, `$env:CI='true'; pnpm test` (full suite), coverage >80% on new/changed modules, `pnpm lint` clean.
 - [ ] Task 5.2: `?perf` sanity — draw calls / triangles with 144 pieces + max scenery; confirm budget vs buildmode baseline; 60 fps headroom.
 - [ ] Task: Phase Verification & Checkpoint (Refer to workflow.md)
