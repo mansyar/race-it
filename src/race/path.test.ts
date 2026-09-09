@@ -16,9 +16,12 @@ function build(tuples: Array<[number, number, string, number]>): GridModel {
 
 /** Asserts the extracted path equals the expected [x, y, type, orientation] sequence. */
 function expectPath(grid: GridModel, expected: Array<[number, number, string, number]>): void {
-  const actual = extractLoopPath(grid).map(
-    (cell: LoopCell): [number, number, string, number] => [cell.x, cell.y, cell.type, cell.orientation],
-  );
+  const actual = extractLoopPath(grid).map((cell: LoopCell): [number, number, string, number] => [
+    cell.x,
+    cell.y,
+    cell.type,
+    cell.orientation,
+  ]);
   expect(actual).toEqual(expected);
 }
 

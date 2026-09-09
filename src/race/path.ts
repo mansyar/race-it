@@ -90,7 +90,9 @@ export function extractLoopPath(grid: GridModel): LoopCell[] {
   let steps = 0;
   while (current.x !== start.x || current.y !== start.y) {
     path.push(current);
-    const exit = connectedSides(current.type, current.orientation).find((side) => side !== entrySide);
+    const exit = connectedSides(current.type, current.orientation).find(
+      (side) => side !== entrySide,
+    );
     if (exit === undefined) {
       throw new Error('extractLoopPath: start piece is not part of a closed loop');
     }
@@ -136,7 +138,9 @@ export function extractLoopPath(grid: GridModel): LoopCell[] {
         if (neighbor === null) {
           continue;
         }
-        if (connectedSides(neighbor.type, neighbor.orientation).includes(((side + 2) % 4) as Side)) {
+        if (
+          connectedSides(neighbor.type, neighbor.orientation).includes(((side + 2) % 4) as Side)
+        ) {
           links.push(ny * GRID_SIZE + nx);
         }
       }
