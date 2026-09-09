@@ -7,6 +7,8 @@ import { GRID_SIZE } from './grid/grid-model';
 import { TrackEditor } from './grid/track-editor';
 import { loadOrSeedTrack, saveTrack } from './grid/track-store';
 import { validateTrack } from './grid/track-validator';
+import { createRaceEngine, type RaceEngine } from './race/engine';
+import { extractLoopPath } from './race/path';
 import { type BuildTool, handleCellTap } from './render/interaction';
 import { fillPerfPattern } from './render/perf-harness';
 import { PieceRenderer } from './render/piece-renderer';
@@ -33,6 +35,7 @@ if (root && appReady()) {
   let editor = new TrackEditor(model);
   let tool: BuildTool = { kind: 'none' };
   let selectedType: PieceType | null = null;
+  let raceEngine: RaceEngine | null = null;
 
   const pieces = new PieceRenderer();
   const sfx = createSfx();
@@ -155,9 +158,41 @@ if (root && appReady()) {
     };
   }
 
+  // Debug mode: `?race` runs a headless seeded race on the current track and
+  // prints the result — the end-to-end verification vehicle for the race engine
+  // until race presentation lands (Track 2 scope: Race Engine Core).
+  if (new URLSearchParams(window.location.search).has('race')) {
+    try {
+      raceEngine = createRaceEngine(extractLoopPath(model), { seed: 42 });
+      raceEngine.on('kartFinish', ({ index, time }) => {
+        console.info(`[race] kart ${index} finished at ${time.toFixed(2)}s`);
+      });
+      raceEngine.start();
+      let guard = 0;
+      while (!raceEngine.karts.every((kart) => kart.finished) && guard < 60 * 60) {
+        raceEngine.tick(1 / 60);
+        guard += 1;
+      }
+      console.info('[race] result', raceEngine.result);
+      console.info('[race] headless run complete');
+      (window as unknown as Record<string, unknown>).__raceItRace = raceEngine;
+    } catch (error) {
+      console.error('[race] track has no closed loop', error);
+    }
+  }
+
   const go = createGoButton({
-    // Race mode starts in Track 2; GO is wired but inert until then.
-    onGo: () => {},
+    onGo: () => {
+      raceEngine = createRaceEngine(extractLoopPath(model));
+      raceEngine.on('kartFinish', ({ index, time }) => {
+        console.info(`[race] kart ${index} finished at ${time.toFixed(2)}s`);
+        if (raceEngine?.karts.every((kart) => kart.finished)) {
+          console.info('[race] result', raceEngine.result);
+          (window as unknown as Record<string, unknown>).__raceItRace = raceEngine;
+        }
+      });
+      raceEngine.start();
+    },
   });
 
   const bar = createBuildBar({
@@ -221,5 +256,17 @@ if (root && appReady()) {
     .catch((error: unknown) => {
       console.error('Failed to load track pieces', error);
     });
+  // App loop: ticks the active race engine each frame (no-op outside a race).
+  let lastFrame = performance.now();
+  const frame = (now: number): void => {
+    const dt = Math.min((now - lastFrame) / 1000, 0.1);
+    lastFrame = now;
+    if (raceEngine) {
+      raceEngine.tick(dt);
+    }
+    requestAnimationFrame(frame);
+  };
+  requestAnimationFrame(frame);
+
   window.addEventListener('pagehide', () => view.dispose(), { once: true });
 }
