@@ -35,7 +35,7 @@
 
 ## Phase 4 — Integration & Celebration
 
-- [ ] Task 4.1: `scene.ts` loop refactor tests — expose `onFrame(cb)` registration (or return hook) so one per-frame pass runs `engine.tick` + presentation update + `renderer.render`; build tap handling unchanged; existing scene tests stay green.
+- [x] Task 4.1: `scene.ts` loop refactor tests — expose `onFrame(cb)` registration (or return hook) so one per-frame pass runs `engine.tick` + presentation update + `renderer.render`; build tap handling unchanged; existing scene tests stay green. `(cc913d6)`
 - [ ] Task 4.2: presentation controller tests first (Red) — `src/presentation/presentation.test.ts` (or `src/race-presentation.ts`): event-driven state mapping — `stateChange('countdown')` → show traffic light + hide build HUD; `'running'` → GO flash + show pause; `'finished'` → celebration sequencing; `finish` event → confetti burst + winner spin (spin pose math); all-karts-finished → trophy with correct color word; RACE AGAIN → `engine.restart()` + `start()` + full presentation reset (camera, lights, confetti, karts to start poses).
 - [ ] Task 4.3: implement controller — wire engine events, kart rig updates per frame, camera pose application, confetti lifecycle, victory spin (~2 s yaw), HUD show/hide (Green).
 - [ ] Task 4.4: `main.ts` wiring — GO handler hides build HUD and starts engine via controller; `?race` headless hook unchanged; corner mute stays accessible during race; quit restores build HUD + camera lerp back.
