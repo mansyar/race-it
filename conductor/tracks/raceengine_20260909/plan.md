@@ -19,9 +19,9 @@ pnpm build                   # production build
 
 ### Phase 1 — Validator Relaxation (product decision)
 
-- [ ] Task 1.1: Rewrite validator tests for relaxed rules — finish-only loop → `missing-start`; loop with start only → valid; start+finish → valid; keep `empty` / `no-loop` / `multiple-loops` / dangling-ignored cases. **TDD:** Red against current validator.
-- [ ] Task 1.2: Relax `validateTrack` — drop the finish requirement and the `missing-finish` reason from `InvalidReason`. **Green.**
-- [ ] Task 1.3: Verify ripple — GO gating (`main.ts` calls `validateTrack`), demo-loop seed, shelf save-on-valid all behave with the relaxed rule. *(manual + existing suite)*
+- [x] Task 1.1: Rewrite validator tests for relaxed rules — finish-only loop → `missing-start`; loop with start only → valid; start+finish → valid; keep `empty` / `no-loop` / `multiple-loops` / dangling-ignored cases. **TDD:** Red against current validator. `(511ee23)`
+- [x] Task 1.2: Relax `validateTrack` — drop the finish requirement and the `missing-finish` reason from `InvalidReason`. **Green.** `(511ee23)`
+- [x] Task 1.3: Verify ripple — GO gating (`main.ts` calls `validateTrack`), demo-loop seed, shelf save-on-valid all behave with the relaxed rule. *(manual + existing suite)* `(511ee23)`
 - [ ] Task: Phase Verification & Checkpoint (Refer to workflow.md)
 
 ### Phase 2 — Loop Path Extraction (pure TDD)
