@@ -1,7 +1,13 @@
 import * as THREE from 'three';
 import { describe, expect, it } from 'vitest';
 import { KARTS } from '../assets/manifest';
-import { KART_COLORS, KART_FORWARD_ROTATION, KART_SCALE, KART_Y_OFFSET, KartRenderer } from './kart-meshes';
+import {
+  KART_COLORS,
+  KART_FORWARD_ROTATION,
+  KART_SCALE,
+  KART_Y_OFFSET,
+  KartRenderer,
+} from './kart-meshes';
 
 interface GltfLike {
   scene: THREE.Object3D;
@@ -20,7 +26,10 @@ function mockLoader(scenes: THREE.Object3D[]): { loadAsync: (url: string) => Pro
 
 function singleMeshScene(): THREE.Object3D {
   const scene = new THREE.Object3D();
-  const mesh = new THREE.Mesh(new THREE.BoxGeometry(1, 1, 1), new THREE.MeshLambertMaterial({ color: 0xffffff }));
+  const mesh = new THREE.Mesh(
+    new THREE.BoxGeometry(1, 1, 1),
+    new THREE.MeshLambertMaterial({ color: 0xffffff }),
+  );
   scene.add(mesh);
   return scene;
 }

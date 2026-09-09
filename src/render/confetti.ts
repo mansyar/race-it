@@ -33,7 +33,11 @@ export interface ConfettiParticle {
 }
 
 /** Deterministically spawns a confetti burst above a world position. */
-export function createConfetti(seed: number, count: number, origin: { x: number; z: number }): ConfettiParticle[] {
+export function createConfetti(
+  seed: number,
+  count: number,
+  origin: { x: number; z: number },
+): ConfettiParticle[] {
   const rng = mulberry32(seed);
   const particles: ConfettiParticle[] = [];
   for (let i = 0; i < count; i++) {

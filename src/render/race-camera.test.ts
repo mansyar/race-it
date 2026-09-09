@@ -7,7 +7,10 @@ const buildPlacement: CameraPlacement = {
   target: { x: 0, y: 0, z: 1.2 },
 };
 
-const angleBetween = (a: { x: number; y: number; z: number }, b: { x: number; y: number; z: number }): number => {
+const angleBetween = (
+  a: { x: number; y: number; z: number },
+  b: { x: number; y: number; z: number },
+): number => {
   const dot = a.x * b.x + a.y * b.y + a.z * b.z;
   const norm = Math.hypot(a.x, a.y, a.z) * Math.hypot(b.x, b.y, b.z);
   return Math.acos(Math.min(1, Math.max(-1, dot / norm)));

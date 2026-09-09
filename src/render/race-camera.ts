@@ -36,10 +36,14 @@ export function raceCameraPose(
   const offset = { x: lead.x - buildPlacement.target.x, z: lead.z - buildPlacement.target.z };
   const offsetMag = Math.hypot(offset.x, offset.z);
   const clampedMag = Math.min(offsetMag, MAX_DRIFT);
-  const offsetDir = offsetMag > 0 ? { x: offset.x / offsetMag, z: offset.z / offsetMag } : { x: 0, z: 0 };
+  const offsetDir =
+    offsetMag > 0 ? { x: offset.x / offsetMag, z: offset.z / offsetMag } : { x: 0, z: 0 };
 
   // Ease the drift out as the race approaches the finish line.
-  const settle = Math.min(1, Math.max(0, (finishRatio - FINISH_SETTLE_START) / (1 - FINISH_SETTLE_START)));
+  const settle = Math.min(
+    1,
+    Math.max(0, (finishRatio - FINISH_SETTLE_START) / (1 - FINISH_SETTLE_START)),
+  );
   const driftScale = 1 - settle;
 
   const target = {

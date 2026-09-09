@@ -1,5 +1,12 @@
 import { describe, expect, it } from 'vitest';
-import { CONFETTI_COUNT, CONFETTI_GRAVITY, CONFETTI_LIFE, ConfettiBurst, createConfetti, stepConfetti } from './confetti';
+import {
+  CONFETTI_COUNT,
+  CONFETTI_GRAVITY,
+  CONFETTI_LIFE,
+  ConfettiBurst,
+  createConfetti,
+  stepConfetti,
+} from './confetti';
 
 const origin = { x: 0, z: 0 };
 
