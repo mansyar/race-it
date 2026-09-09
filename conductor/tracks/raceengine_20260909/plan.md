@@ -43,8 +43,8 @@ pnpm build                   # production build
 - [x] Task 4.2: Implement `pause()`/`resume()`/`abandon()`/`restart()` on the engine. **Green.** `(e493269)`
 - [x] Task: Phase Verification & Checkpoint `(e493269)`
 
-### Phase 5 — Integration & Verification
+### Phase 5 — Integration & Verification [checkpoint: c7969f4]
 
 - [x] Task 5.1: Wire `onGo` in `main.ts` to start the engine + app-loop `tick`; `?race` debug hook runs a headless seeded race and prints the result (project debug convention: `?perf`, `?debug`). *(manual verification)* `(0c851c4, c7969f4)`
 - [x] Task 5.2: Quality gates — `pnpm build`, `CI=true pnpm test` (full suite), coverage >80% on `src/race/*` + validator, `pnpm lint`; tick-cost sanity (engine work ≪ 1 ms/frame). *(measured)* `(c00709f)`
-- [ ] Task: Phase Verification & Checkpoint (Refer to workflow.md)
+- [x] Task: Phase Verification & Checkpoint `(c7969f4)`
