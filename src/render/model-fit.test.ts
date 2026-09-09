@@ -1,6 +1,34 @@
 import * as THREE from 'three';
 import { describe, expect, it } from 'vitest';
-import { applyModelFit, FLAG_FIT, PIECE_FIT } from './model-fit';
+import { applyModelFit, FLAG_FIT, PIECE_FIT, SCENERY_FIT } from './model-fit';
+
+describe('SCENERY_FIT', () => {
+  it('defines a fit for every scenery kind', () => {
+    for (const kind of ['tree', 'grandstand', 'barrier'] as const) {
+      expect(SCENERY_FIT[kind], `missing fit for ${kind}`).toBeDefined();
+    }
+  });
+
+  it('recenters each prop on the cell origin using measured GLB centers', () => {
+    // Measured centers: tree (-0.35, 0.525, -0.65), grandstand (0.15, 0.438, -1.15),
+    // barrier (-0.225, 0.056, -0.712). Offset must cancel scale * center on x/z.
+    const tree = SCENERY_FIT.tree;
+    expect(tree.position[0]).toBeCloseTo(-tree.scale[0] * -0.35, 5);
+    expect(tree.position[2]).toBeCloseTo(-tree.scale[2] * -0.65, 5);
+    const stand = SCENERY_FIT.grandstand;
+    expect(stand.position[0]).toBeCloseTo(-stand.scale[0] * 0.15, 5);
+    expect(stand.position[2]).toBeCloseTo(-stand.scale[2] * -1.15, 5);
+    const barrier = SCENERY_FIT.barrier;
+    expect(barrier.position[0]).toBeCloseTo(-barrier.scale[0] * -0.225, 5);
+    expect(barrier.position[2]).toBeCloseTo(-barrier.scale[2] * -0.712, 5);
+  });
+
+  it('keeps props readable on a 2-unit cell (scale > 0.5)', () => {
+    for (const kind of ['tree', 'grandstand', 'barrier'] as const) {
+      expect(SCENERY_FIT[kind].scale[0]).toBeGreaterThan(0.5);
+    }
+  });
+});
 
 describe('PIECE_FIT', () => {
   it('defines a fit for every piece type', () => {

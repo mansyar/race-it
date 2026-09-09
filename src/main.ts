@@ -1,6 +1,6 @@
 import * as THREE from 'three';
 import { appReady } from './app';
-import { KARTS, MODELS, SFX } from './assets/manifest';
+import { KARTS, MODELS, SCENERY, SFX } from './assets/manifest';
 import { createSfx } from './audio/sfx';
 import type { GridModel, PieceType } from './grid/grid-model';
 import { GRID_SIZE } from './grid/grid-model';
@@ -8,14 +8,17 @@ import { TrackEditor } from './grid/track-editor';
 import { loadOrSeedTrack, saveTrack } from './grid/track-store';
 import { validateTrack } from './grid/track-validator';
 import { createRacePresentation, type RacePresentation } from './presentation/race-presentation';
-import { createRaceEngine } from './race/engine';
+import { createRaceEngine, type RaceEngine } from './race/engine';
 import { extractLoopPath } from './race/path';
 import { ConfettiBurst } from './render/confetti';
 import { type BuildTool, handleCellTap } from './render/interaction';
 import { KartRenderer } from './render/kart-meshes';
 import { fillPerfPattern } from './render/perf-harness';
+import { applyPieceFeedback } from './render/piece-feedback-apply';
 import { PieceRenderer } from './render/piece-renderer';
 import { createBuildScene } from './render/scene';
+import { SceneryRenderer } from './render/scenery-render';
+import { PieceFeedback } from './render/toy-feedback';
 import './style.css';
 import { createBuildBar } from './ui/build-bar';
 import { createCornerCluster } from './ui/corner-cluster';
@@ -29,6 +32,7 @@ import { createTrophy } from './ui/trophy';
 const ASSET_URLS: readonly string[] = [
   ...Object.values(MODELS),
   ...Object.values(KARTS),
+  ...Object.values(SCENERY),
   ...Object.values(SFX),
 ];
 void ASSET_URLS.length;
@@ -45,15 +49,19 @@ if (root && appReady()) {
   let tool: BuildTool = { kind: 'none' };
   let selectedType: PieceType | null = null;
   let presentation: RacePresentation | null = null;
+  let raceEngine: RaceEngine | null = null;
 
   const pieces = new PieceRenderer();
   const karts = new KartRenderer();
   const confetti = new ConfettiBurst();
+  const scenery = new SceneryRenderer();
+  const feedback = new PieceFeedback();
   const sfx = createSfx();
   sfx.setMuted(localStorage.getItem('race-it:muted') === 'true');
 
   const rerender = (): void => {
     pieces.update(model.toSnapshot());
+    scenery.update(model.toSnapshot());
     bar.setUndoEnabled(editor.canUndo());
     go.setValid(validateTrack(model).valid);
     if (validateTrack(model).valid) {
@@ -62,7 +70,10 @@ if (root && appReady()) {
   };
 
   const view = createBuildScene(root, (x, y) => {
-    handleCellTap(editor, tool, x, y);
+    const result = handleCellTap(editor, tool, x, y);
+    if (result === 'placed') {
+      feedback.notePlaced(y * GRID_SIZE + x);
+    }
     rerender();
   });
 
@@ -224,6 +235,7 @@ if (root && appReady()) {
       try {
         const path = extractLoopPath(model);
         const engine = createRaceEngine(path);
+        raceEngine = engine;
         engine.on('kartFinish', ({ index, time }) => {
           console.info(`[race] kart ${index} finished at ${time.toFixed(2)}s`);
           if (engine.karts.every((kart) => kart.finished)) {
@@ -242,6 +254,9 @@ if (root && appReady()) {
           camera: view.camera,
           onBuildUiChange: setBuildUiVisible,
         });
+        // Leaving remove mode behind would leak build feedback into the race.
+        feedback.setRemoveMode(false);
+        bar.setRemoveActive(false);
         sfx.play('confirmA');
         presentation.beginRace();
       } catch (error) {
@@ -258,6 +273,7 @@ if (root && appReady()) {
       bar.setSelected(selectedType);
       if (selectedType) {
         bar.setRemoveActive(false);
+        feedback.setRemoveMode(false);
       }
     },
     onUndo: () => {
@@ -270,6 +286,7 @@ if (root && appReady()) {
       const active = tool.kind !== 'remove';
       tool = active ? { kind: 'remove' } : { kind: 'none' };
       bar.setRemoveActive(active);
+      feedback.setRemoveMode(active);
       if (active) {
         selectedType = null;
         bar.setSelected(null);
@@ -313,11 +330,14 @@ if (root && appReady()) {
     .load()
     .then(() => {
       view.scene.add(pieces.update(model.toSnapshot()));
+      return scenery.load();
+    })
+    .then(() => {
+      view.scene.add(scenery.update(model.toSnapshot()));
     })
     .catch((error: unknown) => {
-      console.error('Failed to load track pieces', error);
+      console.error('Failed to load track pieces or scenery', error);
     });
-
   karts
     .load()
     .then(() => {
@@ -328,8 +348,13 @@ if (root && appReady()) {
       console.error('Failed to load kart models', error);
     });
 
-  // Single per-frame pass: engine tick + presentation + render (scene owns rAF).
+  // Single per-frame pass: build feedback (build mode only) plus race
+  // presentation (owns engine ticking), then render (scene owns rAF).
   view.onFrame((dt) => {
+    feedback.tick(dt);
+    if (!raceEngine || raceEngine.state === 'idle') {
+      applyPieceFeedback(pieces.group, feedback, feedback.time);
+    }
     presentation?.update(dt);
   });
 

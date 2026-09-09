@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { KARTS, MODELS, SFX } from './assets/manifest';
+import { KARTS, MODELS, SCENERY, SFX } from './assets/manifest';
 
 describe('asset import pipeline', () => {
   it('resolves every track piece model to a URL', () => {
@@ -7,6 +7,13 @@ describe('asset import pipeline', () => {
     expect(MODELS.corner).toMatch(/roadCornerSmall.*\.glb$/);
     expect(MODELS.start).toMatch(/roadStart.*\.glb$/);
     expect(MODELS.finishFlag).toMatch(/flagCheckers.*\.glb$/);
+  });
+
+  it('resolves every scenery model to a URL', () => {
+    expect(SCENERY.tree).toMatch(/treeSmall.*\.glb$/);
+    expect(SCENERY.grandstand).toMatch(/grandStand.*\.glb$/);
+    expect(SCENERY.barrier).toMatch(/barrierWhite.*\.glb$/);
+    expect(Object.keys(SCENERY)).toHaveLength(3);
   });
 
   it('resolves every sound effect to a URL', () => {

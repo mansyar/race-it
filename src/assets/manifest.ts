@@ -1,4 +1,6 @@
+import barrierUrl from './models/barrierWhite.glb?url';
 import finishFlagUrl from './models/flagCheckers.glb?url';
+import grandstandUrl from './models/grandStand.glb?url';
 import kartOobiUrl from './models/kart-oobi.glb?url';
 import kartOodiUrl from './models/kart-oodi.glb?url';
 import kartOoliUrl from './models/kart-ooli.glb?url';
@@ -6,6 +8,7 @@ import kartOopiUrl from './models/kart-oopi.glb?url';
 import cornerUrl from './models/roadCornerSmall.glb?url';
 import startUrl from './models/roadStart.glb?url';
 import straightUrl from './models/roadStraight.glb?url';
+import treeUrl from './models/treeSmall.glb?url';
 import clickUrl from './sfx/click_001.ogg?url';
 import confirmAUrl from './sfx/confirmation_001.ogg?url';
 import confirmBUrl from './sfx/confirmation_002.ogg?url';
@@ -27,6 +30,13 @@ export const KARTS = {
   oodi: kartOodiUrl,
   ooli: kartOoliUrl,
   oopi: kartOopiUrl,
+} as const;
+
+/** Decorative scenery models from Kenney Racing Kit (CC0). */
+export const SCENERY = {
+  tree: treeUrl,
+  grandstand: grandstandUrl,
+  barrier: barrierUrl,
 } as const;
 
 /** UI sound effects from Kenney Interface Sounds (CC0). */
