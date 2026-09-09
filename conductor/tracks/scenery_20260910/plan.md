@@ -38,3 +38,7 @@
 - [x] Task 5.1: quality gates — `pnpm build`, `$env:CI='true'; pnpm test` (full suite), coverage >80% on new/changed modules, `pnpm lint` clean. `(c2c0fc4)` — 186 tests green; new modules: scenery-plan 92.7% lines, scenery-render 96.8%, toy-feedback 97.1%, piece-feedback-apply 92.3%; `tsc --noEmit` + Biome clean; production build + PWA precache OK (tree/grandstand/barrier GLBs emitted).
 - [x] Task 5.2: `?perf` sanity — draw calls / triangles with 144 pieces + max scenery; confirm budget vs buildmode baseline; 60 fps headroom. `(c2c0fc4)` — budget math: ≤14 scenery meshes + rim box + contact-shadow quad ≈ +16 draw calls vs +40 target; baseline was ~542 calls / ~21.7k tris on full board, still large headroom for 60 fps. On-device `?perf` browser check recommended at review.
 - [x] Task: Phase Verification & Checkpoint (Refer to workflow.md) `(c2c0fc4)`
+
+## Phase: Review Fixes
+
+- [x] Task: Apply review suggestions `(3b99c3f)`
