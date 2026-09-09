@@ -5,8 +5,34 @@ import { pickCell } from './picking';
 
 /** Warm wood tone of the toy table. */
 const TABLE_COLOR = 0xc99a6b;
+/** Darker chunky edge/rim wood under the table top. */
+const TABLE_RIM_COLOR = 0x8b5a32;
 /** Faint etched grid line color. */
 const GRID_LINE_COLOR = 0xa87f52;
+
+/**
+ * Soft radial contact-shadow texture so the diorama sits on the cream
+ * background instead of floating. 64px is plenty for a blurred disc.
+ */
+export function contactShadowTexture(size = 64): THREE.CanvasTexture {
+  const canvas = document.createElement('canvas');
+  canvas.width = size;
+  canvas.height = size;
+  const ctx = canvas.getContext('2d');
+  if (ctx) {
+    const half = size / 2;
+    const gradient = ctx.createRadialGradient(half, half, half * 0.15, half, half, half);
+    gradient.addColorStop(0, 'rgba(74, 55, 40, 0.35)');
+    gradient.addColorStop(0.55, 'rgba(74, 55, 40, 0.18)');
+    gradient.addColorStop(1, 'rgba(74, 55, 40, 0)');
+    ctx.clearRect(0, 0, size, size);
+    ctx.fillStyle = gradient;
+    ctx.fillRect(0, 0, size, size);
+  }
+  const texture = new THREE.CanvasTexture(canvas);
+  texture.colorSpace = THREE.SRGBColorSpace;
+  return texture;
+}
 
 /**
  * Creates the build-mode 3D diorama: a wooden toy table with a faint etched
@@ -47,6 +73,30 @@ export function createBuildScene(
   );
   table.position.y = -0.25;
   scene.add(table);
+
+  // Chunky darker rim just under the tabletop so the edge reads as thick wood.
+  const rimGeometry = new THREE.BoxGeometry(BOARD_WORLD_SIZE + 0.35, 0.22, BOARD_WORLD_SIZE + 0.35);
+  const rim = new THREE.Mesh(
+    rimGeometry,
+    new THREE.MeshLambertMaterial({ color: TABLE_RIM_COLOR }),
+  );
+  rim.position.y = -0.56;
+  scene.add(rim);
+
+  // Soft contact shadow under the table (cheap single quad, no shadow maps).
+  const contactTexture = contactShadowTexture();
+  const contactGeometry = new THREE.PlaneGeometry(BOARD_WORLD_SIZE * 1.45, BOARD_WORLD_SIZE * 1.45);
+  const contact = new THREE.Mesh(
+    contactGeometry,
+    new THREE.MeshBasicMaterial({
+      map: contactTexture,
+      transparent: true,
+      depthWrite: false,
+    }),
+  );
+  contact.rotation.x = -Math.PI / 2;
+  contact.position.y = -0.72;
+  scene.add(contact);
 
   // Faint etched grid on the tabletop.
   const half = BOARD_WORLD_SIZE / 2;
@@ -155,6 +205,9 @@ export function createBuildScene(
       gridGeometry.dispose();
       highlightGeometry.dispose();
       tableGeometry.dispose();
+      rimGeometry.dispose();
+      contactGeometry.dispose();
+      contactTexture.dispose();
       renderer.dispose();
       renderer.domElement.remove();
     },
