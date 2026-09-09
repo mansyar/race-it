@@ -24,13 +24,13 @@
 
 ## Phase 3 — Race HUD Modules
 
-- [ ] Task 3.1: engine `countdownRemaining` getter tests first (Red) — `src/race/engine.test.ts`: getter exists, = `COUNTDOWN_SECONDS` at start, decrements with tick, frozen while paused, 0 at running. Green: add readonly getter to `RaceEngine` (only engine change this track).
-- [ ] Task 3.2: traffic-light tests first (Red) — `src/ui/traffic-light.test.ts`: hidden initially; `setCountdown(remaining)` → 3 red lights sequential 3-2-1 (one per second); `setGo()` → green flash; hidden on reset; DOM structure/aria-labels.
-- [ ] Task 3.3: implement `src/ui/traffic-light.ts` — `createTrafficLight(callbacks?)` → `{ root, setCountdown, setGo, reset }`, 3 stacked ≥64px lights, wordless (Green).
-- [ ] Task 3.4: race-hud tests first (Red) — `src/ui/race-hud.test.ts`: pause button ≥64px; tapping shows overlay (Resume/Quit-to-builder); Quit requires confirm step (toddler-proof per corner-cluster pattern); callbacks fire `onResume`/`onQuit` once confirmed; hidden in build mode.
-- [ ] Task 3.5: implement `src/ui/race-hud.ts` — `createRaceHud({ onResume, onQuit })` → `{ root, showPause, showOverlay, hide, reset }` (Green).
-- [ ] Task 3.6: trophy tests first (Red) — `src/ui/trophy.test.ts`: hidden initially; `show(result, colors)` → giant `🏆 [COLOR] WINS!` (color word + icon, only allowed text), correct color per `winnerIndex`; RACE AGAIN button ≥64px fires `onAgain` once.
-- [ ] Task 3.7: implement `src/ui/trophy.ts` — `createTrophy({ onAgain })` → `{ root, show, hide }` (Green).
+- [x] Task 3.1: engine `countdownRemaining` getter tests first (Red) — `src/race/engine.test.ts`: getter exists, = `COUNTDOWN_SECONDS` at start, decrements with tick, frozen while paused, 0 at running. Green: add readonly getter to `RaceEngine` (only engine change this track). (9fb496d)
+- [x] Task 3.2: traffic-light tests first (Red) — `src/ui/traffic-light.test.ts`: hidden initially; `setCountdown(remaining)` → 3 red lights sequential 3-2-1 (one per second); `setGo()` → green flash; hidden on reset; DOM structure/aria-labels. (a5f628f)
+- [x] Task 3.3: implement `src/ui/traffic-light.ts` — `createTrafficLight(callbacks?)` → `{ root, setCountdown, setGo, reset }`, 3 stacked ≥64px lights, wordless (Green). (a5f628f)
+- [x] Task 3.4: race-hud tests first (Red) — `src/ui/race-hud.test.ts`: pause button ≥64px; tapping shows overlay (Resume/Quit-to-builder); Quit requires confirm step (toddler-proof per corner-cluster pattern); callbacks fire `onResume`/`onQuit` once confirmed; hidden in build mode. (eb16bdf)
+- [x] Task 3.5: implement `src/ui/race-hud.ts` — `createRaceHud({ onResume, onQuit })` → `{ root, showPause, showOverlay, hide, reset }` (Green). (eb16bdf)
+- [x] Task 3.6: trophy tests first (Red) — `src/ui/trophy.test.ts`: hidden initially; `show(result, colors)` → giant `🏆 [COLOR] WINS!` (color word + icon, only allowed text), correct color per `winnerIndex`; RACE AGAIN button ≥64px fires `onAgain` once. (2c751fd)
+- [x] Task 3.7: implement `src/ui/trophy.ts` — `createTrophy({ onAgain })` → `{ root, show, hide }` (Green). (2c751fd)
 - [ ] Task: Phase Verification & Checkpoint (Refer to workflow.md)
 
 ## Phase 4 — Integration & Celebration
