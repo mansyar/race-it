@@ -22,7 +22,7 @@
 - [x] Task 2.4: implement `src/render/confetti.ts` — pure particle math + thin Three.js Points wrapper (`burstAt`, `update(dt)`, `clear`), ~300 particles, 1 draw call (Green). `(e1765a9)`
 - [x] Task: Phase Verification & Checkpoint (Refer to workflow.md) `(46028b0)`
 
-## Phase 3 — Race HUD Modules
+## Phase 3 — Race HUD Modules [checkpoint: 2c751fd]
 
 - [x] Task 3.1: engine `countdownRemaining` getter tests first (Red) — `src/race/engine.test.ts`: getter exists, = `COUNTDOWN_SECONDS` at start, decrements with tick, frozen while paused, 0 at running. Green: add readonly getter to `RaceEngine` (only engine change this track). (9fb496d)
 - [x] Task 3.2: traffic-light tests first (Red) — `src/ui/traffic-light.test.ts`: hidden initially; `setCountdown(remaining)` → 3 red lights sequential 3-2-1 (one per second); `setGo()` → green flash; hidden on reset; DOM structure/aria-labels. (a5f628f)
@@ -31,7 +31,7 @@
 - [x] Task 3.5: implement `src/ui/race-hud.ts` — `createRaceHud({ onResume, onQuit })` → `{ root, showPause, showOverlay, hide, reset }` (Green). (eb16bdf)
 - [x] Task 3.6: trophy tests first (Red) — `src/ui/trophy.test.ts`: hidden initially; `show(result, colors)` → giant `🏆 [COLOR] WINS!` (color word + icon, only allowed text), correct color per `winnerIndex`; RACE AGAIN button ≥64px fires `onAgain` once. (2c751fd)
 - [x] Task 3.7: implement `src/ui/trophy.ts` — `createTrophy({ onAgain })` → `{ root, show, hide }` (Green). (2c751fd)
-- [ ] Task: Phase Verification & Checkpoint (Refer to workflow.md)
+- [x] Task: Phase Verification & Checkpoint (Refer to workflow.md) (2c751fd)
 
 ## Phase 4 — Integration & Celebration
 
