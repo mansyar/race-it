@@ -1,0 +1,349 @@
+import { beforeEach, describe, expect, it, vi } from 'vitest';
+import { createRaceEngine, type RaceEngine } from '../race/engine';
+import type { LoopCell } from '../race/path';
+import type { KartPose } from '../render/kart-rig';
+import { createRaceHud } from '../ui/race-hud';
+import { createTrafficLight } from '../ui/traffic-light';
+import { createTrophy } from '../ui/trophy';
+import {
+  createRacePresentation,
+  type RacePresentation,
+  VICTORY_SPIN_SECONDS,
+  victorySpinHeading,
+  WINNER_COLOR_WORDS,
+} from './race-presentation';
+
+/** Closed 8-cell loop on the board; start at (5,5) heading east. */
+const path: LoopCell[] = [
+  { x: 5, y: 5, type: 'start', orientation: 90 },
+  { x: 6, y: 5, type: 'straight', orientation: 90 },
+  { x: 7, y: 5, type: 'curve', orientation: 180 },
+  { x: 7, y: 6, type: 'straight', orientation: 0 },
+  { x: 7, y: 7, type: 'curve', orientation: 270 },
+  { x: 6, y: 7, type: 'straight', orientation: 90 },
+  { x: 5, y: 7, type: 'curve', orientation: 0 },
+  { x: 5, y: 6, type: 'straight', orientation: 0 },
+];
+
+function click(selector: string, root: ParentNode): void {
+  const button = root.querySelector<HTMLButtonElement>(selector);
+  if (!button) {
+    throw new Error(`Missing button: ${selector}`);
+  }
+  button.click();
+}
+
+interface Harness {
+  engine: RaceEngine;
+  presentation: RacePresentation;
+  light: ReturnType<typeof createTrafficLight>;
+  hud: ReturnType<typeof createRaceHud>;
+  trophy: ReturnType<typeof createTrophy>;
+  confetti: {
+    burst: ReturnType<typeof vi.fn>;
+    update: ReturnType<typeof vi.fn>;
+    clear: ReturnType<typeof vi.fn>;
+  };
+  karts: { update: ReturnType<typeof vi.fn>; lastPoses: KartPose[] };
+  camera: {
+    position: { x: number; y: number; z: number; set: (x: number, y: number, z: number) => void };
+    lookAt: ReturnType<typeof vi.fn>;
+    aspect: number;
+  };
+  onBuildUiChange: ReturnType<typeof vi.fn>;
+  /** Advances presentation through a full countdown into running. */
+  raceToRunning(seconds?: number): void;
+  /** Ticks engine + presentation until the race is finished (all karts). */
+  raceToAllFinished(): void;
+  /** Ticks until the winner crosses the finish line. */
+  raceToFirstFinish(): void;
+}
+
+function createHarness(options: { countdownSeconds?: number } = {}): Harness {
+  const engine = createRaceEngine(path, {
+    seed: 42,
+    countdownSeconds: options.countdownSeconds ?? 0.05,
+  });
+  const light = createTrafficLight();
+  const hud = createRaceHud({ onPause: vi.fn(), onResume: vi.fn(), onQuit: vi.fn() });
+  const trophy = createTrophy({ onAgain: vi.fn() });
+  const confetti = {
+    burst: vi.fn(),
+    update: vi.fn(),
+    clear: vi.fn(),
+  };
+  const lastPoses: KartPose[] = [];
+  const karts = {
+    update: vi.fn((poses: KartPose[]) => {
+      lastPoses.splice(0, lastPoses.length, ...poses);
+      return null;
+    }),
+    lastPoses,
+  };
+  const camera = {
+    position: { x: 0, y: 0, z: 0, set: vi.fn() },
+    lookAt: vi.fn(),
+    aspect: 1.5,
+  };
+  const onBuildUiChange = vi.fn();
+
+  const presentation = createRacePresentation({
+    engine,
+    path,
+    trafficLight: light,
+    raceHud: hud,
+    trophy,
+    confetti,
+    karts,
+    camera,
+    onBuildUiChange,
+  });
+
+  return {
+    engine,
+    presentation,
+    light,
+    hud,
+    trophy,
+    confetti,
+    karts,
+    camera,
+    onBuildUiChange,
+    raceToRunning(seconds = 0.06) {
+      presentation.beginRace();
+      presentation.update(seconds);
+    },
+    raceToAllFinished() {
+      presentation.beginRace();
+      // Countdown + long enough for the 37.5 s target race.
+      for (let i = 0; i < 60 * 50; i++) {
+        presentation.update(1 / 60);
+        if (engine.karts.every((kart) => kart.finished)) {
+          break;
+        }
+      }
+    },
+    raceToFirstFinish() {
+      presentation.beginRace();
+      for (let i = 0; i < 60 * 60; i++) {
+        presentation.update(1 / 60);
+        if (engine.state === 'finished') {
+          break;
+        }
+      }
+    },
+  };
+}
+
+describe('victorySpinHeading', () => {
+  it('returns the base heading at spin start', () => {
+    expect(victorySpinHeading(1.2, 0)).toBeCloseTo(1.2);
+  });
+
+  it('adds a full turn at spin complete', () => {
+    expect(victorySpinHeading(0, 1)).toBeCloseTo(Math.PI * 2);
+  });
+
+  it('clamps progress beyond 1', () => {
+    expect(victorySpinHeading(0, 2)).toBeCloseTo(Math.PI * 2);
+  });
+
+  it('interpolates halfway through the spin', () => {
+    expect(victorySpinHeading(0, 0.5)).toBeCloseTo(Math.PI);
+  });
+
+  it('exposes a ~2 second spin duration', () => {
+    expect(VICTORY_SPIN_SECONDS).toBeCloseTo(2);
+  });
+});
+
+describe('createRacePresentation', () => {
+  let harness: Harness;
+
+  beforeEach(() => {
+    harness = createHarness();
+  });
+
+  describe('beginRace / countdown', () => {
+    it('hides build UI and starts the engine countdown', () => {
+      harness.presentation.beginRace();
+      expect(harness.onBuildUiChange).toHaveBeenCalledWith(false);
+      expect(harness.engine.state).toBe('countdown');
+    });
+
+    it('shows the traffic light synced to countdownRemaining', () => {
+      harness.presentation.beginRace();
+      harness.presentation.update(0.01);
+      expect(harness.light.root.classList.contains('hidden')).toBe(false);
+      expect(harness.light.root.querySelectorAll('.lit').length).toBeGreaterThan(0);
+    });
+
+    it('keeps karts on the start lineup during countdown', () => {
+      harness.presentation.beginRace();
+      harness.presentation.update(0.01);
+      expect(harness.karts.lastPoses).toHaveLength(4);
+      // Row 0 karts sit on the start line (progress 0).
+      expect(harness.karts.lastPoses[0].x).toBeCloseTo(-1); // cell (5,5) world x
+      expect(harness.karts.lastPoses[1].x).toBeCloseTo(-1);
+    });
+
+    it('does not show the pause button during countdown', () => {
+      harness.presentation.beginRace();
+      harness.presentation.update(0.01);
+      const pause = harness.hud.root.querySelector('[data-action="pause"]');
+      expect(pause?.classList.contains('hidden')).toBe(true);
+    });
+  });
+
+  describe('running', () => {
+    it('flashes GO and reveals the pause button when the race starts', () => {
+      harness.raceToRunning();
+      expect(harness.engine.state).toBe('running');
+      expect(harness.light.root.querySelector('[data-light="go"]')?.classList.contains('lit')).toBe(
+        true,
+      );
+      const pause = harness.hud.root.querySelector('[data-action="pause"]');
+      expect(pause?.classList.contains('hidden')).toBe(false);
+    });
+
+    it('hides the traffic light shortly after the GO flash', () => {
+      harness.presentation.beginRace();
+      // Finish countdown, then run past the GO flash window.
+      harness.presentation.update(0.06);
+      harness.presentation.update(1.0);
+      expect(harness.light.root.classList.contains('hidden')).toBe(true);
+    });
+
+    it('advances kart poses as the engine progresses', () => {
+      harness.raceToRunning();
+      const startPose = { ...harness.karts.lastPoses[0] };
+      harness.presentation.update(0.5);
+      const laterPose = { ...harness.karts.lastPoses[0] };
+      const moved = Math.hypot(laterPose.x - startPose.x, laterPose.z - startPose.z);
+      expect(moved).toBeGreaterThan(0.01);
+    });
+
+    it('applies a camera placement while running', () => {
+      harness.raceToRunning();
+      harness.presentation.update(0.2);
+      expect(harness.camera.position.set).toHaveBeenCalled();
+      expect(harness.camera.lookAt).toHaveBeenCalled();
+    });
+  });
+
+  describe('finish celebration', () => {
+    it('bursts confetti at the finish origin when the winner crosses', () => {
+      harness.raceToAllFinished();
+      expect(harness.confetti.burst).toHaveBeenCalled();
+      const origin = harness.confetti.burst.mock.calls[0][0] as { x: number; z: number };
+      // Finish = start cell (5,5) → world (-1, -1)
+      expect(origin.x).toBeCloseTo(-1);
+      expect(origin.z).toBeCloseTo(-1);
+    });
+
+    it('shows the trophy with the winner color word once every kart finishes', () => {
+      harness.raceToAllFinished();
+      expect(harness.engine.karts.every((kart) => kart.finished)).toBe(true);
+      expect(harness.trophy.root.classList.contains('hidden')).toBe(false);
+      const winner = harness.engine.result?.winnerIndex ?? 0;
+      expect(harness.trophy.root.textContent).toContain(WINNER_COLOR_WORDS[winner]);
+      expect(harness.trophy.root.textContent).toContain('WINS!');
+    });
+
+    it('spins the winner kart yaw over the victory window', () => {
+      harness.raceToFirstFinish();
+      const winner = harness.engine.result?.winnerIndex;
+      expect(winner).toBeGreaterThanOrEqual(0);
+      // Capture the pose at the start of the spin (one frame after the finish event).
+      const before = { ...harness.karts.lastPoses[winner as number] };
+      harness.presentation.update(VICTORY_SPIN_SECONDS / 2);
+      const after = harness.karts.lastPoses[winner as number];
+      const delta = after.heading - before.heading;
+      // Half a turn of extra yaw after halfway through the spin.
+      expect(Math.abs(delta)).toBeGreaterThan(1);
+      expect(Math.abs(delta)).toBeLessThanOrEqual(Math.PI + 0.2);
+    });
+
+    it('hides the pause button once the race is finished', () => {
+      harness.raceToAllFinished();
+      const pause = harness.hud.root.querySelector('[data-action="pause"]');
+      expect(pause?.classList.contains('hidden')).toBe(true);
+    });
+  });
+
+  describe('RACE AGAIN', () => {
+    it('restarts the engine with a fresh countdown and resets presentation', () => {
+      harness.raceToAllFinished();
+      const seedSpeeds = harness.engine.karts.map((kart) => kart.speed);
+
+      click('button[data-action="again"]', harness.trophy.root);
+
+      expect(harness.trophy.root.classList.contains('hidden')).toBe(true);
+      expect(harness.light.root.classList.contains('hidden')).toBe(false);
+      expect(harness.confetti.clear).toHaveBeenCalled();
+      expect(harness.engine.state).toBe('countdown');
+      // Progress reset to the start lineup.
+      expect(harness.engine.karts.every((kart) => !kart.finished)).toBe(true);
+      expect(harness.karts.lastPoses).toHaveLength(4);
+      // Speeds re-rolled (same seed stream continues, values should differ).
+      const newSpeeds = harness.engine.karts.map((kart) => kart.speed);
+      expect(newSpeeds).not.toEqual(seedSpeeds);
+      // Build UI stays hidden for the replayed race.
+      expect(harness.onBuildUiChange).toHaveBeenLastCalledWith(false);
+    });
+  });
+
+  describe('pause / resume / quit', () => {
+    it('freezes the engine when pause is tapped', () => {
+      harness.raceToRunning();
+      harness.presentation.update(0.2);
+      const progressBefore = harness.engine.karts[0].progress;
+
+      click('button[data-action="pause"]', harness.hud.root);
+      harness.presentation.update(0.5);
+
+      expect(harness.engine.karts[0].progress).toBeCloseTo(progressBefore);
+      expect(harness.hud.overlay.hidden).toBe(false);
+    });
+
+    it('resumes the race when resume is tapped', () => {
+      harness.raceToRunning();
+      click('button[data-action="pause"]', harness.hud.root);
+      click('button[data-action="resume"]', harness.hud.overlay);
+      harness.presentation.update(0.3);
+      expect(harness.engine.karts[0].progress).toBeGreaterThan(0);
+      expect(harness.hud.overlay.hidden).toBe(true);
+    });
+
+    it('quits to the builder, restores build UI, and clears race visuals', () => {
+      harness.raceToRunning();
+      click('button[data-action="pause"]', harness.hud.root);
+      click('button[data-action="quit"]', harness.hud.overlay);
+      click('button[data-confirm="yes"]', harness.hud.confirm);
+
+      expect(harness.engine.state).toBe('idle');
+      expect(harness.onBuildUiChange).toHaveBeenLastCalledWith(true);
+      expect(harness.light.root.classList.contains('hidden')).toBe(true);
+      expect(harness.hud.root.classList.contains('hidden')).toBe(true);
+      expect(harness.confetti.clear).toHaveBeenCalled();
+    });
+  });
+
+  describe('update', () => {
+    it('ticks the engine each frame', () => {
+      harness.presentation.beginRace();
+      const stateBefore = harness.engine.state;
+      harness.presentation.update(1);
+      // Countdown is only 0.05 s, so a 1 s tick must leave running.
+      expect(stateBefore).toBe('countdown');
+      expect(harness.engine.state).toBe('running');
+    });
+
+    it('updates confetti each frame after a burst', () => {
+      harness.raceToAllFinished();
+      const callsBefore = harness.confetti.update.mock.calls.length;
+      harness.presentation.update(0.016);
+      expect(harness.confetti.update.mock.calls.length).toBeGreaterThan(callsBefore);
+    });
+  });
+});

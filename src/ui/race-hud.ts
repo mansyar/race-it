@@ -5,7 +5,7 @@ export interface RaceHud {
   overlay: HTMLDivElement;
   /** Quit confirmation dialog element (hidden until quit is tapped). */
   confirm: HTMLDivElement;
-  callbacks: { onResume: () => void; onQuit: () => void };
+  callbacks: { onPause: () => void; onResume: () => void; onQuit: () => void };
   /** Reveals the pause button (race is running). */
   showPause(): void;
   /** Opens the resume/quit overlay (pause tapped). */
@@ -39,7 +39,11 @@ function button(action: string, label: string, className: string): HTMLButtonEle
  * quit requires a confirm tap (toddler-proof, same pattern as the clear-table
  * confirm in the corner cluster).
  */
-export function createRaceHud(callbacks: { onResume: () => void; onQuit: () => void }): RaceHud {
+export function createRaceHud(callbacks: {
+  onPause: () => void;
+  onResume: () => void;
+  onQuit: () => void;
+}): RaceHud {
   const root = document.createElement('div');
   root.className = 'race-hud hidden';
 
@@ -64,6 +68,7 @@ export function createRaceHud(callbacks: { onResume: () => void; onQuit: () => v
     pause.classList.add('hidden');
     overlay.hidden = false;
     confirm.hidden = true;
+    callbacks.onPause();
   });
   resume.addEventListener('click', () => {
     overlay.hidden = true;

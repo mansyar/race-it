@@ -13,7 +13,7 @@ describe('createRaceHud', () => {
   let hud: ReturnType<typeof createRaceHud>;
 
   beforeEach(() => {
-    hud = createRaceHud({ onResume: vi.fn(), onQuit: vi.fn() });
+    hud = createRaceHud({ onPause: vi.fn(), onResume: vi.fn(), onQuit: vi.fn() });
   });
 
   it('renders pause, resume, quit, and confirm buttons', () => {
@@ -44,6 +44,12 @@ describe('createRaceHud', () => {
     hud.showPause();
     click(hud.root, 'button[data-action="pause"]').click();
     expect(hud.overlay.hidden).toBe(false);
+  });
+
+  it('tapping pause fires onPause once', () => {
+    hud.showPause();
+    click(hud.root, 'button[data-action="pause"]').click();
+    expect(hud.callbacks.onPause).toHaveBeenCalledTimes(1);
   });
 
   it('resume fires onResume once and closes the overlay', () => {
