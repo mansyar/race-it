@@ -1,15 +1,18 @@
 import * as THREE from 'three';
 import { appReady } from './app';
-import { MODELS, SFX } from './assets/manifest';
+import { KARTS, MODELS, SFX } from './assets/manifest';
 import { createSfx } from './audio/sfx';
 import type { GridModel, PieceType } from './grid/grid-model';
 import { GRID_SIZE } from './grid/grid-model';
 import { TrackEditor } from './grid/track-editor';
 import { loadOrSeedTrack, saveTrack } from './grid/track-store';
 import { validateTrack } from './grid/track-validator';
-import { createRaceEngine, type RaceEngine } from './race/engine';
+import { createRacePresentation, type RacePresentation } from './presentation/race-presentation';
+import { createRaceEngine } from './race/engine';
 import { extractLoopPath } from './race/path';
+import { ConfettiBurst } from './render/confetti';
 import { type BuildTool, handleCellTap } from './render/interaction';
+import { KartRenderer } from './render/kart-meshes';
 import { fillPerfPattern } from './render/perf-harness';
 import { PieceRenderer } from './render/piece-renderer';
 import { createBuildScene } from './render/scene';
@@ -17,11 +20,17 @@ import './style.css';
 import { createBuildBar } from './ui/build-bar';
 import { createCornerCluster } from './ui/corner-cluster';
 import { createGoButton } from './ui/go-button';
+import { createRaceHud } from './ui/race-hud';
+import { createTrafficLight } from './ui/traffic-light';
+import { createTrophy } from './ui/trophy';
 
 // Referenced so the production build emits every GLB/OGG for service-worker
-// precaching; the race-mode renderer (Track 2) and audio (Track 3) consume
-// them at runtime.
-const ASSET_URLS: readonly string[] = [...Object.values(MODELS), ...Object.values(SFX)];
+// precaching; the race presentation and audio consume them at runtime.
+const ASSET_URLS: readonly string[] = [
+  ...Object.values(MODELS),
+  ...Object.values(KARTS),
+  ...Object.values(SFX),
+];
 void ASSET_URLS.length;
 
 const root = document.querySelector<HTMLDivElement>('#app');
@@ -35,9 +44,11 @@ if (root && appReady()) {
   let editor = new TrackEditor(model);
   let tool: BuildTool = { kind: 'none' };
   let selectedType: PieceType | null = null;
-  let raceEngine: RaceEngine | null = null;
+  let presentation: RacePresentation | null = null;
 
   const pieces = new PieceRenderer();
+  const karts = new KartRenderer();
+  const confetti = new ConfettiBurst();
   const sfx = createSfx();
   sfx.setMuted(localStorage.getItem('race-it:muted') === 'true');
 
@@ -159,39 +170,79 @@ if (root && appReady()) {
   }
 
   // Debug mode: `?race` runs a headless seeded race on the current track and
-  // prints the result — the end-to-end verification vehicle for the race engine
-  // until race presentation lands (Track 2 scope: Race Engine Core).
+  // prints the result — end-to-end verification vehicle for the race engine.
   if (new URLSearchParams(window.location.search).has('race')) {
     try {
-      raceEngine = createRaceEngine(extractLoopPath(model), { seed: 42 });
-      raceEngine.on('kartFinish', ({ index, time }) => {
+      const headless = createRaceEngine(extractLoopPath(model), { seed: 42 });
+      headless.on('kartFinish', ({ index, time }) => {
         console.info(`[race] kart ${index} finished at ${time.toFixed(2)}s`);
       });
-      raceEngine.start();
+      headless.start();
       let guard = 0;
-      while (!raceEngine.karts.every((kart) => kart.finished) && guard < 60 * 60) {
-        raceEngine.tick(1 / 60);
+      while (!headless.karts.every((kart) => kart.finished) && guard < 60 * 60) {
+        headless.tick(1 / 60);
         guard += 1;
       }
-      console.info('[race] result', raceEngine.result);
+      console.info('[race] result', headless.result);
       console.info('[race] headless run complete');
-      (window as unknown as Record<string, unknown>).__raceItRace = raceEngine;
+      (window as unknown as Record<string, unknown>).__raceItRace = headless;
     } catch (error) {
       console.error('[race] track has no closed loop', error);
     }
   }
 
+  const trafficLight = createTrafficLight();
+  const raceHud = createRaceHud({
+    onPause: () => {
+      sfx.play('click');
+    },
+    onResume: () => {
+      sfx.play('click');
+    },
+    onQuit: () => {
+      sfx.play('confirmB');
+    },
+  });
+  const trophy = createTrophy({
+    onAgain: () => {
+      sfx.play('confirmA');
+    },
+  });
+
+  const setBuildUiVisible = (visible: boolean): void => {
+    go.root.classList.toggle('hidden', !visible);
+    bar.root.classList.toggle('hidden', !visible);
+    cluster.root.classList.toggle('racing', !visible);
+  };
+
   const go = createGoButton({
     onGo: () => {
-      raceEngine = createRaceEngine(extractLoopPath(model));
-      raceEngine.on('kartFinish', ({ index, time }) => {
-        console.info(`[race] kart ${index} finished at ${time.toFixed(2)}s`);
-        if (raceEngine?.karts.every((kart) => kart.finished)) {
-          console.info('[race] result', raceEngine.result);
-          (window as unknown as Record<string, unknown>).__raceItRace = raceEngine;
-        }
-      });
-      raceEngine.start();
+      try {
+        const path = extractLoopPath(model);
+        const engine = createRaceEngine(path);
+        engine.on('kartFinish', ({ index, time }) => {
+          console.info(`[race] kart ${index} finished at ${time.toFixed(2)}s`);
+          if (engine.karts.every((kart) => kart.finished)) {
+            console.info('[race] result', engine.result);
+            (window as unknown as Record<string, unknown>).__raceItRace = engine;
+          }
+        });
+        presentation = createRacePresentation({
+          engine,
+          path,
+          trafficLight,
+          raceHud,
+          trophy,
+          confetti,
+          karts,
+          camera: view.camera,
+          onBuildUiChange: setBuildUiVisible,
+        });
+        sfx.play('confirmA');
+        presentation.beginRace();
+      } catch (error) {
+        console.error('[race] cannot start race', error);
+      }
     },
   });
 
@@ -224,7 +275,7 @@ if (root && appReady()) {
 
   const cluster = createCornerCluster({
     onShelf: () => {
-      // Shelf UI is Track 3 scope; stub is inert for now.
+      // Shelf UI is a later track; stub is inert for now.
     },
     onMuteToggle: (muted) => {
       sfx.setMuted(muted);
@@ -243,8 +294,14 @@ if (root && appReady()) {
   });
 
   const appUi = document.createElement('div');
+  appUi.className = 'app-ui';
   appUi.append(cluster.root, go.root, bar.root, cluster.confirm);
   root.append(appUi);
+
+  const raceUi = document.createElement('div');
+  raceUi.className = 'race-ui';
+  raceUi.append(trafficLight.root, raceHud.root, trophy.root);
+  root.append(raceUi);
 
   go.setValid(validateTrack(model).valid);
 
@@ -256,17 +313,21 @@ if (root && appReady()) {
     .catch((error: unknown) => {
       console.error('Failed to load track pieces', error);
     });
-  // App loop: ticks the active race engine each frame (no-op outside a race).
-  let lastFrame = performance.now();
-  const frame = (now: number): void => {
-    const dt = Math.min((now - lastFrame) / 1000, 0.1);
-    lastFrame = now;
-    if (raceEngine) {
-      raceEngine.tick(dt);
-    }
-    requestAnimationFrame(frame);
-  };
-  requestAnimationFrame(frame);
+
+  karts
+    .load()
+    .then(() => {
+      view.scene.add(karts.group);
+      view.scene.add(confetti.points);
+    })
+    .catch((error: unknown) => {
+      console.error('Failed to load kart models', error);
+    });
+
+  // Single per-frame pass: engine tick + presentation + render (scene owns rAF).
+  view.onFrame((dt) => {
+    presentation?.update(dt);
+  });
 
   window.addEventListener('pagehide', () => view.dispose(), { once: true });
 }

@@ -42,7 +42,7 @@ export class KartRenderer {
     this.karts = templates.map((template, kartIndex) => {
       const kart = template.clone(true);
       kart.scale.setScalar(KART_SCALE);
-      this.tintKart(kart, KART_COLORS[kartIndex]);
+      this.tintKart(kart, KART_COLORS[kartIndex] ?? 0xffffff);
       return kart;
     });
   }
@@ -52,11 +52,12 @@ export class KartRenderer {
     this.group.clear();
     for (let i = 0; i < poses.length; i++) {
       const kart = this.karts[i];
-      if (!kart) {
+      const pose = poses[i];
+      if (!kart || !pose) {
         continue;
       }
-      kart.position.set(poses[i].x, KART_Y_OFFSET, poses[i].z);
-      kart.rotation.y = poses[i].heading + KART_FORWARD_ROTATION;
+      kart.position.set(pose.x, KART_Y_OFFSET, pose.z);
+      kart.rotation.y = pose.heading + KART_FORWARD_ROTATION;
       this.group.add(kart);
     }
     return this.group;

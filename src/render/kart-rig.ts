@@ -23,8 +23,12 @@ export function kartPose(path: LoopCell[], progress: number, lane: number): Kart
   const wrapped = ((progress % lapLength) + lapLength) % lapLength;
   const seg = Math.min(path.length - 1, Math.floor(wrapped / SEGMENT_LENGTH));
   const frac = wrapped / SEGMENT_LENGTH - seg;
-  const cur = gridToWorld(path[seg].x, path[seg].y);
+  const curCell = path[seg];
   const nextCell = path[(seg + 1) % path.length];
+  if (!curCell || !nextCell) {
+    throw new RangeError('kartPose: path index out of range');
+  }
+  const cur = gridToWorld(curCell.x, curCell.y);
   const next = gridToWorld(nextCell.x, nextCell.y);
   const x = cur.x + (next.x - cur.x) * frac;
   const z = cur.z + (next.z - cur.z) * frac;

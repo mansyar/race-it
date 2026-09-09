@@ -41,11 +41,16 @@ describe('confetti particles', () => {
   });
 
   it('applies gravity and velocity each step', () => {
-    const [particle] = createConfetti(7, 1, origin);
+    const particle = createConfetti(7, 1, origin)[0];
+    if (!particle) {
+      throw new Error('Expected one confetti particle');
+    }
     const vy = particle.vy;
     const beforeY = particle.y;
-    const stepped = stepConfetti([particle], 0.1);
-    const moved = stepped[0];
+    const moved = stepConfetti([particle], 0.1)[0];
+    if (!moved) {
+      throw new Error('Expected the particle to stay alive');
+    }
     expect(moved.vy).toBeCloseTo(vy + CONFETTI_GRAVITY * 0.1); // gravity reduced upward speed
     expect(moved.y).not.toBeCloseTo(beforeY); // vertical motion applied
     expect(moved.age).toBeCloseTo(0.1);

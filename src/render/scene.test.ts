@@ -11,7 +11,6 @@ vi.mock('three', () => {
   class StubRenderer {
     domElement = (() => {
       const el = document.createElement('canvas');
-      el.style = {} as CSSStyleDeclaration;
       return Object.assign(el, {
         addEventListener: vi.fn(),
         removeEventListener: vi.fn(),

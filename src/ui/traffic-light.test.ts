@@ -10,7 +10,7 @@ describe('createTrafficLight', () => {
 
   it('renders three red countdown lights and a green GO light', () => {
     const lights = [...light.root.querySelectorAll('[data-light]')];
-    expect(lights.map((el) => el.dataset.light)).toEqual(['1', '2', '3', 'go']);
+    expect(lights.map((el) => (el as HTMLElement).dataset.light)).toEqual(['1', '2', '3', 'go']);
   });
 
   it('is hidden initially with no lit lights', () => {

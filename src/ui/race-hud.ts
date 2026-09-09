@@ -23,15 +23,27 @@ function hiddenDiv(className: string): HTMLDivElement {
   return div;
 }
 
-function button(action: string, label: string, className: string): HTMLButtonElement {
+function button(
+  action: string,
+  label: string,
+  className: string,
+  html?: string,
+): HTMLButtonElement {
   const btn = document.createElement('button');
   btn.type = 'button';
   btn.dataset.action = action;
   btn.className = className;
-  btn.textContent = label;
+  if (html !== undefined) {
+    btn.innerHTML = html;
+  } else {
+    btn.textContent = label;
+  }
   btn.setAttribute('aria-label', label);
   return btn;
 }
+
+const PAUSE_ICON =
+  '<svg viewBox="0 0 24 24" aria-hidden="true" width="32" height="32"><rect x="6" y="4" width="4" height="16" rx="1" fill="currentColor"/><rect x="14" y="4" width="4" height="16" rx="1" fill="currentColor"/></svg>';
 
 /**
  * Creates the race HUD. Hidden in build mode; showPause() reveals the pause
@@ -47,7 +59,7 @@ export function createRaceHud(callbacks: {
   const root = document.createElement('div');
   root.className = 'race-hud hidden';
 
-  const pause = button('pause', 'Pause', 'pause-button hidden');
+  const pause = button('pause', 'Pause', 'pause-button hidden', PAUSE_ICON);
   root.append(pause);
 
   const overlay = hiddenDiv('race-overlay');

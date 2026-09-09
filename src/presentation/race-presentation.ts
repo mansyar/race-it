@@ -70,7 +70,11 @@ export interface RacePresentation {
 }
 
 function leadKart(karts: Kart[]): Kart {
-  let lead = karts[0];
+  const first = karts[0];
+  if (!first) {
+    throw new RangeError('leadKart: karts must not be empty');
+  }
+  let lead = first;
   for (const kart of karts) {
     if (kart.progress > lead.progress) {
       lead = kart;
@@ -93,7 +97,8 @@ function cameraPhase(state: RaceState): RaceCameraPhase {
  */
 export function createRacePresentation(options: RacePresentationOptions): RacePresentation {
   const { engine, path, trafficLight, raceHud, trophy, confetti, karts, camera } = options;
-  const finishOrigin = path.length > 0 ? gridToWorld(path[0].x, path[0].y) : { x: 0, z: 0 };
+  const startCell = path[0];
+  const finishOrigin = startCell ? gridToWorld(startCell.x, startCell.y) : { x: 0, z: 0 };
 
   let goFlashRemaining = 0;
   let spinning = false;

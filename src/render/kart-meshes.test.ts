@@ -55,10 +55,14 @@ describe('KartRenderer', () => {
     expect(renderer.group.children).toHaveLength(4);
     for (let i = 0; i < 4; i++) {
       const kart = renderer.group.children[i];
-      expect(kart.position.x).toBeCloseTo(pose(i).x);
-      expect(kart.position.z).toBeCloseTo(pose(i).z);
+      const target = pose(i);
+      if (!kart) {
+        throw new Error(`Expected kart mesh at index ${i}`);
+      }
+      expect(kart.position.x).toBeCloseTo(target.x);
+      expect(kart.position.z).toBeCloseTo(target.z);
       expect(kart.position.y).toBeCloseTo(KART_Y_OFFSET);
-      expect(kart.rotation.y).toBeCloseTo(pose(i).heading + KART_FORWARD_ROTATION);
+      expect(kart.rotation.y).toBeCloseTo(target.heading + KART_FORWARD_ROTATION);
     }
   });
 
@@ -108,6 +112,6 @@ describe('KartRenderer', () => {
     await renderer.load(mockLoader(scenes));
     renderer.update([pose(0), pose(1)]);
     expect(renderer.group.children).toHaveLength(2);
-    expect(renderer.group.children[1].position.x).toBeCloseTo(pose(1).x);
+    expect(renderer.group.children[1]?.position.x).toBeCloseTo(pose(1).x);
   });
 });

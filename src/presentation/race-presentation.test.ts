@@ -183,8 +183,13 @@ describe('createRacePresentation', () => {
       harness.presentation.update(0.01);
       expect(harness.karts.lastPoses).toHaveLength(4);
       // Row 0 karts sit on the start line (progress 0).
-      expect(harness.karts.lastPoses[0].x).toBeCloseTo(-1); // cell (5,5) world x
-      expect(harness.karts.lastPoses[1].x).toBeCloseTo(-1);
+      const pose0 = harness.karts.lastPoses[0];
+      const pose1 = harness.karts.lastPoses[1];
+      if (!pose0 || !pose1) {
+        throw new Error('Expected start-line poses');
+      }
+      expect(pose0.x).toBeCloseTo(-1); // cell (5,5) world x
+      expect(pose1.x).toBeCloseTo(-1);
     });
 
     it('does not show the pause button during countdown', () => {
@@ -216,9 +221,15 @@ describe('createRacePresentation', () => {
 
     it('advances kart poses as the engine progresses', () => {
       harness.raceToRunning();
-      const startPose = { ...harness.karts.lastPoses[0] };
+      const startPose = harness.karts.lastPoses[0];
+      if (!startPose) {
+        throw new Error('Expected a start pose');
+      }
       harness.presentation.update(0.5);
-      const laterPose = { ...harness.karts.lastPoses[0] };
+      const laterPose = harness.karts.lastPoses[0];
+      if (!laterPose) {
+        throw new Error('Expected a later pose');
+      }
       const moved = Math.hypot(laterPose.x - startPose.x, laterPose.z - startPose.z);
       expect(moved).toBeGreaterThan(0.01);
     });
@@ -235,7 +246,11 @@ describe('createRacePresentation', () => {
     it('bursts confetti at the finish origin when the winner crosses', () => {
       harness.raceToAllFinished();
       expect(harness.confetti.burst).toHaveBeenCalled();
-      const origin = harness.confetti.burst.mock.calls[0][0] as { x: number; z: number };
+      const call = harness.confetti.burst.mock.calls[0];
+      const origin = call?.[0] as { x: number; z: number } | undefined;
+      if (!origin) {
+        throw new Error('Expected a confetti burst origin');
+      }
       // Finish = start cell (5,5) → world (-1, -1)
       expect(origin.x).toBeCloseTo(-1);
       expect(origin.z).toBeCloseTo(-1);
@@ -254,11 +269,19 @@ describe('createRacePresentation', () => {
       harness.raceToFirstFinish();
       const winner = harness.engine.result?.winnerIndex;
       expect(winner).toBeGreaterThanOrEqual(0);
+      const winnerIndex = winner ?? 0;
       // Capture the pose at the start of the spin (one frame after the finish event).
-      const before = { ...harness.karts.lastPoses[winner as number] };
+      const before = harness.karts.lastPoses[winnerIndex];
+      if (!before) {
+        throw new Error('Expected a winner pose at finish');
+      }
+      const beforeHeading = before.heading;
       harness.presentation.update(VICTORY_SPIN_SECONDS / 2);
-      const after = harness.karts.lastPoses[winner as number];
-      const delta = after.heading - before.heading;
+      const after = harness.karts.lastPoses[winnerIndex];
+      if (!after) {
+        throw new Error('Expected a winner pose mid-spin');
+      }
+      const delta = after.heading - beforeHeading;
       // Half a turn of extra yaw after halfway through the spin.
       expect(Math.abs(delta)).toBeGreaterThan(1);
       expect(Math.abs(delta)).toBeLessThanOrEqual(Math.PI + 0.2);
@@ -297,12 +320,16 @@ describe('createRacePresentation', () => {
     it('freezes the engine when pause is tapped', () => {
       harness.raceToRunning();
       harness.presentation.update(0.2);
-      const progressBefore = harness.engine.karts[0].progress;
+      const kart0 = harness.engine.karts[0];
+      if (!kart0) {
+        throw new Error('Expected kart 0');
+      }
+      const progressBefore = kart0.progress;
 
       click('button[data-action="pause"]', harness.hud.root);
       harness.presentation.update(0.5);
 
-      expect(harness.engine.karts[0].progress).toBeCloseTo(progressBefore);
+      expect(harness.engine.karts[0]?.progress).toBeCloseTo(progressBefore);
       expect(harness.hud.overlay.hidden).toBe(false);
     });
 
@@ -311,7 +338,7 @@ describe('createRacePresentation', () => {
       click('button[data-action="pause"]', harness.hud.root);
       click('button[data-action="resume"]', harness.hud.overlay);
       harness.presentation.update(0.3);
-      expect(harness.engine.karts[0].progress).toBeGreaterThan(0);
+      expect(harness.engine.karts[0]?.progress).toBeGreaterThan(0);
       expect(harness.hud.overlay.hidden).toBe(true);
     });
 
