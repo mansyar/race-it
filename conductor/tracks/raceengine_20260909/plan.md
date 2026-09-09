@@ -39,8 +39,8 @@ pnpm build                   # production build
 
 ### Phase 4 — Race Lifecycle API (pure TDD)
 
-- [ ] Task 4.1: Lifecycle tests first — pause freezes progress, resume continues, abandon resets to idle, restart re-rolls speeds (seeded: different factors than previous race). **Red.**
-- [ ] Task 4.2: Implement `pause()`/`resume()`/`abandon()`/`restart()` on the engine. **Green.**
+- [x] Task 4.1: Lifecycle tests first — pause freezes progress, resume continues, abandon resets to idle, restart re-rolls speeds (seeded: different factors than previous race). **Red.** `(e493269)`
+- [x] Task 4.2: Implement `pause()`/`resume()`/`abandon()`/`restart()` on the engine. **Green.** `(e493269)`
 - [ ] Task: Phase Verification & Checkpoint (Refer to workflow.md)
 
 ### Phase 5 — Integration & Verification
