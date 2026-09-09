@@ -30,12 +30,12 @@ pnpm build                   # production build
 - [x] Task 2.2: Implement `src/race/path.ts` — `extractLoopPath(grid)` returning ordered cells (coords, type, orientation). **Green.** `(a6d201a)`
 - [x] Task: Phase Verification & Checkpoint `(a6d201a)`
 
-### Phase 3 — Race Engine Core (pure TDD)
+### Phase 3 — Race Engine Core (pure TDD) [checkpoint: e5a9aa6]
 
 - [x] Task 3.1: Injectable seeded RNG utility (mulberry32) + tests (deterministic sequences, uniform band sampling). `(293affa)`
 - [x] Task 3.2: Engine tests first — lineup offsets for 2/3/4 karts (pairs, alternating lanes, odd-count centered); speed roll from seed; `baseSpeed = L / 37.5` auto-tune (8-cell and 48-cell loops → winner within 30–45 s); countdown freeze (no movement before GO, movement exactly at GO); finish detection at progress ≥ L; finish times for all karts; `photoFinish` true/false (seeded close & clear races); >1 distinct winner across seeds. **Red.** `(e5a9aa6)`
 - [x] Task 3.3: Implement `src/race/engine.ts` — kart model, state machine (`idle → countdown → running → finished` + paused), `tick(dt)`, results, typed events (`stateChange`, `kartFinish`, `finish`). **Green.** `(e5a9aa6)`
-- [ ] Task: Phase Verification & Checkpoint (Refer to workflow.md)
+- [x] Task: Phase Verification & Checkpoint `(e5a9aa6)`
 
 ### Phase 4 — Race Lifecycle API (pure TDD)
 
