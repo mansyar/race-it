@@ -8,8 +8,8 @@
 
 ## Phase 1 — Toolchain Pins & Stack Documentation
 
-- [ ] Task 1.1: Document CI/CD stack in `conductor/tech-stack.md` — GitHub Actions, Docker multi-stage (node:24-alpine → nginx:alpine), GHCR public registry, Playwright E2E, pins Node 24.16.0 / pnpm 12.3.4 (per workflow: tech-stack changes documented *before* implementation)
-- [ ] Task 1.2: Add `.nvmrc` (24.16.0) + `"packageManager": "pnpm@12.3.4"` in `package.json`; verify `pnpm install` still resolves cleanly
+- [x] Task 1.1: Document CI/CD stack in `conductor/tech-stack.md` — GitHub Actions, Docker multi-stage (node:24-alpine → nginx:alpine), GHCR public registry, Playwright E2E, pins Node 24.16.0 / pnpm 12.3.4 (per workflow: tech-stack changes documented *before* implementation) `(f82228e)`
+- [~] Task 1.2: Add `.nvmrc` (24.16.0) + `"packageManager": "pnpm@12.3.4"` in `package.json`; verify `pnpm install` still resolves cleanly
 - [ ] Task: Phase Verification & Checkpoint (Refer to workflow.md)
 
 ## Phase 2 — Playwright E2E Smoke Suite (TDD)
