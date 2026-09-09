@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { CONFETTI_COUNT, CONFETTI_GRAVITY, CONFETTI_LIFE, createConfetti, stepConfetti } from './confetti';
+import { CONFETTI_COUNT, CONFETTI_GRAVITY, CONFETTI_LIFE, ConfettiBurst, createConfetti, stepConfetti } from './confetti';
 
 const origin = { x: 0, z: 0 };
 
@@ -65,5 +65,35 @@ describe('confetti particles', () => {
 
   it('returns an empty array when stepping nothing', () => {
     expect(stepConfetti([], 0.1)).toEqual([]);
+  });
+});
+
+describe('ConfettiBurst wrapper', () => {
+  it('becomes visible with a full position buffer on burst', () => {
+    const burst = new ConfettiBurst();
+    expect(burst.points.visible).toBe(false);
+    burst.burst(origin, 42);
+    expect(burst.points.visible).toBe(true);
+    const position = burst.points.geometry.getAttribute('position');
+    expect(position.count).toBe(CONFETTI_COUNT);
+    expect(position.getY(0)).toBeGreaterThan(0); // particles above the road
+  });
+
+  it('hides itself once every particle has expired', () => {
+    const burst = new ConfettiBurst();
+    burst.burst(origin, 42);
+    for (let t = 0; t < CONFETTI_LIFE + 1; t += 0.1) {
+      burst.update(0.1);
+    }
+    expect(burst.points.visible).toBe(false);
+  });
+
+  it('clear empties the burst and keeps it hidden', () => {
+    const burst = new ConfettiBurst();
+    burst.burst(origin, 42);
+    burst.clear();
+    expect(burst.points.visible).toBe(false);
+    burst.update(0.1); // no-op after clear
+    expect(burst.points.visible).toBe(false);
   });
 });
