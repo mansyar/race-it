@@ -37,11 +37,11 @@ pnpm build                   # production build
 - [x] Task 3.3: Implement `src/race/engine.ts` — kart model, state machine (`idle → countdown → running → finished` + paused), `tick(dt)`, results, typed events (`stateChange`, `kartFinish`, `finish`). **Green.** `(e5a9aa6)`
 - [x] Task: Phase Verification & Checkpoint `(e5a9aa6)`
 
-### Phase 4 — Race Lifecycle API (pure TDD)
+### Phase 4 — Race Lifecycle API [checkpoint: e493269] (pure TDD)
 
 - [x] Task 4.1: Lifecycle tests first — pause freezes progress, resume continues, abandon resets to idle, restart re-rolls speeds (seeded: different factors than previous race). **Red.** `(e493269)`
 - [x] Task 4.2: Implement `pause()`/`resume()`/`abandon()`/`restart()` on the engine. **Green.** `(e493269)`
-- [ ] Task: Phase Verification & Checkpoint (Refer to workflow.md)
+- [x] Task: Phase Verification & Checkpoint `(e493269)`
 
 ### Phase 5 — Integration & Verification
 
