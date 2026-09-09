@@ -26,6 +26,7 @@ Stand up an efficient, reproducible CI/CD pipeline for Race-It: GitHub Actions r
 - FR2.1 Multi-stage Docker build (node:24-alpine build → nginx:alpine serve) → push `ghcr.io/mansyar/race-it:vX.Y.Z` **and** `:latest` (public — no registry credential needed in Coolify)
 - FR2.2 Trigger Coolify deployment via deploy webhook: `POST $COOLIFY_DEPLOY_WEBHOOK` with header `Authorization: Bearer $COOLIFY_API_TOKEN`
 - FR2.3 Deploy runs serialized (no concurrent releases)
+- FR2.4 Publish a GitHub Release with auto-generated notes: commits between the previous tag and the new tag, grouped by conventional-commit type (`feat`/`fix`/`chore`/`docs`/`test`/`refactor`/`style`); first release covers all commits since the beginning. Notes live on GitHub only — not attached to the Coolify deploy
 
 ### FR3 — Pipeline efficiency
 
@@ -55,6 +56,7 @@ Stand up an efficient, reproducible CI/CD pipeline for Race-It: GitHub Actions r
 - AC4: Coolify deploy triggered via authenticated webhook (Bearer token)
 - AC5: Deployed PWA loads and registers its service worker under Coolify URL
 - AC6: Second pipeline run is measurably faster (cache hits — no full reinstall)
+- AC7: Tagging `vX.Y.Z` creates a GitHub Release with auto-generated notes grouped by commit type
 
 ## Out of Scope
 

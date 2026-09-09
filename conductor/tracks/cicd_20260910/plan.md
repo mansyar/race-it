@@ -29,11 +29,12 @@
 - [ ] Task 4.1: `Dockerfile` (node:24-alpine build stage → nginx:alpine; nginx.conf: SPA fallback + PWA-friendly cache headers) + `.dockerignore`
 - [ ] Task 4.2: Local verification — `docker build`, run container, curl smoke (if Docker available locally)
 - [ ] Task 4.3: `.github/workflows/release.yml` — on `v*` tags: build → build-push-action → `ghcr.io/mansyar/race-it:vX.Y.Z` + `:latest` (public) → POST deploy webhook with `Authorization: Bearer $COOLIFY_API_TOKEN` (`$COOLIFY_DEPLOY_WEBHOOK`); deploy runs serialized
-- [ ] Task 4.4: User adds 2 repo secrets (`COOLIFY_DEPLOY_WEBHOOK`, `COOLIFY_API_TOKEN`); verify via `gh secret list`
+- [ ] Task 4.4: GitHub Release step — generate notes from `git log` between previous tag and new tag (first release: all commits), group by conventional-commit type (`feat`/`fix`/`chore`/`docs`/`test`/`refactor`/`style`) into a notes file; publish via `gh release create` (GITHUB_TOKEN). Notes stay on GitHub — not attached to the Coolify deploy
+- [ ] Task 4.5: User adds 2 repo secrets (`COOLIFY_DEPLOY_WEBHOOK`, `COOLIFY_API_TOKEN`); verify via `gh secret list`
 - [ ] Task: Phase Verification & Checkpoint (Refer to workflow.md)
 
 ## Phase 5 — End-to-End Pipeline Verification
 
-- [ ] Task 5.1: Merge branch to `master`; bump `package.json` to 0.2.0; tag `v0.2.0` and push → release workflow runs: GHCR image published (both tags), Coolify deploy triggered via authenticated webhook
+- [ ] Task 5.1: Merge branch to `master`; bump `package.json` to 0.2.0; tag `v0.2.0` and push → release workflow runs: GHCR image published (both tags), GitHub Release published with type-grouped notes, Coolify deploy triggered via authenticated webhook
 - [ ] Task 5.2: Verify deployed PWA at Coolify URL (SW registered, offline boots, race runs); confirm efficiency — second pipeline run hits caches (no full reinstall)
 - [ ] Task: Phase Verification & Checkpoint (Refer to workflow.md)
