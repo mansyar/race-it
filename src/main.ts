@@ -1,6 +1,6 @@
 import * as THREE from 'three';
 import { appReady } from './app';
-import { MODELS, SFX } from './assets/manifest';
+import { MODELS, SCENERY, SFX } from './assets/manifest';
 import { createSfx } from './audio/sfx';
 import type { GridModel, PieceType } from './grid/grid-model';
 import { GRID_SIZE } from './grid/grid-model';
@@ -21,7 +21,11 @@ import { createGoButton } from './ui/go-button';
 // Referenced so the production build emits every GLB/OGG for service-worker
 // precaching; the race-mode renderer (Track 2) and audio (Track 3) consume
 // them at runtime.
-const ASSET_URLS: readonly string[] = [...Object.values(MODELS), ...Object.values(SFX)];
+const ASSET_URLS: readonly string[] = [
+  ...Object.values(MODELS),
+  ...Object.values(SCENERY),
+  ...Object.values(SFX),
+];
 void ASSET_URLS.length;
 
 const root = document.querySelector<HTMLDivElement>('#app');
