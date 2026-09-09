@@ -15,9 +15,9 @@
 
 ## Phase 2 — Scenery Renderer
 
-- [~] Task 2.1: `SceneryRenderer` tests first (Red) — `src/render/scenery-render.test.ts` with mocked GLTF loader: `load()` stores 3 templates; `update(snapshot)` builds one Object3D per plan item with yaw/scale; rebuild clears previous children; bright tint applied.
-- [ ] Task 2.2: implement `src/render/scenery-render.ts` — injectable loader, template map, `update(snapshot)` → `THREE.Group` (Green).
-- [ ] Task: Phase Verification & Checkpoint (Refer to workflow.md)
+- [x] Task 2.1: `SceneryRenderer` tests first (Red) — `src/render/scenery-render.test.ts` with mocked GLTF loader: `load()` stores 3 templates; `update(snapshot)` builds one Object3D per plan item with yaw/scale; rebuild clears previous children; bright tint applied. `(8e05ae8)`
+- [x] Task 2.2: implement `src/render/scenery-render.ts` — injectable loader, template map, `update(snapshot)` → `THREE.Group` (Green). `(8e05ae8)`
+- [x] Task: Phase Verification & Checkpoint (Refer to workflow.md) `(8e05ae8)`
 
 ## Phase 3 — Micro-Feedback & Table Polish
 
