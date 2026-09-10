@@ -12,3 +12,4 @@
 - [x] **Track: PWA Install Experience** *Archived: [pwainstall_20260910](./archive/pwainstall_20260910/index.md)*
 - [x] **Track: Ship v0.4.0 — Release & Deploy** *Archived: [shipv040_20260910](./archive/shipv040_20260910/index.md)*
 - [x] **Track: Post-Race Navigation** *Archived: [postracenav_20260911](./archive/postracenav_20260911/index.md)*
+- [ ] **Track: Adaptive Performance Guardrails** *Link: [perfguardrails_20260911](./tracks/perfguardrails_20260911/index.md)*
