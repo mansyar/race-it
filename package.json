@@ -1,7 +1,7 @@
 {
   "name": "race-it",
   "private": true,
-  "version": "0.2.0",
+  "version": "0.3.0",
   "packageManager": "pnpm@12.3.4",
   "type": "module",
   "scripts": {
