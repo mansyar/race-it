@@ -34,8 +34,8 @@
 - [ ] Task: Phase Verification & Checkpoint (Refer to workflow.md) — browser: race → hide tab → return → overlay + Resume; countdown hold; build/picker unaffected.
 
 ## Phase 4 — Integration & Quality Gates (FR5 / AC8–AC10)
-- [ ] Task 4.1: new `e2e/lifecycle.spec.ts` — synthetic `visibilitychange` during a running race → pause overlay visible and stays until Resume; synthetic `pagehide`(persisted:false) + `pageshow`(persisted:true) → canvas remains attached, build palette still places a piece, console error-free; dispatched `contextmenu`/`dblclick` on the canvas are `defaultPrevented`.
-- [ ] Task 4.2: full gates green — `$env:CI='true'; pnpm test -- --coverage`, `pnpm lint`, `pnpm build`, `pnpm exec playwright test` (smoke + shelf + installability + lifecycle); coverage ≥80% on new modules.
+- [x] Task 4.1: new `e2e/lifecycle.spec.ts` — synthetic `visibilitychange` during a running race → pause overlay visible and stays until Resume; synthetic `pagehide`(persisted:false) + `pageshow`(persisted:true) → canvas remains attached, build palette still places a piece, console error-free; dispatched `contextmenu`/`dblclick` on the canvas are `defaultPrevented`. (0e1b640)
+- [x] Task 4.2: full gates green — `$env:CI='true'; pnpm test -- --coverage`, `pnpm lint`, `pnpm build`, `pnpm exec playwright test` (smoke + shelf + installability + lifecycle); coverage ≥80% on new modules. (gates green: 491/491 unit tests, 97.32% global coverage, 6/6 e2e specs passed)
 - [ ] Task 4.3: manual device checklist executed (iOS standalone + Android Chrome): app-switch mid-race → hold + Resume/Quit; bfcache back-navigation restore intact; long-press/double-tap/pinch guarded; wake lock holds through a race; unsupported/Low-Power-Mode fallback silent.
 - [ ] Task: Phase Verification & Checkpoint (Refer to workflow.md)
 
