@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { MODELS, SCENERY, SFX } from './assets/manifest';
+import { CARS, MODELS, SCENERY, SFX } from './assets/manifest';
 
 describe('asset import pipeline', () => {
   it('resolves every track piece model to a URL', () => {
@@ -20,5 +20,10 @@ describe('asset import pipeline', () => {
     expect(SFX.click).toMatch(/click_001.*\.ogg$/);
     expect(SFX.confirmA).toMatch(/confirmation_001.*\.ogg$/);
     expect(SFX.confirmB).toMatch(/confirmation_002.*\.ogg$/);
+  });
+
+  it('resolves every kart model to a URL', () => {
+    expect(CARS.kart).toMatch(/kart.*\.glb$/);
+    expect(Object.keys(CARS)).toHaveLength(1);
   });
 });

@@ -1,6 +1,7 @@
 import barrierUrl from './models/barrierWhite.glb?url';
 import finishFlagUrl from './models/flagCheckers.glb?url';
 import grandstandUrl from './models/grandStand.glb?url';
+import kartUrl from './models/kart.glb?url';
 import cornerUrl from './models/roadCornerSmall.glb?url';
 import startUrl from './models/roadStart.glb?url';
 import straightUrl from './models/roadStraight.glb?url';
@@ -22,6 +23,11 @@ export const SCENERY = {
   tree: treeUrl,
   grandstand: grandstandUrl,
   barrier: barrierUrl,
+} as const;
+
+/** Kart models from Kenney Car Kit (CC0). */
+export const CARS = {
+  kart: kartUrl,
 } as const;
 
 /** UI sound effects from Kenney Interface Sounds (CC0). */
