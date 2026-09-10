@@ -5,12 +5,12 @@ import {
   DEGRADE_WINDOW_SECONDS,
   parseForcedTier,
   QUALITY_STORAGE_KEY,
-  readStoredTier,
-  RECOVER_FPS,
-  RECOVER_WINDOW_SECONDS,
-  resolveStartTier,
   type QualityController,
   type QualityStorage,
+  RECOVER_FPS,
+  RECOVER_WINDOW_SECONDS,
+  readStoredTier,
+  resolveStartTier,
 } from './quality-controller';
 
 const SLOW_FPS = DEGRADE_FPS - 25;
