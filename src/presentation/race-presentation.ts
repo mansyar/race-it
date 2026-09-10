@@ -33,6 +33,24 @@ export interface KartPoseSink {
   update(poses: KartPose[]): unknown;
 }
 
+/** Audio sink the presentation drives for the race's music/hum/jingle layers. */
+export interface RaceAudioDirector {
+  /** Starts (or continues) the looping background music. */
+  startMusic: () => void;
+  /** Fades in the procedural engine hum. */
+  startHum: () => void;
+  /** Fades out the engine hum. */
+  stopHum: () => void;
+  /** Plays the victory jingle once (music ducks underneath). */
+  playVictoryJingle: () => void;
+  /** Silences everything (mid-race pause). */
+  suspendAll: () => void;
+  /** Restores everything (mid-race resume). */
+  resumeAll: () => void;
+  /** Stops hum + music permanently (quit / back to the builder). */
+  stopAll: () => void;
+}
+
 /** Confetti burst lifecycle (ConfettiBurst-compatible). */
 export interface ConfettiLike {
   burst(origin: { x: number; z: number }, seed: number): void;
@@ -62,6 +80,8 @@ export interface RacePresentationOptions {
   onCountdownBeep?: (step: number) => void;
   /** The countdown finished and the race started running — GO cue sink. */
   onGo?: () => void;
+  /** Race audio layers (music, hum, jingle) driven by the race lifecycle. */
+  audio?: RaceAudioDirector;
 }
 
 export interface RacePresentation {
@@ -147,14 +167,17 @@ export function createRacePresentation(options: RacePresentationOptions): RacePr
   const priorAgain = trophy.callbacks.onAgain;
   raceHud.callbacks.onPause = () => {
     priorPause();
+    options.audio?.suspendAll();
     engine.pause();
   };
   raceHud.callbacks.onResume = () => {
     priorResume();
     engine.resume();
+    options.audio?.resumeAll();
   };
   raceHud.callbacks.onQuit = () => {
     priorQuit();
+    options.audio?.stopAll();
     engine.abandon();
   };
   trophy.callbacks.onAgain = () => {
@@ -171,6 +194,7 @@ export function createRacePresentation(options: RacePresentationOptions): RacePr
   engine.on('stateChange', (state) => {
     if (state === 'countdown') {
       options.onBuildUiChange?.(false);
+      options.audio?.startMusic();
       resetCelebration();
       goFlashRemaining = 0;
       raceHud.hide();
@@ -182,16 +206,19 @@ export function createRacePresentation(options: RacePresentationOptions): RacePr
     }
     if (state === 'running') {
       options.onGo?.();
+      options.audio?.startHum();
       trafficLight.setGo();
       goFlashRemaining = GO_FLASH_SECONDS;
       raceHud.showPause();
       return;
     }
     if (state === 'finished') {
+      options.audio?.stopHum();
       raceHud.hide();
       return;
     }
     if (state === 'idle') {
+      options.audio?.stopAll();
       resetToBuildVisuals();
     }
   });
@@ -253,6 +280,7 @@ export function createRacePresentation(options: RacePresentationOptions): RacePr
     }
     trophy.show(engine.result, [...WINNER_COLOR_WORDS]);
     trophyShown = true;
+    options.audio?.playVictoryJingle();
     raceHud.hide();
   }
 

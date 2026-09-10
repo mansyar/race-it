@@ -1,11 +1,6 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { MUSIC, SFX } from '../assets/manifest';
-import {
-  COUNTDOWN_RATES,
-  createAudioDirector,
-  GAINS,
-  type SfxName,
-} from './audio-director';
+import { COUNTDOWN_RATES, createAudioDirector, GAINS, type SfxName } from './audio-director';
 
 interface RampCall {
   method: 'setValueAtTime' | 'linearRampToValueAtTime' | 'cancelScheduledValues';
@@ -38,11 +33,8 @@ function createFakeParam(value: number): FakeParam {
   };
 }
 
-interface FakeNode {
+interface FakeNodeBase {
   kind: 'gain' | 'oscillator' | 'filter';
-  gain?: FakeParam;
-  type?: string;
-  frequency?: FakeParam;
   connects: unknown[];
   connect: (destination: unknown) => void;
   starts: number;
@@ -51,14 +43,34 @@ interface FakeNode {
   stop: () => void;
 }
 
+interface FakeGainNode extends FakeNodeBase {
+  kind: 'gain';
+  gain: FakeParam;
+}
+
+interface FakeOscillatorNode extends FakeNodeBase {
+  kind: 'oscillator';
+  type: OscillatorType;
+  frequency: FakeParam;
+}
+
+interface FakeFilterNode extends FakeNodeBase {
+  kind: 'filter';
+  type: BiquadFilterType;
+  frequency: FakeParam;
+}
+
+type FakeNode = FakeGainNode | FakeOscillatorNode | FakeFilterNode;
+
 interface FakeContext {
   destination: unknown;
+  currentTime: number;
   nodes: FakeNode[];
   suspends: number;
   resumes: number;
-  createGain: () => FakeNode;
-  createOscillator: () => FakeNode;
-  createBiquadFilter: () => FakeNode;
+  createGain: () => FakeGainNode;
+  createOscillator: () => FakeOscillatorNode;
+  createBiquadFilter: () => FakeFilterNode;
   suspend: () => void;
   resume: () => void;
 }
@@ -67,11 +79,12 @@ function createFakeContext(): FakeContext {
   const nodes: FakeNode[] = [];
   return {
     destination: { label: 'destination' },
+    currentTime: 0,
     nodes,
     suspends: 0,
     resumes: 0,
     createGain() {
-      const node: FakeNode = {
+      const node: FakeGainNode = {
         kind: 'gain',
         gain: createFakeParam(1),
         connects: [],
@@ -91,7 +104,7 @@ function createFakeContext(): FakeContext {
       return node;
     },
     createOscillator() {
-      const node: FakeNode = {
+      const node: FakeOscillatorNode = {
         kind: 'oscillator',
         type: 'sawtooth',
         frequency: createFakeParam(440),
@@ -112,9 +125,10 @@ function createFakeContext(): FakeContext {
       return node;
     },
     createBiquadFilter() {
-      const node: FakeNode = {
+      const node: FakeFilterNode = {
         kind: 'filter',
         type: 'lowpass',
+        frequency: createFakeParam(350),
         connects: [],
         connect(destination) {
           this.connects.push(destination);
@@ -158,33 +172,29 @@ interface FakeElement {
   pause: () => void;
 }
 
-function masterNodeOf(context: FakeContext): FakeNode {
-  const node = context.nodes[0];
-  if (!node) {
+function masterNodeOf(context: FakeContext): FakeGainNode {
+  const node = context.nodes.find((candidate) => candidate.kind === 'gain');
+  if (!node || node.kind !== 'gain') {
     throw new Error('expected the master gain node to exist');
   }
   return node;
 }
 
-function humGainOf(context: FakeContext): FakeNode {
+function humGainOf(context: FakeContext): FakeGainNode {
   const master = masterNodeOf(context);
   const node = context.nodes.find((candidate) => candidate.kind === 'gain' && candidate !== master);
-  if (!node) {
+  if (!node || node.kind !== 'gain') {
     throw new Error('expected the hum gain node to exist');
   }
   return node;
 }
 
-function rampValuesOf(node: FakeNode, method: RampCall['method']): number[] {
-  const gain = node.gain;
-  if (!gain) {
-    throw new Error('expected the node to expose a gain parameter');
-  }
-  return gain.ramps.filter((call) => call.method === method).map((call) => call.value);
+function rampValuesOf(node: FakeGainNode, method: RampCall['method']): number[] {
+  return node.gain.ramps.filter((call) => call.method === method).map((call) => call.value);
 }
 
-function oscillatorsOf(context: FakeContext): FakeNode[] {
-  return context.nodes.filter((node) => node.kind === 'oscillator');
+function oscillatorsOf(context: FakeContext): FakeOscillatorNode[] {
+  return context.nodes.filter((node): node is FakeOscillatorNode => node.kind === 'oscillator');
 }
 
 describe('createAudioDirector', () => {

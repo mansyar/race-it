@@ -1,6 +1,6 @@
 import * as THREE from 'three';
 import { appReady } from './app';
-import { KARTS, MODELS, SCENERY, SFX } from './assets/manifest';
+import { KARTS, MODELS, MUSIC, SCENERY, SFX } from './assets/manifest';
 import { createAudioDirector } from './audio/audio-director';
 import type { GridModel, PieceType } from './grid/grid-model';
 import { GRID_SIZE } from './grid/grid-model';
@@ -34,6 +34,7 @@ const ASSET_URLS: readonly string[] = [
   ...Object.values(KARTS),
   ...Object.values(SCENERY),
   ...Object.values(SFX),
+  ...Object.values(MUSIC),
 ];
 void ASSET_URLS.length;
 
@@ -269,6 +270,7 @@ if (root && appReady()) {
           onGo: () => {
             audio.playOneShot('go');
           },
+          audio,
         });
         // Leaving remove mode behind would leak build feedback into the race.
         feedback.setRemoveMode(false);
@@ -373,5 +375,23 @@ if (root && appReady()) {
     presentation?.update(dt);
   });
 
-  window.addEventListener('pagehide', () => view.dispose(), { once: true });
+  // iOS audio unlock: the WebAudio context may only resume inside a user
+  // gesture, so unlock on the very first touch anywhere (capture phase).
+  window.addEventListener(
+    'pointerdown',
+    () => {
+      audio.unlock();
+    },
+    { once: true, capture: true },
+  );
+  // Backgrounding: silence everything when the page hides, restore on return.
+  window.addEventListener('pagehide', () => {
+    audio.suspendAll();
+    view.dispose();
+  });
+  document.addEventListener('visibilitychange', () => {
+    if (document.visibilityState === 'visible') {
+      audio.resumeAll();
+    }
+  });
 }

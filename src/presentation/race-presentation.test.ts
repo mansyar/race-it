@@ -452,50 +452,51 @@ describe('createRacePresentation', () => {
   });
 
   describe('race audio lifecycle', () => {
-  it('starts the music at the countdown and the hum at GO', () => {
-    const harness = createHarness();
-    harness.raceToRunning();
-    expect(harness.audio.startMusic).toHaveBeenCalledTimes(1);
-    expect(harness.audio.startHum).toHaveBeenCalledTimes(1);
+    it('starts the music at the countdown and the hum at GO', () => {
+      const harness = createHarness();
+      harness.raceToRunning();
+      expect(harness.audio.startMusic).toHaveBeenCalledTimes(1);
+      expect(harness.audio.startHum).toHaveBeenCalledTimes(1);
+    });
+
+    it('keeps the music continuous and replays the hum across RACE AGAIN', () => {
+      const harness = createHarness();
+      harness.raceToAllFinished();
+      click('button[data-action="again"]', harness.trophy.root);
+      harness.presentation.update(0.06);
+      // Continuity is the director's job (startMusic is idempotent); the hum restarts.
+      expect(harness.audio.startMusic).toHaveBeenCalled();
+      expect(harness.audio.startHum).toHaveBeenCalledTimes(2);
+    });
+
+    it('stops the hum at the finish and plays the jingle with the trophy', () => {
+      const harness = createHarness();
+      harness.raceToAllFinished();
+      expect(harness.audio.stopHum).toHaveBeenCalled();
+      expect(harness.audio.playVictoryJingle).toHaveBeenCalledTimes(1);
+    });
+
+    it('pauses and resumes all audio with the HUD', () => {
+      const harness = createHarness();
+      harness.raceToRunning();
+      click('button[data-action="pause"]', harness.hud.root);
+      expect(harness.audio.suspendAll).toHaveBeenCalledTimes(1);
+      click('button[data-action="resume"]', harness.hud.overlay);
+      expect(harness.audio.resumeAll).toHaveBeenCalledTimes(1);
+    });
+
+    it('stops all audio when quitting to the builder', () => {
+      const harness = createHarness();
+      harness.raceToRunning();
+      click('button[data-action="pause"]', harness.hud.root);
+      click('button[data-action="quit"]', harness.hud.overlay);
+      click('button[data-confirm="yes"]', harness.hud.confirm);
+      harness.presentation.update(1 / 60);
+      expect(harness.audio.stopAll).toHaveBeenCalled();
+    });
   });
 
-  it('keeps the music continuous and replays the hum across RACE AGAIN', () => {
-    const harness = createHarness();
-    harness.raceToAllFinished();
-    click('button[data-action="again"]', harness.trophy.root);
-    harness.presentation.update(1 / 60);
-    expect(harness.audio.startMusic).toHaveBeenCalledTimes(1);
-    expect(harness.audio.startHum).toHaveBeenCalledTimes(2);
-  });
-
-  it('stops the hum at the finish and plays the jingle with the trophy', () => {
-    const harness = createHarness();
-    harness.raceToAllFinished();
-    expect(harness.audio.stopHum).toHaveBeenCalled();
-    expect(harness.audio.playVictoryJingle).toHaveBeenCalledTimes(1);
-  });
-
-  it('pauses and resumes all audio with the HUD', () => {
-    const harness = createHarness();
-    harness.raceToRunning();
-    click('button[data-action="pause"]', harness.hud.root);
-    expect(harness.audio.suspendAll).toHaveBeenCalledTimes(1);
-    click('button[data-action="resume"]', harness.hud.overlay);
-    expect(harness.audio.resumeAll).toHaveBeenCalledTimes(1);
-  });
-
-  it('stops all audio when quitting to the builder', () => {
-    const harness = createHarness();
-    harness.raceToRunning();
-    click('button[data-action="pause"]', harness.hud.root);
-    click('button[data-action="quit"]', harness.hud.overlay);
-    click('button[data-confirm="yes"]', harness.hud.confirm);
-    harness.presentation.update(1 / 60);
-    expect(harness.audio.stopAll).toHaveBeenCalled();
-  });
-});
-
-describe('update', () => {
+  describe('update', () => {
     it('ticks the engine each frame', () => {
       harness.presentation.beginRace();
       const stateBefore = harness.engine.state;
