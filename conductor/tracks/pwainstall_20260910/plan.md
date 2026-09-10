@@ -1,8 +1,8 @@
 # PWA Install Experience — Implementation Plan
 
 ## Phase 1: Manifest Polish & Install Identity (FR1)
-- [ ] Task: Write failing unit test validating the manifest contract (`id: '/'`, `display: 'standalone'`, `lang`, `categories`, icons & theme colors unchanged, parent-warm description) against `vite.config.ts`
-- [ ] Task: Implement manifest changes in `vite.config.ts`; confirm `vite build` emits the corrected `manifest.webmanifest`
+- [x] Task: Write failing unit test validating the manifest contract (`id: '/'`, `display: 'standalone'`, `lang`, `categories`, icons & theme colors unchanged, parent-warm description) against `vite.config.ts` (1992a34)
+- [~] Task: Implement manifest changes in `vite.config.ts`; confirm `vite build` emits the corrected `manifest.webmanifest`
 - [ ] Task: Verify coverage ≥80% on new test, `pnpm test` + Biome + `tsc --noEmit` green; commit
 - [ ] Task: Phase Verification & Checkpoint (Refer to workflow.md)
 
