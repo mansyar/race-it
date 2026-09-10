@@ -23,16 +23,16 @@
 - [x] Task: Phase Verification & Checkpoint (Refer to workflow.md)
 
 ## Phase 3: Shelf Overlay UI (`src/ui/shelf-overlay.ts`)
-- [ ] Task: Write failing tests (TDD Red)
+- [x] Task: Write failing tests (TDD Red)
     - 12 fixed slots; occupied slots render schematic cards; empty slots dimmed
     - Empty state: dim slots pulse + save action highlighted
     - Save action: emits save callback; success pops new card (toy bounce) newest-first; full state wiggles red, no append
     - Card tap: emits load callback with entry id and closes overlay
     - Long-press ~600ms: wiggle + wordless ✓/✗ confirm; ✓ emits delete, ✗ cancels restoring card
     - Close (✕) button closes overlay; all touch targets ≥ 64px; no text nodes anywhere
-- [ ] Task: Implement overlay to pass tests (Green), styling in `style.css`
-- [ ] Task: Refactor & verify coverage
-- [ ] Task: Commit `feat(ui): Add wordless shelf overlay with save/load/delete` + attach git note
+- [x] Task: Implement overlay to pass tests (Green), styling in `style.css`
+- [x] Task: Refactor & verify coverage
+- [x] Task: Commit `feat(ui): Add wordless shelf overlay with save/load/delete` + attach git note
 - [ ] Task: Phase Verification & Checkpoint (Refer to workflow.md)
 
 ## Phase 4: Integration & Wiring (`main.ts`, `corner-cluster.ts`)
