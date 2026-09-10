@@ -9,8 +9,8 @@
 ## Phase 1 — Quality Controller Core
 
 - [x] Task 1.1: controller tests first (Red) (f724909) — new `src/render/quality-controller.test.ts`: synthetic dt streams drive the rolling windows — persistent dips (<55fps avg over ~2s) step `high→mid→low` with at most one step per decision; sustained headroom (>58fps over ~10s) steps back up; borderline flicker does not oscillate; clamping at both ends; O(1) per tick. Also cover `resolveStartTier(search, storage)`: `?tier=low|mid|high` forces and bypasses sampling; forced tier is never written to storage; stored `race-it:quality` survives reload; corrupt/absent values fall back to `high`; no throw on storage errors (injected fake storage — no real localStorage in unit tests).
-- [~] Task 1.2: implement the controller (Green) — `src/render/quality-controller.ts`: exported `QualityTier` (`'high' | 'mid' | 'low'`), tuning constants (window lengths, fps thresholds, `STORAGE_KEY = 'race-it:quality'`), a pure frame-fed `tick(dt)` controller with observable current tier, and `resolveStartTier` for boot. No DOM/Three imports; injectable storage; JSDoc on the public API.
-- [ ] Task 1.3: verify coverage for the new module (>80%) and refactor for clarity while tests stay green.
+- [x] Task 1.2: implement the controller (Green) (4e23994) — `src/render/quality-controller.ts`: exported `QualityTier` (`'high' | 'mid' | 'low'`), tuning constants (window lengths, fps thresholds, `STORAGE_KEY = 'race-it:quality'`), a pure frame-fed `tick(dt)` controller with observable current tier, and `resolveStartTier` for boot. No DOM/Three imports; injectable storage; JSDoc on the public API.
+- [x] Task 1.3: verify coverage for the new module (>80%) and refactor for clarity while tests stay green (4e23994) — verified: 100% stmts / 98.07% branch / 100% lines on quality-controller.ts; full suite 475 tests green; no refactor needed.
 - [ ] Task: Phase Verification & Checkpoint (Refer to workflow.md)
 
 ## Phase 2 — Scene DPR Lever & Boot Wiring
