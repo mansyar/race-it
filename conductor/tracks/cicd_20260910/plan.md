@@ -24,7 +24,7 @@
 - [x] Task 3.2: Push branch, verify CI green on GitHub (all 4 jobs) `(6f42e53)`
 - [ ] Task: Phase Verification & Checkpoint (Refer to workflow.md)
 
-## Phase 4 — Docker Image & Release Pipeline
+## Phase 4 — Docker Image & Release Pipeline [checkpoint: 5973368]
 
 - [x] Task 4.1: `Dockerfile` (node:24-alpine build stage → nginx:alpine; nginx.conf: SPA fallback + PWA-friendly cache headers) + `.dockerignore` `(8c587b6)`
 - [x] Task 4.2: Local verification — `docker build`, run container, curl smoke (if Docker available locally) `(2baedc9)`
