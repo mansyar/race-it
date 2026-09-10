@@ -7,12 +7,12 @@
 - [x] Task: Verify coverage ≥80% on new module, `pnpm test` + Biome lint + `tsc --noEmit` green — 0443faa
 - [x] Task: Phase Verification & Checkpoint (Refer to workflow.md) — 0443faa
 
-## Phase 2: Countdown, GO & Build Feedback Sounds
+## Phase 2: Countdown, GO & Build Feedback Sounds [checkpoint: ba6fca5]
 - [x] Task: Source Kenney CC0 one-shot assets (countdown beep, GO tone, place pop, remove sound, "nope" wobble) — add to `src/assets/sfx/` with license notes; extend `assets/manifest.ts` `SFX` map — c9a2c8c
 - [x] Task: Write failing tests — countdown scheduler (3 rising beeps synced to `countdownRemaining` events + distinct GO), placement pop / removal sound / blocked-GO "nope" triggers — 7d0bdec
 - [x] Task: Implement — wire countdown + GO into `race-presentation.ts` (countdown state events); wire pop/remove/nope into `main.ts` (placement result, remove-mode tap, disabled GO attempt) — ba6fca5
 - [x] Task: Verify coverage ≥80%, tests + lint + typecheck green — ba6fca5
-- [ ] Task: Phase Verification & Checkpoint (Refer to workflow.md)
+- [x] Task: Phase Verification & Checkpoint (Refer to workflow.md) — ba6fca5
 
 ## Phase 3: Engine Hum, Music Loop & Victory Jingle
 - [ ] Task: Add Kenney Background Music loop asset (OGG, within ~1.5 MB total budget) + license notes; extend manifest (`MUSIC` / `SFX` maps)
