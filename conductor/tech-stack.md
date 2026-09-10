@@ -15,8 +15,8 @@ Vanilla TypeScript + Three.js, no UI framework, no game engine. A lean static PW
 | PWA | **vite-plugin-pwa** | 1.3.0 | Service worker (offline-first precache), web manifest, auto-update. Supports Vite ^8 ✔ (Workbox 7.4.x underneath). |
 | PWA assets | **@vite-pwa/assets-generator** | 1.0.2 | Generates icons/splash assets for manifest. |
 | Testing | **Vitest** | 5.0.0 | Unit tests for track validation, race logic, storage. Supports Vite ^8 ✔. |
-| E2E testing | **Playwright** | exact pin at install | Chromium-only smoke suite (boot + demo-loop race) against the production build via `vite preview`; browsers cached in CI. |
-| Test typings | **@types/node** | 22.20.1 | Dev-only Node API typings (fs/path/url imports) for tests that read project files, e.g. the stylesheet contract test. Module-scoped imports only — `tsconfig` keeps `types: ["vite/client"]`, so app code gains no Node globals. |
+| E2E testing | **Playwright** | exact pin at install | Chromium-only suite: smoke (boot + demo-loop race), shelf save/load/delete, and a headed Chrome installability gate (CDP) against the production build via `vite preview`; browsers cached in CI. |
+| Test typings | **@types/node** | 24.13.3 | Dev-only Node API typings (fs/path/url imports) for tests that read project files, e.g. the splash-screen contract test. Module-scoped imports only — `tsconfig` adds `"node"` to `types`, so Node imports type-check while app code gains no Node globals. |
 | Lint/Format | **Biome** | 2.5.12 | Single fast tool for linting + formatting; config MUST be aligned with `conductor/code_styleguides/` (Google TS style): single quotes, explicit semicolons, named exports only (no default exports), `===`, no `any`, no `_`-prefixed identifiers. |
 
 ## Storage
@@ -44,7 +44,7 @@ Vanilla TypeScript + Three.js, no UI framework, no game engine. A lean static PW
 - CI installs the exact pinned toolchain on every run (reproducible builds).
 
 ## CI/CD & Deployment
-- **CI:** GitHub Actions on `mansyar/race-it` (public, default branch `master`) — `ci.yml` runs on every push/PR: Biome lint+format, Vitest unit + coverage gate ≥80%, `tsc --noEmit && vite build` (dist artifact reused), Playwright E2E smoke. pnpm store + Playwright browser caches; superseded runs cancelled.
+- **CI:** GitHub Actions on `mansyar/race-it` (public, default branch `master`) — `ci.yml` runs on every push/PR: Biome lint+format, Vitest unit + coverage gate ≥80%, `tsc --noEmit && vite build` (dist artifact reused), Playwright E2E (smoke + shelf + installability gate). pnpm store + Playwright browser caches; superseded runs cancelled.
 - **Release:** `release.yml` on `v*` semver tags — multi-stage Docker build (node:24-alpine → nginx:alpine) → push **GHCR** `ghcr.io/mansyar/race-it` (`:vX.Y.Z` + `:latest`, public) → publish GitHub Release with auto-generated notes grouped by conventional-commit type → trigger Coolify deploy via authenticated webhook (`Authorization: Bearer` token).
 - **Secrets (repo):** `COOLIFY_DEPLOY_WEBHOOK`, `COOLIFY_API_TOKEN` (Bearer).
 

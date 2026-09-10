@@ -25,4 +25,9 @@ test('boot, seed demo loop, and start a race', async ({ page }) => {
   await expect(race).toBeEnabled({ timeout: 15_000 });
   await race.click();
   await expect(page.locator('button[data-action="pause"]')).toBeVisible({ timeout: 15_000 });
+
+  // Regression: the pause overlay must stay hidden while the race runs. Its
+  // display:flex once defeated the `hidden` attribute and pinned the dimmed
+  // quit dialog on screen for the whole race.
+  await expect(page.locator('.race-overlay')).toBeHidden();
 });

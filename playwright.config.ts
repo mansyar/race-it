@@ -14,7 +14,21 @@ export default defineConfig({
     serviceWorkers: 'block',
     trace: 'on-first-retry',
   },
-  projects: [{ name: 'chromium', use: { browserName: 'chromium' } }],
+  projects: [
+    {
+      name: 'chromium',
+      testIgnore: /installability\.spec\.ts/,
+      use: { browserName: 'chromium' },
+    },
+    {
+      // Chrome only runs its installability checks in headed mode (headless
+      // skips them and reports an empty error list even for broken apps), so
+      // this project launches a real window; CI wraps the run in xvfb.
+      name: 'installability',
+      testMatch: /installability\.spec\.ts/,
+      use: { browserName: 'chromium', headless: false },
+    },
+  ],
   webServer: {
     command: 'pnpm preview --host 127.0.0.1',
     url: 'http://127.0.0.1:4173',

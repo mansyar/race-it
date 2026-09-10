@@ -27,6 +27,8 @@ import { createBuildBar } from './ui/build-bar';
 import { createCarPicker } from './ui/car-picker';
 import { createCornerCluster } from './ui/corner-cluster';
 import { createGoButton } from './ui/go-button';
+import { readInstallEnv } from './ui/install-context';
+import { createInstallHint } from './ui/install-hint';
 import { createRaceHud } from './ui/race-hud';
 import { createShelfOverlay } from './ui/shelf-overlay';
 import { createTrafficLight } from './ui/traffic-light';
@@ -244,6 +246,11 @@ if (root && appReady()) {
     go.root.classList.toggle('hidden', !visible);
     bar.root.classList.toggle('hidden', !visible);
     cluster.root.classList.toggle('racing', !visible);
+    if (visible) {
+      installHint.show();
+    } else {
+      installHint.hide();
+    }
   };
 
   const go = createGoButton({
@@ -255,6 +262,7 @@ if (root && appReady()) {
       picker.setLineup(loadLineup());
       picker.show();
       renderKartPreviews();
+      installHint.hide();
     },
   });
 
@@ -337,6 +345,13 @@ if (root && appReady()) {
     },
   });
 
+  // Install hint: iOS Safari parents get a wordless Add-to-Home-Screen nudge;
+  // every other environment renders nothing at all.
+  const installHint = createInstallHint(readInstallEnv());
+  // The build screen is the boot state; race transitions call hide()/show()
+  // from here on.
+  installHint.show();
+
   const picker = createCarPicker({
     onRace: (lineup) => {
       try {
@@ -387,6 +402,7 @@ if (root && appReady()) {
     onBack: () => {
       audio.playOneShot('click');
       picker.hide();
+      installHint.show();
     },
     onToggle: () => {
       audio.playOneShot('click');
@@ -412,7 +428,15 @@ if (root && appReady()) {
 
   const appUi = document.createElement('div');
   appUi.className = 'app-ui';
-  appUi.append(cluster.root, go.root, bar.root, cluster.confirm, picker.root, shelf.root);
+  appUi.append(
+    cluster.root,
+    go.root,
+    bar.root,
+    cluster.confirm,
+    picker.root,
+    installHint.root,
+    shelf.root,
+  );
   root.append(appUi);
 
   const raceUi = document.createElement('div');
