@@ -11,7 +11,8 @@
     "test": "vitest run",
     "test:coverage": "vitest run --coverage",
     "lint": "biome check .",
-    "format": "biome format --write ."
+    "format": "biome format --write .",
+    "pwa-assets": "pwa-assets-generator"
   },
   "dependencies": {
     "three": "^0.185.1"
@@ -19,6 +20,7 @@
   "devDependencies": {
     "@biomejs/biome": "^2.5.12",
     "@playwright/test": "1.63.0",
+    "@types/node": "^24.13.3",
     "@types/three": "^0.185.0",
     "@vite-pwa/assets-generator": "^1.0.2",
     "@vitest/coverage-v8": "^5.0.0",
