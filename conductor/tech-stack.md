@@ -25,8 +25,13 @@ Vanilla TypeScript + Three.js, no UI framework, no game engine. A lean static PW
 ## Assets
 - **Kenney Racing Kit** — track tiles, scenery (glTF/GLB, CC0).
 - **Kenney Car Kit** — kart racers (glTF/GLB, CC0).
-- **Kenney audio packs** — SFX + one music loop (CC0).
+- **Kenney audio packs (CC0)** — Interface Sounds (UI clicks, confirmations, countdown tick, GO tone, place/remove/nope), Music Jingles (victory jingle), Music Loops ("Polka Train" background loop); OGGs imported at build time, license files kept alongside.
 - GLB assets imported at build time; optimized (Draco/meshopt only if device-floor perf demands it).
+
+## Audio
+- **`src/audio/audio-director.ts`** — single audio hub on WebAudio: shared master gain (0.9), one-shots (0.8), music loop (0.35), engine hum (0.15); mute persisted at `race-it:muted` and silences the master graph.
+- **Procedural engine hum** — oscillator blend (80/160 Hz sawtooth) through a 400 Hz low-pass on the graph; 400 ms linear fades; audible only while the race runs.
+- **Lifecycle** — music starts at the countdown and continues through RACE AGAIN; hum at GO; victory jingle ducks music ~40% then swells back; pause suspends, resume restores, quit stops for good; `pagehide` silences and `visibilitychange` restores; iOS unlock via `resume()` on the first pointerdown gesture.
 
 ## Runtime & Hosting
 - **Runtime:** modern evergreen mobile browsers — iOS Safari 16+, Android Chrome 110+.
