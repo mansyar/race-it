@@ -37,12 +37,12 @@
 - [x] Task: Implement `car-picker.ts` (green) — 100% stmts / 83.33% branch `[dc28457]`
 - [x] Task: Phase Verification & Checkpoint (Refer to workflow.md) `[dc28457]`
 
-## Phase 4 — Integration & Quality Gates
+## Phase 4 — Integration & Quality Gates `[checkpoint: 14d6859]`
 
-- [ ] Task: Wire GO → picker → RACE in `main.ts`
-  - [ ] GO opens the picker overlay (build UI hidden/dimmed) instead of starting the race
-  - [ ] RACE creates the engine with `kartCount = lineup.karts.length` and starts it; lineup saved
-  - [ ] Back restores build mode with track/undo/mute untouched; `?race` debug keeps working
-  - [ ] Existing suites (`grid/*`, `race/*`, `render/*`, `ui/*`) stay green
-- [ ] Task: Run full quality gates: `pnpm build`, `CI=true pnpm test`, `pnpm lint` (+ coverage >80% on new modules)
-- [ ] Task: Phase Verification & Checkpoint with manual verification plan (Refer to workflow.md)
+- [x] Task: Wire GO → picker → RACE in `main.ts` `[14d6859]`
+  - [x] GO opens the picker overlay (build UI hidden/dimmed) instead of starting the race `[14d6859]`
+  - [x] RACE creates the engine with `kartCount = lineup.karts.length` and starts it; lineup saved `[14d6859]`
+  - [x] Back restores build mode with track/undo/mute untouched; `?race` debug keeps working `[14d6859]`
+  - [x] Existing suites (`grid/*`, `race/*`, `render/*`, `ui/*`) stay green `[14d6859]`
+- [x] Task: Run full quality gates: `pnpm build`, `pnpm test`, `pnpm lint` (+ coverage >80% on new modules) — 220 tests, 96.4% coverage `[14d6859]`
+- [x] Task: Phase Verification & Checkpoint with manual verification plan (Refer to workflow.md) `[14d6859]`
