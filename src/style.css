@@ -252,19 +252,19 @@ body {
 }
 
 .swatch[data-color="red"] .swatch__disc {
-  background: #e5484d;
+  background: #e3989d;
 }
 
 .swatch[data-color="blue"] .swatch__disc {
-  background: #3f7fd9;
+  background: #93abdf;
 }
 
 .swatch[data-color="green"] .swatch__disc {
-  background: #3fae5a;
+  background: #93c3a1;
 }
 
 .swatch[data-color="yellow"] .swatch__disc {
-  background: #f0b90a;
+  background: #eac993;
 }
 
 .car-picker__race {

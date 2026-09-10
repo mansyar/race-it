@@ -93,6 +93,9 @@ export class KartPreview {
 
   /** Loads the kart model once and builds four tinted, fitted clones. */
   async load(): Promise<void> {
+    if (this.models.length > 0) {
+      return;
+    }
     const gltf = await this.loader.loadAsync(CARS.kart);
     for (const color of KART_COLORS) {
       const model = gltf.scene.clone(true);

@@ -33,9 +33,13 @@ export function toggleKart(lineup: CarLineup, color: KartColor): CarLineup {
   return { karts: [...lineup.karts, color] };
 }
 
-/** True when the lineup has between 2 and 4 karts. */
+/** True when the lineup has between 2 and 4 distinct karts. */
 export function isLineupValid(lineup: CarLineup): boolean {
-  return lineup.karts.length >= MIN_KARTS && lineup.karts.length <= MAX_KARTS;
+  return (
+    lineup.karts.length >= MIN_KARTS &&
+    lineup.karts.length <= MAX_KARTS &&
+    new Set(lineup.karts).size === lineup.karts.length
+  );
 }
 
 /** Persists the lineup so the child's last choice is the next race's default. */

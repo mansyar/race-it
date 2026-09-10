@@ -49,6 +49,11 @@ describe('isLineupValid', () => {
     expect(isLineupValid({ karts: ['red', 'blue', 'green'] })).toBe(true);
     expect(isLineupValid(DEFAULT_LINEUP)).toBe(true);
   });
+
+  it('rejects duplicate colors', () => {
+    expect(isLineupValid({ karts: ['red', 'red'] })).toBe(false);
+    expect(isLineupValid({ karts: ['red', 'blue', 'red', 'green'] })).toBe(false);
+  });
 });
 
 describe('lineup persistence', () => {

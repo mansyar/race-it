@@ -136,6 +136,22 @@ describe('KartPreview', () => {
     }
   });
 
+  it('ignores repeated load calls (models stay unique)', async () => {
+    const loaded: string[] = [];
+    const preview = makePreview(container, loaded, {
+      scissor: [],
+      viewport: [],
+      renderCount: 0,
+      visiblePerRender: [],
+      scissorTestEnabled: false,
+      disposed: false,
+    });
+    await preview.load();
+    await preview.load();
+    expect(loaded).toHaveLength(1);
+    expect(preview.models).toHaveLength(KART_COLORS.length);
+  });
+
   it('renders four scissored viewports into one shared canvas', async () => {
     const calls: RendererCalls = {
       scissor: [],
