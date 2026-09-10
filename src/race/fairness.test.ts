@@ -96,11 +96,14 @@ function runRace(
     );
   }
   const result = requireResult(engine);
-  const sorted = [...result.finishTimes].sort((a, b) => a - b);
+  const finishTimes = result.finishTimes.map((time, index) =>
+    requireNumber(time, `finish time of kart ${index}`),
+  );
+  const sorted = [...finishTimes].sort((a, b) => a - b);
   const firstFinish = requireNumber(sorted[0], 'first finish time');
   return {
     winnerIndex: result.winnerIndex,
-    finishTimes: [...result.finishTimes],
+    finishTimes,
     photoFinish: result.photoFinish,
     firstFinish,
   };
