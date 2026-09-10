@@ -147,7 +147,8 @@ export class KartPreview {
       const column = i % columns;
       const row = Math.floor(i / columns);
       const x = column * quadrantW;
-      const y = row * quadrantH;
+      // WebGL's y axis points up: DOM row 0 is the topmost canvas row.
+      const y = (rows - 1 - row) * quadrantH;
       this.camera.aspect = quadrantW / quadrantH;
       this.camera.updateProjectionMatrix();
       this.renderer.setViewport(x, y, quadrantW, quadrantH);
