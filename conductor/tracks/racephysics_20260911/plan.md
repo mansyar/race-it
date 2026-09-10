@@ -8,15 +8,15 @@
 
 **Coordination note:** `src/presentation/race-presentation.ts` is also edited by the in-flight `feature/post-race-navigation` branch — keep changes additive and localized to the motion/pose paths.
 
-## Phase 1 — Distance-Normalized Fairness (bug fix)
+## Phase 1 — Distance-Normalized Fairness (bug fix) [checkpoint: 3d7590f]
 
 - [x] Task 1.1: fairness simulation harness first (Red) (3d7590f) — new `src/race/fairness.test.ts`: fixed-seed sweep (2-4 karts × 8/14/48-cell loops, coarse fixed dt for CI speed) asserting (a) back-row slots win on the demo loop at all — currently 0, the bug; (b) every slot's win share within `[0.5/n, 2/n]`; (c) photo-finish rate 30-65% on the 14-cell loop; (d) first finish 30-45 s; (e) same-seed determinism. Current measured shares documented in the failure output.
 - [x] Task 1.2: implement distance normalization in `src/race/engine.ts` (Green) (3d7590f) — fold the grid offset into pace (`pace = base · factor · (L - startProgress)/L`) in `rollKarts`; update `engine.test.ts` expectations (injected-rng coverage now includes per-row compensation; start lineup unchanged; duration band re-checked). Full suite + harness green.
-- [ ] Task: Phase Verification & Checkpoint (Refer to workflow.md) — review the before/after fairness table with the user.
+- [x] Task: Phase Verification & Checkpoint (Refer to workflow.md) — review the before/after fairness table with the user.
 
 ## Phase 2 — Natural Pace Dynamics (engine)
 
-- [ ] Task 2.1: pace-dynamics tests first (Red) — new `src/race/motion.test.ts` + updated `engine.test.ts`: shared launch curve (0 → pace over ~1 s; below constant-speed distance in the first quarter-second; ≥95% pace by ~1 s); curvature modulation factor from cell geometry (curves slower than straights; shared by all karts); seeded wobble (same seed → identical outcome; bounded amplitude; near-zero mean). Harness + determinism + 30-45 s band must hold with motion ON.
+- [~] Task 2.1: pace-dynamics tests first (Red) — new `src/race/motion.test.ts` + updated `engine.test.ts`: shared launch curve (0 → pace over ~1 s; below constant-speed distance in the first quarter-second; ≥95% pace by ~1 s); curvature modulation factor from cell geometry (curves slower than straights; shared by all karts); seeded wobble (same seed → identical outcome; bounded amplitude; near-zero mean). Harness + determinism + 30-45 s band must hold with motion ON.
 - [ ] Task 2.2: implement `src/race/motion.ts` (launch/curvature/wobble pure profiles) and wire into the `engine.ts` tick (Green) — pace-multiplicative only; retune `TARGET_RACE_SECONDS`/base speed if the launch shifts the duration band; Phase-1 harness stays green.
 - [ ] Task: Phase Verification & Checkpoint (Refer to workflow.md) — `?race` headless output reviewed; duration/closeness numbers compared.
 
