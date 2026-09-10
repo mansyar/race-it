@@ -47,6 +47,8 @@ export function createBuildScene(
   scene: THREE.Scene;
   camera: THREE.PerspectiveCamera;
   renderer: THREE.WebGLRenderer;
+  /** Registers (or clears with null) the per-frame update hook; runs before render. */
+  onFrame: (callback: ((dt: number) => void) | null) => void;
   dispose: () => void;
 } {
   const renderer = new THREE.WebGLRenderer({ antialias: true });
@@ -188,23 +190,29 @@ export function createBuildScene(
   observer.observe(container);
 
   let frame = 0;
-  let lastFrameTime = performance.now();
-  function loop(): void {
+  let lastFrame = performance.now();
+  let frameCallback: ((dt: number) => void) | null = onFrame ?? null;
+  function loop(now: number): void {
     frame = requestAnimationFrame(loop);
-    const now = performance.now();
-    const dt = Math.min((now - lastFrameTime) / 1000, 0.1);
-    lastFrameTime = now;
-    onFrame?.(dt);
+    const dt = Math.min((now - lastFrame) / 1000, 0.1);
+    lastFrame = now;
+    if (frameCallback) {
+      frameCallback(dt);
+    }
     renderer.render(scene, camera);
   }
-  loop();
+  frame = requestAnimationFrame(loop);
 
   return {
     scene,
     camera,
     renderer,
+    onFrame(callback: ((dt: number) => void) | null) {
+      frameCallback = callback;
+    },
     dispose: () => {
       cancelAnimationFrame(frame);
+      frameCallback = null;
       observer.disconnect();
       renderer.domElement.removeEventListener('pointerdown', onPointerDown);
       renderer.domElement.removeEventListener('pointerup', onPointerUp);

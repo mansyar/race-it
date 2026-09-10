@@ -1,16 +1,19 @@
 import * as THREE from 'three';
 import { appReady } from './app';
-import { CARS, MODELS, SCENERY, SFX } from './assets/manifest';
-import { createSfx } from './audio/sfx';
+import { KARTS, MODELS, MUSIC, SCENERY, SFX } from './assets/manifest';
+import { createAudioDirector } from './audio/audio-director';
 import type { GridModel, PieceType } from './grid/grid-model';
 import { GRID_SIZE } from './grid/grid-model';
 import { TrackEditor } from './grid/track-editor';
 import { loadOrSeedTrack, saveTrack } from './grid/track-store';
 import { validateTrack } from './grid/track-validator';
+import { createRacePresentation, type RacePresentation } from './presentation/race-presentation';
 import { createRaceEngine, type RaceEngine } from './race/engine';
-import { loadLineup, saveLineup } from './race/lineup';
+import { kartColorIndex, loadLineup, saveLineup } from './race/lineup';
 import { extractLoopPath } from './race/path';
+import { ConfettiBurst } from './render/confetti';
 import { type BuildTool, handleCellTap } from './render/interaction';
+import { KartRenderer } from './render/kart-meshes';
 import { KartPreview } from './render/kart-preview';
 import { fillPerfPattern } from './render/perf-harness';
 import { applyPieceFeedback } from './render/piece-feedback-apply';
@@ -23,14 +26,18 @@ import { createBuildBar } from './ui/build-bar';
 import { createCarPicker } from './ui/car-picker';
 import { createCornerCluster } from './ui/corner-cluster';
 import { createGoButton } from './ui/go-button';
+import { createRaceHud } from './ui/race-hud';
+import { createTrafficLight } from './ui/traffic-light';
+import { createTrophy } from './ui/trophy';
 
 // Referenced so the production build emits every GLB/OGG for service-worker
-// precaching; renderers, the car picker, and audio consume them at runtime.
+// precaching; the race presentation and audio consume them at runtime.
 const ASSET_URLS: readonly string[] = [
   ...Object.values(MODELS),
+  ...Object.values(KARTS),
   ...Object.values(SCENERY),
-  ...Object.values(CARS),
   ...Object.values(SFX),
+  ...Object.values(MUSIC),
 ];
 void ASSET_URLS.length;
 
@@ -45,13 +52,15 @@ if (root && appReady()) {
   let editor = new TrackEditor(model);
   let tool: BuildTool = { kind: 'none' };
   let selectedType: PieceType | null = null;
+  let presentation: RacePresentation | null = null;
   let raceEngine: RaceEngine | null = null;
 
   const pieces = new PieceRenderer();
+  const karts = new KartRenderer();
+  const confetti = new ConfettiBurst();
   const scenery = new SceneryRenderer();
   const feedback = new PieceFeedback();
-  const sfx = createSfx();
-  sfx.setMuted(localStorage.getItem('race-it:muted') === 'true');
+  const audio = createAudioDirector();
 
   const rerender = (): void => {
     pieces.update(model.toSnapshot());
@@ -63,32 +72,31 @@ if (root && appReady()) {
     }
   };
 
-  const view = createBuildScene(
-    root,
-    (x, y) => {
-      const result = handleCellTap(editor, tool, x, y);
-      if (result === 'placed') {
-        feedback.notePlaced(y * GRID_SIZE + x);
-      }
-      rerender();
-    },
-    (dt) => {
-      feedback.tick(dt);
-      // Keep piece feedback in build mode only — races stay a pure spectacle.
-      if (!raceEngine || raceEngine.state === 'idle') {
-        applyPieceFeedback(pieces.group, feedback, feedback.time);
-      }
-      if (raceEngine) {
-        raceEngine.tick(dt);
-      }
-    },
-  );
+  const view = createBuildScene(root, (x, y) => {
+    const result = handleCellTap(editor, tool, x, y);
+    if (result === 'placed') {
+      audio.playOneShot('place');
+      feedback.notePlaced(y * GRID_SIZE + x);
+    }
+    if (result === 'removed') {
+      audio.playOneShot('remove');
+    }
+    if (result === 'ignored' && tool.kind === 'piece') {
+      // A piece tool on an occupied cell is blocked — gentle nope feedback.
+      audio.playOneShot('nope');
+    }
+    rerender();
+  });
 
   // Debug mode: `?perf` fills the whole board (worst case, 144 pieces) and
   // exposes renderer stats on the window for manual fps/draw-call measurement.
   if (new URLSearchParams(window.location.search).has('perf')) {
     fillPerfPattern(model);
-    (window as unknown as Record<string, unknown>).__raceItPerf = () => view.renderer.info.render;
+    (window as unknown as Record<string, unknown>).__raceItPerf = () => ({
+      ...view.renderer.info.render,
+      kartMeshes: karts.group.children.length,
+      confettiVisible: confetti.points.visible,
+    });
   }
 
   // Debug mode: `?debug` exposes per-piece world transforms and road-level
@@ -188,31 +196,57 @@ if (root && appReady()) {
   }
 
   // Debug mode: `?race` runs a headless seeded race on the current track and
-  // prints the result — the end-to-end verification vehicle for the race engine
-  // until race presentation lands (Track 2 scope: Race Engine Core).
+  // prints the result — end-to-end verification vehicle for the race engine.
   if (new URLSearchParams(window.location.search).has('race')) {
     try {
-      raceEngine = createRaceEngine(extractLoopPath(model), { seed: 42 });
-      raceEngine.on('kartFinish', ({ index, time }) => {
+      const headless = createRaceEngine(extractLoopPath(model), { seed: 42 });
+      headless.on('kartFinish', ({ index, time }) => {
         console.info(`[race] kart ${index} finished at ${time.toFixed(2)}s`);
       });
-      raceEngine.start();
+      headless.start();
       let guard = 0;
-      while (!raceEngine.karts.every((kart) => kart.finished) && guard < 60 * 60) {
-        raceEngine.tick(1 / 60);
+      while (!headless.karts.every((kart) => kart.finished) && guard < 60 * 60) {
+        headless.tick(1 / 60);
         guard += 1;
       }
-      console.info('[race] result', raceEngine.result);
+      console.info('[race] result', headless.result);
       console.info('[race] headless run complete');
-      (window as unknown as Record<string, unknown>).__raceItRace = raceEngine;
+      (window as unknown as Record<string, unknown>).__raceItRace = headless;
     } catch (error) {
       console.error('[race] track has no closed loop', error);
     }
   }
 
+  const trafficLight = createTrafficLight();
+  const raceHud = createRaceHud({
+    onPause: () => {
+      audio.playOneShot('click');
+    },
+    onResume: () => {
+      audio.playOneShot('click');
+    },
+    onQuit: () => {
+      audio.playOneShot('confirmB');
+    },
+  });
+  const trophy = createTrophy({
+    onAgain: () => {
+      audio.playOneShot('confirmA');
+    },
+  });
+
+  const setBuildUiVisible = (visible: boolean): void => {
+    go.root.classList.toggle('hidden', !visible);
+    bar.root.classList.toggle('hidden', !visible);
+    cluster.root.classList.toggle('racing', !visible);
+  };
+
   const go = createGoButton({
+    onBlockedTap: () => {
+      audio.playOneShot('nope');
+    },
     onGo: () => {
-      sfx.play('click');
+      audio.playOneShot('click');
       picker.setLineup(loadLineup());
       picker.show();
       renderKartPreviews();
@@ -221,7 +255,7 @@ if (root && appReady()) {
 
   const bar = createBuildBar({
     onPieceSelect: (type) => {
-      sfx.play('click');
+      audio.playOneShot('click');
       selectedType = selectedType === type ? null : type;
       tool = selectedType ? { kind: 'piece', type: selectedType } : { kind: 'none' };
       bar.setSelected(selectedType);
@@ -231,12 +265,12 @@ if (root && appReady()) {
       }
     },
     onUndo: () => {
-      sfx.play('click');
+      audio.playOneShot('click');
       editor.undo();
       rerender();
     },
     onRemoveToggle: () => {
-      sfx.play('click');
+      audio.playOneShot('click');
       const active = tool.kind !== 'remove';
       tool = active ? { kind: 'remove' } : { kind: 'none' };
       bar.setRemoveActive(active);
@@ -250,14 +284,13 @@ if (root && appReady()) {
 
   const cluster = createCornerCluster({
     onShelf: () => {
-      // Shelf UI is Track 3 scope; stub is inert for now.
+      // Shelf UI is a later track; stub is inert for now.
     },
     onMuteToggle: (muted) => {
-      sfx.setMuted(muted);
-      localStorage.setItem('race-it:muted', String(muted));
+      audio.setMuted(muted);
     },
     onClearConfirmed: () => {
-      sfx.play('confirmB');
+      audio.playOneShot('confirmB');
       for (let y = 0; y < GRID_SIZE; y++) {
         for (let x = 0; x < GRID_SIZE; x++) {
           model.setCell(x, y, null);
@@ -270,29 +303,57 @@ if (root && appReady()) {
 
   const picker = createCarPicker({
     onRace: (lineup) => {
-      sfx.play('confirmA');
-      saveLineup(lineup);
-      picker.hide();
-      raceEngine = createRaceEngine(extractLoopPath(model), {
-        kartCount: lineup.karts.length,
-      });
-      raceEngine.on('kartFinish', ({ index, time }) => {
-        console.info(`[race] kart ${index} finished at ${time.toFixed(2)}s`);
-        if (raceEngine?.karts.every((kart) => kart.finished)) {
-          console.info('[race] result', raceEngine.result);
-          (window as unknown as Record<string, unknown>).__raceItRace = raceEngine;
-        }
-      });
-      feedback.setRemoveMode(false);
-      bar.setRemoveActive(false);
-      raceEngine.start();
+      try {
+        const path = extractLoopPath(model);
+        const engine = createRaceEngine(path, { kartCount: lineup.karts.length });
+        raceEngine = engine;
+        // The picker picked WHICH colors race; remap kart slots so engine
+        // kart i renders the chosen color's model (and trophy color word).
+        const order = lineup.karts.map((color) => kartColorIndex[color]);
+        karts.setKartOrder(order);
+        engine.on('kartFinish', ({ index, time }) => {
+          console.info(`[race] kart ${index} finished at ${time.toFixed(2)}s`);
+          if (engine.karts.every((kart) => kart.finished)) {
+            console.info('[race] result', engine.result);
+            (window as unknown as Record<string, unknown>).__raceItRace = engine;
+          }
+        });
+        presentation = createRacePresentation({
+          engine,
+          path,
+          trafficLight,
+          raceHud,
+          trophy,
+          confetti,
+          karts,
+          camera: view.camera,
+          kartOrder: order,
+          onBuildUiChange: setBuildUiVisible,
+          onCountdownBeep: (step) => {
+            audio.playCountdownBeep(step);
+          },
+          onGo: () => {
+            audio.playOneShot('go');
+          },
+          audio,
+        });
+        // Leaving remove mode behind would leak build feedback into the race.
+        feedback.setRemoveMode(false);
+        bar.setRemoveActive(false);
+        saveLineup(lineup);
+        picker.hide();
+        audio.playOneShot('confirmA');
+        presentation.beginRace();
+      } catch (error) {
+        console.error('[race] cannot start race', error);
+      }
     },
     onBack: () => {
-      sfx.play('click');
+      audio.playOneShot('click');
       picker.hide();
     },
     onToggle: () => {
-      sfx.play('click');
+      audio.playOneShot('click');
     },
   });
 
@@ -314,8 +375,14 @@ if (root && appReady()) {
   window.addEventListener('resize', renderKartPreviews);
 
   const appUi = document.createElement('div');
+  appUi.className = 'app-ui';
   appUi.append(cluster.root, go.root, bar.root, cluster.confirm, picker.root);
   root.append(appUi);
+
+  const raceUi = document.createElement('div');
+  raceUi.className = 'race-ui';
+  raceUi.append(trafficLight.root, raceHud.root, trophy.root);
+  root.append(raceUi);
 
   go.setValid(validateTrack(model).valid);
 
@@ -331,14 +398,45 @@ if (root && appReady()) {
     .catch((error: unknown) => {
       console.error('Failed to load track pieces or scenery', error);
     });
+  karts
+    .load()
+    .then(() => {
+      view.scene.add(karts.group);
+      view.scene.add(confetti.points);
+    })
+    .catch((error: unknown) => {
+      console.error('Failed to load kart models', error);
+    });
 
+  // Single per-frame pass: build feedback (build mode only) plus race
+  // presentation (owns engine ticking), then render (scene owns rAF).
+  view.onFrame((dt) => {
+    feedback.tick(dt);
+    if (!raceEngine || raceEngine.state === 'idle') {
+      applyPieceFeedback(pieces.group, feedback, feedback.time);
+    }
+    presentation?.update(dt);
+  });
+
+  // iOS audio unlock: the WebAudio context may only resume inside a user
+  // gesture, so unlock on the very first touch anywhere (capture phase).
   window.addEventListener(
-    'pagehide',
+    'pointerdown',
     () => {
-      window.removeEventListener('resize', renderKartPreviews);
-      kartPreview.dispose();
-      view.dispose();
+      audio.unlock();
     },
-    { once: true },
+    { once: true, capture: true },
   );
+  // Backgrounding: silence everything when the page hides, restore on return.
+  window.addEventListener('pagehide', () => {
+    window.removeEventListener('resize', renderKartPreviews);
+    kartPreview.dispose();
+    audio.suspendAll();
+    view.dispose();
+  });
+  document.addEventListener('visibilitychange', () => {
+    if (document.visibilityState === 'visible') {
+      audio.resumeAll();
+    }
+  });
 }

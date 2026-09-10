@@ -358,4 +358,37 @@ describe('createRaceEngine', () => {
       expect(finishCount).toBe(1);
     });
   });
+
+  describe('countdownRemaining getter', () => {
+    it('starts at the full countdown after start()', () => {
+      const engine = createRaceEngine(loopOfLength(8), { seed: 2 });
+      expect(engine.countdownRemaining).toBe(0);
+      engine.start();
+      expect(engine.countdownRemaining).toBe(COUNTDOWN_SECONDS);
+    });
+
+    it('decrements with each tick', () => {
+      const engine = createRaceEngine(loopOfLength(8), { seed: 2 });
+      engine.start();
+      engine.tick(1.0);
+      expect(engine.countdownRemaining).toBeCloseTo(COUNTDOWN_SECONDS - 1);
+    });
+
+    it('freezes while paused', () => {
+      const engine = createRaceEngine(loopOfLength(8), { seed: 2 });
+      engine.start();
+      engine.tick(1.0);
+      engine.pause();
+      engine.tick(5.0);
+      expect(engine.countdownRemaining).toBeCloseTo(COUNTDOWN_SECONDS - 1);
+    });
+
+    it('reaches zero exactly when the race starts running', () => {
+      const engine = createRaceEngine(loopOfLength(8), { seed: 2 });
+      engine.start();
+      engine.tick(COUNTDOWN_SECONDS);
+      expect(engine.state).toBe('running');
+      expect(engine.countdownRemaining).toBe(0);
+    });
+  });
 });

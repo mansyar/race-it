@@ -66,6 +66,8 @@ export interface RaceEngine {
   readonly lapLength: number;
   /** Live result; non-null once the winner crosses the finish line. */
   readonly result: RaceResult | null;
+  /** Seconds left in the countdown; 0 once the race is running. */
+  readonly countdownRemaining: number;
   on(event: 'stateChange', listener: (state: RaceState) => void): void;
   on(event: 'kartFinish', listener: (payload: { index: number; time: number }) => void): void;
   /** NOTE: the payload is the LIVE result — photoFinish/finishTimes are
@@ -239,6 +241,9 @@ export function createRaceEngine(path: LoopCell[], options: RaceEngineOptions = 
     },
     get result() {
       return result;
+    },
+    get countdownRemaining() {
+      return countdownRemaining;
     },
     on(event, listener) {
       // Type-erased on purpose: the overloads above guarantee the payload

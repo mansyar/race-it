@@ -1,10 +1,10 @@
 import * as THREE from 'three';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
-import { CARS } from '../assets/manifest';
+import { KARTS } from '../assets/manifest';
 import { KART_COLORS } from '../race/lineup';
+import { KART_COLORS as RACE_KART_COLORS } from './kart-meshes';
 import { KART_TINT, KartPreview } from './kart-preview';
 import { KART_FIT } from './model-fit';
-import { tintBright } from './piece-visuals';
 
 function kartTemplate(): THREE.Object3D {
   const mesh = new THREE.Mesh(
@@ -76,7 +76,7 @@ describe('KartPreview', () => {
     container = document.createElement('div');
   });
 
-  it('loads the kart model from the CARS manifest via the injected loader', async () => {
+  it('loads all four kart models from the KARTS manifest via the injected loader', async () => {
     const loaded: string[] = [];
     const preview = makePreview(container, loaded, {
       scissor: [],
@@ -87,10 +87,10 @@ describe('KartPreview', () => {
       disposed: false,
     });
     await preview.load();
-    expect(loaded).toEqual([CARS.kart]);
+    expect(loaded).toEqual([...Object.values(KARTS)]);
   });
 
-  it('builds one bright-tinted model per kart color', async () => {
+  it('builds one race-palette-tinted model per kart color', async () => {
     const preview = makePreview(container, [], {
       scissor: [],
       viewport: [],
@@ -112,9 +112,9 @@ describe('KartPreview', () => {
       }
       const mesh = model.children[0] as THREE.Mesh;
       const material = mesh.material as THREE.MeshStandardMaterial;
-      const expected = new THREE.Color(KART_TINT[color]);
-      tintBright(expected);
+      const expected = new THREE.Color(RACE_KART_COLORS[i] ?? 0xffffff);
       expect(material.color.equals(expected)).toBe(true);
+      expect(KART_TINT[color]).toBe(RACE_KART_COLORS[i]);
     }
   });
 
@@ -148,7 +148,7 @@ describe('KartPreview', () => {
     });
     await preview.load();
     await preview.load();
-    expect(loaded).toHaveLength(1);
+    expect(loaded).toHaveLength(Object.values(KARTS).length);
     expect(preview.models).toHaveLength(KART_COLORS.length);
   });
 

@@ -1,6 +1,13 @@
 import { beforeEach, describe, expect, it } from 'vitest';
 import type { CarLineup } from './lineup';
-import { DEFAULT_LINEUP, isLineupValid, loadLineup, saveLineup, toggleKart } from './lineup';
+import {
+  DEFAULT_LINEUP,
+  isLineupValid,
+  kartColorIndex,
+  loadLineup,
+  saveLineup,
+  toggleKart,
+} from './lineup';
 
 const STORAGE_KEY = 'race-it:lineup';
 
@@ -83,5 +90,14 @@ describe('lineup persistence', () => {
     expect(loadLineup()).toEqual(DEFAULT_LINEUP);
     localStorage.setItem(STORAGE_KEY, JSON.stringify({ karts: ['red', 'purple'] }));
     expect(loadLineup()).toEqual(DEFAULT_LINEUP);
+  });
+});
+
+describe('kartColorIndex', () => {
+  it('maps each picker color to its race kart slot', () => {
+    expect(kartColorIndex.red).toBe(0);
+    expect(kartColorIndex.blue).toBe(1);
+    expect(kartColorIndex.green).toBe(2);
+    expect(kartColorIndex.yellow).toBe(3);
   });
 });

@@ -1,17 +1,19 @@
 import * as THREE from 'three';
 import { GLTFLoader } from 'three/examples/jsm/loaders/GLTFLoader.js';
-import { CARS } from '../assets/manifest';
+import { KARTS } from '../assets/manifest';
 import type { KartColor } from '../race/lineup';
-import { KART_COLORS } from '../race/lineup';
+import { KART_COLORS } from './kart-meshes';
 import { applyModelFit, KART_FIT } from './model-fit';
-import { tintBright } from './piece-visuals';
 
-/** Vivid seed colors for the four karts (also used by the picker swatches). */
+/**
+ * Race palette per kart color, derived from the race presentation's
+ * KART_COLORS so preview karts look exactly like the karts that race.
+ */
 export const KART_TINT: Record<KartColor, number> = {
-  red: 0xe5484d,
-  blue: 0x3f7fd9,
-  green: 0x3fae5a,
-  yellow: 0xf0b90a,
+  red: KART_COLORS[0] ?? 0xffffff,
+  blue: KART_COLORS[1] ?? 0xffffff,
+  green: KART_COLORS[2] ?? 0xffffff,
+  yellow: KART_COLORS[3] ?? 0xffffff,
 };
 
 const PREVIEW_FOV = 45;
@@ -21,12 +23,11 @@ const LOOK_AT_Y = 0.6;
 /** A material that carries a tintable base color (standard, lambert, ...). */
 type TintableMaterial = THREE.Material & { color: THREE.Color };
 
-/** Sets a material's color to the kart tint and brightens it toy-style. */
+/** Sets a material's color to the kart tint. */
 function tintKartMaterial(material: THREE.Material, color: KartColor): void {
   if ('color' in material) {
     const tintable = material as TintableMaterial;
-    tintable.color.set(KART_TINT[color]);
-    tintBright(tintable.color);
+    tintable.color.setHex(KART_TINT[color]);
   }
 }
 
@@ -91,26 +92,35 @@ export class KartPreview {
     this.scene.add(key);
   }
 
-  /** Loads the kart model once and builds four tinted, fitted clones. */
+  /** Loads the four kart models and builds one tinted, fitted clone each. */
   async load(): Promise<void> {
     if (this.models.length > 0) {
       return;
     }
-    const gltf = await this.loader.loadAsync(CARS.kart);
-    for (const color of KART_COLORS) {
-      const model = gltf.scene.clone(true);
+    const urls = Object.values(KARTS);
+    const templates: THREE.Object3D[] = [];
+    for (const url of urls) {
+      const gltf = await this.loader.loadAsync(url);
+      templates.push(gltf.scene);
+    }
+    const colorNames = Object.keys(KART_TINT) as KartColor[];
+    templates.forEach((template, index) => {
+      const model = template.clone(true);
+      const color = colorNames[index] ?? 'red';
       model.traverse((obj) => {
         if (obj instanceof THREE.Mesh) {
           // clone(true) shares the source material between clones, so clone
-          // materials per model to give each color its own tint.
+          // materials per model to give each kart its own tint.
           if (Array.isArray(obj.material)) {
-            obj.material = obj.material.map((material) => material.clone());
-            for (const material of obj.material) {
-              tintKartMaterial(material, color);
-            }
+            obj.material = obj.material.map((material) => {
+              const clone = material.clone();
+              tintKartMaterial(clone, color);
+              return clone;
+            });
           } else {
-            obj.material = obj.material.clone();
-            tintKartMaterial(obj.material, color);
+            const clone = obj.material.clone();
+            tintKartMaterial(clone, color);
+            obj.material = clone;
           }
         }
       });
@@ -118,7 +128,7 @@ export class KartPreview {
       model.userData.kartPreview = true;
       this.models.push(model);
       this.scene.add(model);
-    }
+    });
   }
 
   /** Renders each kart into its own quadrant of the shared canvas. */

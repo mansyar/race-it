@@ -42,6 +42,14 @@ export function isLineupValid(lineup: CarLineup): boolean {
   );
 }
 
+/** Race kart slot per color (matches KARTS/KART_COLORS index order). */
+export const kartColorIndex: Record<KartColor, number> = {
+  red: 0,
+  blue: 1,
+  green: 2,
+  yellow: 3,
+};
+
 /** Persists the lineup so the child's last choice is the next race's default. */
 export function saveLineup(lineup: CarLineup): void {
   localStorage.setItem(STORAGE_KEY, JSON.stringify(lineup));

@@ -1,0 +1,109 @@
+name: Release
+
+on:
+  push:
+    tags:
+      - 'v*'
+
+permissions:
+  contents: write
+  packages: write
+
+concurrency:
+  group: release-${{ github.ref }}
+  cancel-in-progress: false
+
+jobs:
+  release:
+    name: Build, publish & deploy
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          fetch-depth: 0
+      - uses: actions/setup-node@v7
+        with:
+          node-version-file: .nvmrc
+      - name: Enable pnpm via corepack
+        run: corepack enable
+      - name: Resolve pnpm store path
+        id: pnpm-store
+        shell: bash
+        run: echo "store_path=$(pnpm store path)" >> "$GITHUB_OUTPUT"
+      - name: Cache pnpm store
+        uses: actions/cache@v6
+        with:
+          path: ${{ steps.pnpm-store.outputs.store_path }}
+          key: pnpm-store-${{ runner.os }}-${{ hashFiles('pnpm-lock.yaml') }}
+          restore-keys: |
+            pnpm-store-${{ runner.os }}-
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+      - name: Build production bundle
+        run: pnpm build
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v4
+      - name: Log in to GHCR
+        uses: docker/login-action@v4
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+      - name: Build and push image
+        uses: docker/build-push-action@v7
+        with:
+          context: .
+          push: true
+          tags: |
+            ghcr.io/mansyar/race-it:${{ github.ref_name }}
+            ghcr.io/mansyar/race-it:latest
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
+      - name: Generate release notes
+        id: notes
+        shell: bash
+        run: |
+          set -euo pipefail
+          REF="${{ github.ref_name }}"
+          PREV="$(git describe --tags --abbrev=0 "${REF}"^ 2>/dev/null || true)"
+          if [ -n "${PREV}" ]; then
+            RANGE="${PREV}..${REF}"
+          else
+            RANGE="${REF}"
+          fi
+          {
+            printf '# %s\n\n' "${REF}"
+            append_section() {
+              local name="$1" pattern="$2"
+              local body
+              body="$(git log --format='%s' "${RANGE}" | grep -iE "^${pattern}" || true)"
+              if [ -n "${body}" ]; then
+                printf '## %s\n\n' "${name}"
+                printf '%s\n' "${body}" | sed 's/^/ - /'
+                printf '\n'
+              fi
+            }
+            append_section 'Features' 'feat(\(.*\))?:'
+            append_section 'Bug Fixes' 'fix(\(.*\))?:'
+            append_section 'Refactoring' 'refactor(\(.*\))?:'
+            append_section 'Documentation' 'docs(\(.*\))?:'
+            append_section 'Tests' 'test(\(.*\))?:'
+            append_section 'Style' 'style(\(.*\))?:'
+            append_section 'Chores' '(chore|ci|conductor|build)(\(.*\))?:'
+            other="$(git log --format='%s' "${RANGE}" | grep -ivE '^(feat|fix|refactor|docs|test|style|chore|ci|conductor|build)(\(.*\))?:' || true)"
+            if [ -n "${other}" ]; then
+              printf '## Other\n\n'
+              printf '%s\n' "${other}" | sed 's/^/ - /'
+              printf '\n'
+            fi
+          } > notes.md
+      - name: Publish GitHub Release
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: gh release create "${{ github.ref_name }}" --title "${{ github.ref_name }}" --notes-file notes.md
+      - name: Trigger Coolify deploy
+        env:
+          WEBHOOK: ${{ secrets.COOLIFY_DEPLOY_WEBHOOK }}
+          TOKEN: ${{ secrets.COOLIFY_API_TOKEN }}
+        run: |
+          curl -fsS --max-time 120 -X POST "$WEBHOOK" -H "Authorization: Bearer $TOKEN"
