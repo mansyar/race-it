@@ -94,6 +94,7 @@ interface Harness {
   priorOnResume: ReturnType<typeof vi.fn>;
   priorOnQuit: ReturnType<typeof vi.fn>;
   priorOnAgain: ReturnType<typeof vi.fn>;
+  priorOnBuildAgain: ReturnType<typeof vi.fn>;
   /** Advances presentation through a full countdown into running. */
   raceToRunning(seconds?: number): void;
   /** Ticks engine + presentation until the race is finished (all karts). */
@@ -131,12 +132,13 @@ function createHarness(options: { countdownSeconds?: number; kartOrder?: number[
   const priorOnResume = vi.fn();
   const priorOnQuit = vi.fn();
   const priorOnAgain = vi.fn();
+  const priorOnBuildAgain = vi.fn();
   const hud = createRaceHud({
     onPause: priorOnPause,
     onResume: priorOnResume,
     onQuit: priorOnQuit,
   });
-  const trophy = createTrophy({ onAgain: priorOnAgain, onBuildAgain: vi.fn() });
+  const trophy = createTrophy({ onAgain: priorOnAgain, onBuildAgain: priorOnBuildAgain });
   const confetti = {
     burst: vi.fn(),
     update: vi.fn(),
@@ -202,6 +204,7 @@ function createHarness(options: { countdownSeconds?: number; kartOrder?: number[
     priorOnResume,
     priorOnQuit,
     priorOnAgain,
+    priorOnBuildAgain,
     raceToRunning(seconds = 0.06) {
       presentation.beginRace();
       presentation.update(seconds);
@@ -478,6 +481,63 @@ describe('createRacePresentation', () => {
       expect(newSpeeds).not.toEqual(seedSpeeds);
       // Build UI stays hidden for the replayed race.
       expect(harness.onBuildUiChange).toHaveBeenLastCalledWith(false);
+    });
+  });
+
+  describe('Build Again', () => {
+    it('composes the prior Build Again callback instead of replacing it', () => {
+      harness.raceToAllFinished();
+      click('button[data-action="build-again"]', harness.trophy.root);
+      expect(harness.priorOnBuildAgain).toHaveBeenCalledTimes(1);
+      expect(harness.engine.state).toBe('idle');
+    });
+
+    it('returns to the builder with the race visuals cleared and build UI restored', () => {
+      harness.raceToAllFinished();
+      click('button[data-action="build-again"]', harness.trophy.root);
+
+      expect(harness.engine.state).toBe('idle');
+      expect(harness.onBuildUiChange).toHaveBeenLastCalledWith(true);
+      expect(harness.trophy.root.classList.contains('hidden')).toBe(true);
+      expect(harness.confetti.clear).toHaveBeenCalled();
+      expect(harness.light.root.classList.contains('hidden')).toBe(true);
+      expect(harness.hud.root.classList.contains('hidden')).toBe(true);
+      expect(harness.audio.stopAll).toHaveBeenCalled();
+    });
+
+    it('eases the camera back to the build placement instead of snapping', () => {
+      harness.raceToAllFinished();
+      // Let the celebration camera settle onto the finish hold first.
+      for (let i = 0; i < 120; i++) {
+        harness.presentation.update(1 / 60);
+      }
+      const before = harness.camera.lookAt.mock.calls.at(-1);
+      if (!before) {
+        throw new Error('Expected a settled celebration camera');
+      }
+
+      click('button[data-action="build-again"]', harness.trophy.root);
+      harness.presentation.update(1 / 60);
+      const after = harness.camera.lookAt.mock.calls.at(-1);
+      if (!after) {
+        throw new Error('Expected a camera target after Build Again');
+      }
+
+      const build = computeCameraPlacement(harness.camera.aspect);
+      const distanceBefore = Math.hypot(before[0] - build.target.x, before[2] - build.target.z);
+      const distanceAfter = Math.hypot(after[0] - build.target.x, after[2] - build.target.z);
+      // One frame must move toward the build placement, never cut straight to it.
+      expect(distanceAfter).toBeGreaterThan(0.5);
+      expect(distanceAfter).toBeLessThan(distanceBefore);
+
+      // Continued updates settle onto the build placement.
+      for (let i = 0; i < 300; i++) {
+        harness.presentation.update(1 / 60);
+      }
+      const settled = harness.camera.lookAt.mock.calls.at(-1);
+      expect(settled?.[0]).toBeCloseTo(build.target.x, 2);
+      expect(settled?.[1]).toBeCloseTo(build.target.y, 2);
+      expect(settled?.[2]).toBeCloseTo(build.target.z, 2);
     });
   });
 
