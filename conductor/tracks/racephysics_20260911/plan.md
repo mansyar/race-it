@@ -28,15 +28,15 @@
 - [x] Task 3.4: wire into `race-presentation.ts` + `kart-meshes.ts` (Green) (28157ea) — presentation computes visual poses from engine progress + speed; renderer applies roll/pitch/bob transforms.
 - [x] Task: Phase Verification & Checkpoint (Refer to workflow.md) — browser: no corner snapping; lean reads toy-like; 60 fps.
 
-## Phase 4 — Finish Run-Out & Celebration Choreography
+## Phase 4 — Finish Run-Out & Celebration Choreography [checkpoint: d82a43f]
 
 - [x] Task 4.1: run-out tests first (Red) (d82a43f) — `kart-motion.test.ts` + `race-presentation.test.ts`: bounded decelerating roll-out (`runoutOffset(elapsed, pace)` ≤ ~2 world units, settles < ~1.2 s); official finish time unchanged at crossing; winner spin begins once settled; trophy/confetti/jingle timing unchanged; `resetToBuild` / RACE AGAIN clear run-out state.
 - [x] Task 4.2: implement run-out + choreography (Green) (d82a43f) — kart-motion curve + presentation sequencing.
-- [ ] Task: Phase Verification & Checkpoint (Refer to workflow.md) — browser: finish reads as a natural roll-out; celebration beats intact.
+- [x] Task: Phase Verification & Checkpoint (Refer to workflow.md) — browser: finish reads as a natural roll-out; celebration beats intact.
 
 ## Phase 5 — Verification & Quality Gates
 
-- [ ] Task 5.1: quality gates — `pnpm build`; `$env:CI='true'; pnpm test`; coverage >80% on changed modules; `pnpm lint` clean.
+- [~] Task 5.1: quality gates — `pnpm build`; `$env:CI='true'; pnpm test`; coverage >80% on changed modules; `pnpm lint` clean.
 - [ ] Task 5.2: browser full-flow verification — portrait + landscape phone viewports: launch → race motion → pause/Resume/Quit → run-out → trophy → RACE AGAIN; `?race` / `?perf` / `?debug` intact; build/picker/shelf regression-free; screenshots captured.
 - [ ] Task 5.3: fairness & perf validation report — record win shares per slot, photo-finish rate, durations (harness) and `?perf` draw calls/tris; compare against the Phase-1 baseline.
 - [ ] Task: Phase Verification & Checkpoint (Refer to workflow.md)
