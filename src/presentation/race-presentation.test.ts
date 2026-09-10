@@ -75,7 +75,7 @@ interface Harness {
   raceToFirstFinish(): void;
 }
 
-function createHarness(options: { countdownSeconds?: number } = {}): Harness {
+function createHarness(options: { countdownSeconds?: number; kartOrder?: number[] } = {}): Harness {
   const engine = createRaceEngine(path, {
     seed: 42,
     countdownSeconds: options.countdownSeconds ?? 0.05,
@@ -132,6 +132,7 @@ function createHarness(options: { countdownSeconds?: number } = {}): Harness {
     confetti,
     karts,
     camera,
+    kartOrder: options.kartOrder,
     onBuildUiChange,
     onCountdownBeep,
     onGo,
@@ -309,6 +310,20 @@ describe('createRacePresentation', () => {
       const winner = harness.engine.result?.winnerIndex ?? 0;
       expect(harness.trophy.root.textContent).toContain(WINNER_COLOR_WORDS[winner]);
       expect(harness.trophy.root.textContent).toContain('WINS!');
+    });
+
+    it('shows the trophy word for the picked color order once every kart finishes', () => {
+      // Engine kart 0 → yellow (3), kart 1 → blue (1).
+      const harness = createHarness({ kartOrder: [3, 1] });
+      harness.raceToAllFinished();
+      const winner = harness.engine.result?.winnerIndex ?? 0;
+      const order = [3, 1];
+      const expected = WINNER_COLOR_WORDS[order[winner] ?? 0];
+      if (!expected) {
+        throw new Error('Expected a winner color word');
+      }
+      expect(harness.trophy.root.textContent).toContain(expected);
+      expect(harness.trophy.root.textContent).not.toContain('Red');
     });
 
     it('spins the winner kart yaw over the victory window', () => {

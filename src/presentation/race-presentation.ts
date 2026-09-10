@@ -9,7 +9,6 @@ import type { Trophy } from '../ui/trophy';
 
 /** Winner color words for the trophy overlay (product-guidelines palette). */
 export const WINNER_COLOR_WORDS = ['Red', 'Blue', 'Green', 'Yellow'] as const;
-
 /** Duration of the winner victory spin, in seconds. */
 export const VICTORY_SPIN_SECONDS = 2.0;
 
@@ -73,6 +72,11 @@ export interface RacePresentationOptions {
   trophy: Trophy;
   confetti: ConfettiLike;
   karts: KartPoseSink;
+  /**
+   * Race kart slot per engine kart index (car picker lineup). Engine kart 0
+   * renders/trophies as the color at kartOrder[0]; omitted = 0..n-1 order.
+   */
+  kartOrder?: number[];
   camera: CameraLike;
   /** Show/hide the builder HUD (palette, GO, shelf/clear). Mute stays. */
   onBuildUiChange?: (visible: boolean) => void;
@@ -278,7 +282,10 @@ export function createRacePresentation(options: RacePresentationOptions): RacePr
     if (engine.state !== 'finished' || !engine.karts.every((kart) => kart.finished)) {
       return;
     }
-    trophy.show(engine.result, [...WINNER_COLOR_WORDS]);
+    const words = options.kartOrder
+      ? options.kartOrder.map((kart) => WINNER_COLOR_WORDS[kart] ?? 'Winner')
+      : [...WINNER_COLOR_WORDS];
+    trophy.show(engine.result, words);
     trophyShown = true;
     options.audio?.playVictoryJingle();
     raceHud.hide();

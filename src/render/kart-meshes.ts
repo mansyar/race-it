@@ -30,6 +30,13 @@ interface LoaderLike {
 export class KartRenderer {
   readonly group = new THREE.Group();
   private karts: THREE.Object3D[] = [];
+  /** Optional remap: pose slot i renders kart model `kartOrder[i]`. */
+  private kartOrder: number[] = [];
+
+  /** Sets which prepared kart model each pose slot renders (picker lineup). */
+  setKartOrder(order: number[]): void {
+    this.kartOrder = order;
+  }
 
   /** Loads the four manifest kart models and prepares tinted clones. */
   async load(loader: LoaderLike = new GLTFLoader()): Promise<void> {
@@ -51,7 +58,8 @@ export class KartRenderer {
   update(poses: KartPose[]): THREE.Group {
     this.group.clear();
     for (let i = 0; i < poses.length; i++) {
-      const kart = this.karts[i];
+      const modelIndex = this.kartOrder[i] ?? i;
+      const kart = this.karts[modelIndex];
       const pose = poses[i];
       if (!kart || !pose) {
         continue;

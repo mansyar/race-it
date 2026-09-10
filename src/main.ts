@@ -9,10 +9,12 @@ import { loadOrSeedTrack, saveTrack } from './grid/track-store';
 import { validateTrack } from './grid/track-validator';
 import { createRacePresentation, type RacePresentation } from './presentation/race-presentation';
 import { createRaceEngine, type RaceEngine } from './race/engine';
+import { kartColorIndex, loadLineup, saveLineup } from './race/lineup';
 import { extractLoopPath } from './race/path';
 import { ConfettiBurst } from './render/confetti';
 import { type BuildTool, handleCellTap } from './render/interaction';
 import { KartRenderer } from './render/kart-meshes';
+import { KartPreview } from './render/kart-preview';
 import { fillPerfPattern } from './render/perf-harness';
 import { applyPieceFeedback } from './render/piece-feedback-apply';
 import { PieceRenderer } from './render/piece-renderer';
@@ -21,6 +23,7 @@ import { SceneryRenderer } from './render/scenery-render';
 import { PieceFeedback } from './render/toy-feedback';
 import './style.css';
 import { createBuildBar } from './ui/build-bar';
+import { createCarPicker } from './ui/car-picker';
 import { createCornerCluster } from './ui/corner-cluster';
 import { createGoButton } from './ui/go-button';
 import { createRaceHud } from './ui/race-hud';
@@ -243,43 +246,10 @@ if (root && appReady()) {
       audio.playOneShot('nope');
     },
     onGo: () => {
-      try {
-        const path = extractLoopPath(model);
-        const engine = createRaceEngine(path);
-        raceEngine = engine;
-        engine.on('kartFinish', ({ index, time }) => {
-          console.info(`[race] kart ${index} finished at ${time.toFixed(2)}s`);
-          if (engine.karts.every((kart) => kart.finished)) {
-            console.info('[race] result', engine.result);
-            (window as unknown as Record<string, unknown>).__raceItRace = engine;
-          }
-        });
-        presentation = createRacePresentation({
-          engine,
-          path,
-          trafficLight,
-          raceHud,
-          trophy,
-          confetti,
-          karts,
-          camera: view.camera,
-          onBuildUiChange: setBuildUiVisible,
-          onCountdownBeep: (step) => {
-            audio.playCountdownBeep(step);
-          },
-          onGo: () => {
-            audio.playOneShot('go');
-          },
-          audio,
-        });
-        // Leaving remove mode behind would leak build feedback into the race.
-        feedback.setRemoveMode(false);
-        bar.setRemoveActive(false);
-        audio.playOneShot('confirmA');
-        presentation.beginRace();
-      } catch (error) {
-        console.error('[race] cannot start race', error);
-      }
+      audio.playOneShot('click');
+      picker.setLineup(loadLineup());
+      picker.show();
+      renderKartPreviews();
     },
   });
 
@@ -331,9 +301,82 @@ if (root && appReady()) {
     },
   });
 
+  const picker = createCarPicker({
+    onRace: (lineup) => {
+      try {
+        const path = extractLoopPath(model);
+        const engine = createRaceEngine(path, { kartCount: lineup.karts.length });
+        raceEngine = engine;
+        // The picker picked WHICH colors race; remap kart slots so engine
+        // kart i renders the chosen color's model (and trophy color word).
+        const order = lineup.karts.map((color) => kartColorIndex[color]);
+        karts.setKartOrder(order);
+        engine.on('kartFinish', ({ index, time }) => {
+          console.info(`[race] kart ${index} finished at ${time.toFixed(2)}s`);
+          if (engine.karts.every((kart) => kart.finished)) {
+            console.info('[race] result', engine.result);
+            (window as unknown as Record<string, unknown>).__raceItRace = engine;
+          }
+        });
+        presentation = createRacePresentation({
+          engine,
+          path,
+          trafficLight,
+          raceHud,
+          trophy,
+          confetti,
+          karts,
+          camera: view.camera,
+          kartOrder: order,
+          onBuildUiChange: setBuildUiVisible,
+          onCountdownBeep: (step) => {
+            audio.playCountdownBeep(step);
+          },
+          onGo: () => {
+            audio.playOneShot('go');
+          },
+          audio,
+        });
+        // Leaving remove mode behind would leak build feedback into the race.
+        feedback.setRemoveMode(false);
+        bar.setRemoveActive(false);
+        saveLineup(lineup);
+        picker.hide();
+        audio.playOneShot('confirmA');
+        presentation.beginRace();
+      } catch (error) {
+        console.error('[race] cannot start race', error);
+      }
+    },
+    onBack: () => {
+      audio.playOneShot('click');
+      picker.hide();
+    },
+    onToggle: () => {
+      audio.playOneShot('click');
+    },
+  });
+
+  // One shared WebGL canvas renders the four tinted kart previews; it sits
+  // above the swatch grid and only paints when the picker is visible.
+  const kartPreview = new KartPreview({ container: picker.getPreviewSlot() });
+  const renderKartPreviews = (): void => {
+    const rect = picker.getPreviewSlot().getBoundingClientRect();
+    if (rect.width > 0 && rect.height > 0) {
+      kartPreview.render(rect.width, rect.height);
+    }
+  };
+  kartPreview
+    .load()
+    .then(renderKartPreviews)
+    .catch((error: unknown) => {
+      console.error('Failed to load kart preview models', error);
+    });
+  window.addEventListener('resize', renderKartPreviews);
+
   const appUi = document.createElement('div');
   appUi.className = 'app-ui';
-  appUi.append(cluster.root, go.root, bar.root, cluster.confirm);
+  appUi.append(cluster.root, go.root, bar.root, cluster.confirm, picker.root);
   root.append(appUi);
 
   const raceUi = document.createElement('div');
@@ -386,6 +429,8 @@ if (root && appReady()) {
   );
   // Backgrounding: silence everything when the page hides, restore on return.
   window.addEventListener('pagehide', () => {
+    window.removeEventListener('resize', renderKartPreviews);
+    kartPreview.dispose();
     audio.suspendAll();
     view.dispose();
   });
