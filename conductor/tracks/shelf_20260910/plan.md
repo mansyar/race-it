@@ -22,7 +22,7 @@
 - [x] Task: Commit `feat(render): Add shelf card schematic renderer` + attach git note
 - [x] Task: Phase Verification & Checkpoint (Refer to workflow.md)
 
-## Phase 3: Shelf Overlay UI (`src/ui/shelf-overlay.ts`)
+## Phase 3: Shelf Overlay UI (`src/ui/shelf-overlay.ts`) [checkpoint: 8a73087]
 - [x] Task: Write failing tests (TDD Red)
     - 12 fixed slots; occupied slots render schematic cards; empty slots dimmed
     - Empty state: dim slots pulse + save action highlighted
@@ -33,7 +33,7 @@
 - [x] Task: Implement overlay to pass tests (Green), styling in `style.css`
 - [x] Task: Refactor & verify coverage
 - [x] Task: Commit `feat(ui): Add wordless shelf overlay with save/load/delete` + attach git note
-- [ ] Task: Phase Verification & Checkpoint (Refer to workflow.md)
+- [x] Task: Phase Verification & Checkpoint (Refer to workflow.md)
 
 ## Phase 4: Integration & Wiring (`main.ts`, `corner-cluster.ts`)
 - [ ] Task: Write failing tests (TDD Red)
