@@ -8,9 +8,9 @@
 
 ## Phase 1 — Trophy Build Again Affordance
 
-- [ ] Task 1.1: trophy contract tests first (Red) — extend `src/ui/trophy.test.ts`: `.build-again-button` (`data-action="build-again"`) renders below `.again-button` inside the trophy card; inline SVG icon present; non-empty `aria-label`; no visible `textContent`; button and card share one hidden lifecycle (`show`/`hide`); click fires `onBuildAgain` exactly once with no confirm overlay; existing RACE AGAIN assertions untouched.
-- [ ] Task 1.2: implement the affordance (Green) — `src/ui/trophy.ts`: add `onBuildAgain` to the `Trophy` interface and a subordinate icon button beneath RACE AGAIN; wordless (icon + aria-label only).
-- [ ] Task 1.3: styles with contract test first (Red) — style test asserts `.build-again-button` has a ≥64px min touch target, sits below `.again-button`, and hides with `.trophy.hidden`; implement in `src/style.css` (Green) with portrait/landscape + safe-area consistency.
+- [x] Task 1.1: trophy contract tests first (Red) — extend `src/ui/trophy.test.ts`: `.build-again-button` (`data-action="build-again"`) renders below `.again-button` inside the trophy card; inline SVG icon present; non-empty `aria-label`; no visible `textContent`; button and card share one hidden lifecycle (`show`/`hide`); click fires `onBuildAgain` exactly once with no confirm overlay; existing RACE AGAIN assertions untouched. (3a9cfe2)
+- [x] Task 1.2: implement the affordance (Green) — `src/ui/trophy.ts`: add `onBuildAgain` to the `Trophy` interface and a subordinate icon button beneath RACE AGAIN; wordless (icon + aria-label only). (3a9cfe2)
+- [x] Task 1.3: styles with contract test first (Red) — style test asserts `.build-again-button` has a ≥64px min touch target, sits below `.again-button`, and hides with `.trophy.hidden`; implement in `src/style.css` (Green) with portrait/landscape + safe-area consistency. (a40c607)
 - [ ] Task: Phase Verification & Checkpoint (Refer to workflow.md) — browser: trophy shows both actions; Build Again visibly subordinate; tap target comfortable.
 
 ## Phase 2 — Return-to-Builder Wiring
