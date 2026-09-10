@@ -497,30 +497,30 @@ body {
 
 /* Secondary celebration action: back to the builder with the track intact. */
 .build-again-button {
-  min-width: 64px;
-  min-height: 64px;
-  padding: 8px;
+  align-items: center;
+  background: #fff;
   border: 3px solid var(--toy-ink, #4a3728);
   border-radius: 20px;
-  background: #fff;
-  color: var(--toy-ink, #4a3728);
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
   box-shadow: 0 4px 0 var(--toy-ink, #4a3728);
-  touch-action: manipulation;
+  color: var(--toy-ink, #4a3728);
   cursor: pointer;
+  display: inline-flex;
+  justify-content: center;
+  min-height: 64px;
+  min-width: 64px;
+  padding: 8px;
+  touch-action: manipulation;
 }
 
 .build-again-button svg {
-  width: 36px;
   height: 36px;
+  width: 36px;
   pointer-events: none;
 }
 
 .build-again-button:active {
-  transform: translateY(3px);
   box-shadow: 0 1px 0 var(--toy-ink, #4a3728);
+  transform: translateY(3px);
 }
 
 /* Last so it overrides display from component rules with equal specificity. */

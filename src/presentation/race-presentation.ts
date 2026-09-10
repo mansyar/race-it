@@ -218,8 +218,12 @@ export function createRacePresentation(options: RacePresentationOptions): RacePr
   const priorBuildAgain = trophy.callbacks.onBuildAgain;
   trophy.callbacks.onBuildAgain = () => {
     priorBuildAgain();
-    sustainCameraSmoothing = true;
-    engine.abandon();
+    // Only the finished trophy can reach this; guard so a repeated tap after
+    // the reset cannot leave the one-shot smoothing flag set without an emit.
+    if (engine.state !== 'idle') {
+      sustainCameraSmoothing = true;
+      engine.abandon();
+    }
   };
 
   engine.on('stateChange', (state) => {
