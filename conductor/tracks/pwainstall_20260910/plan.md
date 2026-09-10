@@ -25,10 +25,10 @@
 - [x] Task: Verify coverage ≥80% on new modules, tests + lint + typecheck green; commit [8560c76]
 - [x] Task: Phase Verification & Checkpoint (Refer to workflow.md)
 
-## Phase 5: CI Installability Gate (FR5)
+## Phase 5: CI Installability Gate (FR5) [checkpoint: 8da4c29]
 - [x] Task: Add installability gate to CI: Chrome CDP check (`Page.getInstallabilityErrors`) as `e2e/installability.spec.ts`, run by the existing e2e job (deviation: Lighthouse ≥12 removed the `installable-manifest`/`service-worker` audits; user-approved switch to Chrome's own A2HS criteria) [8da4c29]
 - [x] Task: Locally prove gate catches a broken manifest (temporary breakage → red → revert → green) [8da4c29]
-- [~] Task: Phase Verification & Checkpoint (Refer to workflow.md)
+- [x] Task: Phase Verification & Checkpoint (Refer to workflow.md)
 
 ## Phase 6: Integration & Quality Gates
 - [ ] Task: Full gates green — `pnpm test` (+coverage ≥80%), Biome, `tsc --noEmit && vite build`, Playwright E2E smoke on production build
