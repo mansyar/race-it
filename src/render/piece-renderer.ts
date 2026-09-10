@@ -4,21 +4,13 @@ import type { Cell, GridSnapshot, PieceType } from '../grid/grid-model';
 import { GRID_SIZE } from '../grid/grid-model';
 import { CELL_WORLD_SIZE, gridToWorld } from './layout';
 import { applyModelFit, FLAG_FIT, PIECE_FIT } from './model-fit';
-import { checkerTexture, FLAG_URL, MODEL_FOR_PIECE, rotationY } from './piece-visuals';
+import { checkerTexture, FLAG_URL, MODEL_FOR_PIECE, rotationY, tintBright } from './piece-visuals';
 
 /** Shared checker overlay geometry for start/finish cells. */
 const CHECKER_GEOMETRY = new THREE.PlaneGeometry(CELL_WORLD_SIZE, CELL_WORLD_SIZE);
 
 /** Shared checker overlay material; one instance avoids GPU material churn on rebuilds. */
 const CHECKER_MATERIAL = new THREE.MeshLambertMaterial({ transparent: true, opacity: 0.9 });
-
-/** Light toy-gray that brightens the flat vertex colors without hue-shifting grays. */
-const TOY_TINT = new THREE.Color(0xdfe4ea);
-
-/** Pulls a material color toward the chunky bright toy look (no hue shift). */
-function tintBright(color: THREE.Color): void {
-  color.lerp(TOY_TINT, 0.35);
-}
 
 /**
  * Builds one placeable piece: a holder positioned at the cell center with
@@ -60,6 +52,8 @@ export function buildPiece(
   // N + E, so curve pieces carry a built-in 90-degree counter-clockwise turn
   // (+pi/2). Added on the holder so the fit recentering offset rotates with it.
   holder.rotation.y = rotationY(cell.orientation) + (cell.type === 'curve' ? Math.PI / 2 : 0);
+  holder.userData.cellIndex = y * GRID_SIZE + x;
+  holder.userData.baseRotY = holder.rotation.y;
   return holder;
 }
 
@@ -94,6 +88,12 @@ export class PieceRenderer {
           for (const material of materials) {
             if ('color' in material) {
               tintBright(material.color);
+              // Snapshot the bright-tinted base so remove-mode can pulse red
+              // without drifting the color permanently.
+              (material as { userData: Record<string, unknown> }).userData = {
+                ...(material.userData ?? {}),
+                baseColor: material.color.clone(),
+              };
             }
           }
         }

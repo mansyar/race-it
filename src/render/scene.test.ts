@@ -24,6 +24,15 @@ vi.mock('three', () => {
     dispose = vi.fn();
   }
 
+  class StubCanvasTexture {
+    image: { width: number; height: number };
+    colorSpace = '';
+    dispose = vi.fn();
+    constructor(image: { width: number; height: number }) {
+      this.image = image;
+    }
+  }
+
   return {
     WebGLRenderer: class extends StubRenderer {},
     Scene: StubObject3D,
@@ -51,10 +60,27 @@ vi.mock('three', () => {
       dispose = vi.fn();
     },
     MeshBasicMaterial: class {},
+    CanvasTexture: StubCanvasTexture,
+    SRGBColorSpace: '',
   };
 });
 
-import { createBuildScene } from './scene';
+import { contactShadowTexture, createBuildScene } from './scene';
+
+describe('contactShadowTexture', () => {
+  it('returns a canvas texture sized for the shadow disc', () => {
+    const texture = contactShadowTexture(32);
+    expect(texture.image?.width).toBe(32);
+    expect(texture.image?.height).toBe(32);
+    texture.dispose();
+  });
+
+  it('defaults to 64px when size is omitted', () => {
+    const texture = contactShadowTexture();
+    expect(texture.image?.width).toBe(64);
+    texture.dispose();
+  });
+});
 
 describe('createBuildScene frame loop', () => {
   let rafCallback: FrameRequestCallback | null = null;

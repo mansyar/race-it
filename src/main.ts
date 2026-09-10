@@ -1,26 +1,34 @@
 import * as THREE from 'three';
 import { appReady } from './app';
-import { KARTS, MODELS, SFX } from './assets/manifest';
-import { createSfx } from './audio/sfx';
+import { KARTS, MODELS, MUSIC, SCENERY, SFX } from './assets/manifest';
+import { createAudioDirector } from './audio/audio-director';
 import type { GridModel, PieceType } from './grid/grid-model';
 import { GRID_SIZE } from './grid/grid-model';
+import { deleteFromShelf, loadShelf, saveToShelf } from './grid/shelf-store';
 import { TrackEditor } from './grid/track-editor';
 import { loadOrSeedTrack, saveTrack } from './grid/track-store';
 import { validateTrack } from './grid/track-validator';
 import { createRacePresentation, type RacePresentation } from './presentation/race-presentation';
-import { createRaceEngine } from './race/engine';
+import { createRaceEngine, type RaceEngine } from './race/engine';
+import { kartColorIndex, loadLineup, saveLineup } from './race/lineup';
 import { extractLoopPath } from './race/path';
 import { ConfettiBurst } from './render/confetti';
 import { type BuildTool, handleCellTap } from './render/interaction';
 import { KartRenderer } from './render/kart-meshes';
+import { KartPreview } from './render/kart-preview';
 import { fillPerfPattern } from './render/perf-harness';
+import { applyPieceFeedback } from './render/piece-feedback-apply';
 import { PieceRenderer } from './render/piece-renderer';
 import { createBuildScene } from './render/scene';
+import { SceneryRenderer } from './render/scenery-render';
+import { PieceFeedback } from './render/toy-feedback';
 import './style.css';
 import { createBuildBar } from './ui/build-bar';
+import { createCarPicker } from './ui/car-picker';
 import { createCornerCluster } from './ui/corner-cluster';
 import { createGoButton } from './ui/go-button';
 import { createRaceHud } from './ui/race-hud';
+import { createShelfOverlay } from './ui/shelf-overlay';
 import { createTrafficLight } from './ui/traffic-light';
 import { createTrophy } from './ui/trophy';
 
@@ -29,7 +37,9 @@ import { createTrophy } from './ui/trophy';
 const ASSET_URLS: readonly string[] = [
   ...Object.values(MODELS),
   ...Object.values(KARTS),
+  ...Object.values(SCENERY),
   ...Object.values(SFX),
+  ...Object.values(MUSIC),
 ];
 void ASSET_URLS.length;
 
@@ -45,15 +55,18 @@ if (root && appReady()) {
   let tool: BuildTool = { kind: 'none' };
   let selectedType: PieceType | null = null;
   let presentation: RacePresentation | null = null;
+  let raceEngine: RaceEngine | null = null;
 
   const pieces = new PieceRenderer();
   const karts = new KartRenderer();
   const confetti = new ConfettiBurst();
-  const sfx = createSfx();
-  sfx.setMuted(localStorage.getItem('race-it:muted') === 'true');
+  const scenery = new SceneryRenderer();
+  const feedback = new PieceFeedback();
+  const audio = createAudioDirector();
 
   const rerender = (): void => {
     pieces.update(model.toSnapshot());
+    scenery.update(model.toSnapshot());
     bar.setUndoEnabled(editor.canUndo());
     go.setValid(validateTrack(model).valid);
     if (validateTrack(model).valid) {
@@ -62,7 +75,18 @@ if (root && appReady()) {
   };
 
   const view = createBuildScene(root, (x, y) => {
-    handleCellTap(editor, tool, x, y);
+    const result = handleCellTap(editor, tool, x, y);
+    if (result === 'placed') {
+      audio.playOneShot('place');
+      feedback.notePlaced(y * GRID_SIZE + x);
+    }
+    if (result === 'removed') {
+      audio.playOneShot('remove');
+    }
+    if (result === 'ignored' && tool.kind === 'piece') {
+      // A piece tool on an occupied cell is blocked — gentle nope feedback.
+      audio.playOneShot('nope');
+    }
     rerender();
   });
 
@@ -198,18 +222,18 @@ if (root && appReady()) {
   const trafficLight = createTrafficLight();
   const raceHud = createRaceHud({
     onPause: () => {
-      sfx.play('click');
+      audio.playOneShot('click');
     },
     onResume: () => {
-      sfx.play('click');
+      audio.playOneShot('click');
     },
     onQuit: () => {
-      sfx.play('confirmB');
+      audio.playOneShot('confirmB');
     },
   });
   const trophy = createTrophy({
     onAgain: () => {
-      sfx.play('confirmA');
+      audio.playOneShot('confirmA');
     },
   });
 
@@ -220,10 +244,106 @@ if (root && appReady()) {
   };
 
   const go = createGoButton({
+    onBlockedTap: () => {
+      audio.playOneShot('nope');
+    },
     onGo: () => {
+      audio.playOneShot('click');
+      picker.setLineup(loadLineup());
+      picker.show();
+      renderKartPreviews();
+    },
+  });
+
+  const bar = createBuildBar({
+    onPieceSelect: (type) => {
+      audio.playOneShot('click');
+      selectedType = selectedType === type ? null : type;
+      tool = selectedType ? { kind: 'piece', type: selectedType } : { kind: 'none' };
+      bar.setSelected(selectedType);
+      if (selectedType) {
+        bar.setRemoveActive(false);
+        feedback.setRemoveMode(false);
+      }
+    },
+    onUndo: () => {
+      audio.playOneShot('click');
+      editor.undo();
+      rerender();
+    },
+    onRemoveToggle: () => {
+      audio.playOneShot('click');
+      const active = tool.kind !== 'remove';
+      tool = active ? { kind: 'remove' } : { kind: 'none' };
+      bar.setRemoveActive(active);
+      feedback.setRemoveMode(active);
+      if (active) {
+        selectedType = null;
+        bar.setSelected(null);
+      }
+    },
+  });
+
+  const shelf = createShelfOverlay({
+    getEntries: () => loadShelf(),
+    onSave: () => {
+      const result = saveToShelf(model);
+      if (result === 'saved') {
+        audio.playOneShot('click');
+      }
+      return result;
+    },
+    onLoad: (id) => {
+      const entry = loadShelf().find((candidate) => candidate.id === id);
+      if (!entry) {
+        return;
+      }
+      for (let y = 0; y < GRID_SIZE; y++) {
+        for (let x = 0; x < GRID_SIZE; x++) {
+          model.setCell(x, y, entry.snapshot[y * GRID_SIZE + x] ?? null);
+        }
+      }
+      editor = new TrackEditor(model);
+      rerender();
+      audio.playOneShot('click');
+    },
+    onDelete: (id) => {
+      deleteFromShelf(id);
+      audio.playOneShot('confirmB');
+    },
+    onClose: () => {},
+  });
+
+  const cluster = createCornerCluster({
+    onShelf: () => {
+      audio.playOneShot('click');
+      shelf.open();
+    },
+    onMuteToggle: (muted) => {
+      audio.setMuted(muted);
+    },
+    onClearConfirmed: () => {
+      audio.playOneShot('confirmB');
+      for (let y = 0; y < GRID_SIZE; y++) {
+        for (let x = 0; x < GRID_SIZE; x++) {
+          model.setCell(x, y, null);
+        }
+      }
+      editor = new TrackEditor(model);
+      rerender();
+    },
+  });
+
+  const picker = createCarPicker({
+    onRace: (lineup) => {
       try {
         const path = extractLoopPath(model);
-        const engine = createRaceEngine(path);
+        const engine = createRaceEngine(path, { kartCount: lineup.karts.length });
+        raceEngine = engine;
+        // The picker picked WHICH colors race; remap kart slots so engine
+        // kart i renders the chosen color's model (and trophy color word).
+        const order = lineup.karts.map((color) => kartColorIndex[color]);
+        karts.setKartOrder(order);
         engine.on('kartFinish', ({ index, time }) => {
           console.info(`[race] kart ${index} finished at ${time.toFixed(2)}s`);
           if (engine.karts.every((kart) => kart.finished)) {
@@ -240,66 +360,56 @@ if (root && appReady()) {
           confetti,
           karts,
           camera: view.camera,
+          kartOrder: order,
           onBuildUiChange: setBuildUiVisible,
+          onCountdownBeep: (step) => {
+            audio.playCountdownBeep(step);
+          },
+          onGo: () => {
+            audio.playOneShot('go');
+          },
+          audio,
         });
-        sfx.play('confirmA');
+        // Leaving remove mode behind would leak build feedback into the race.
+        feedback.setRemoveMode(false);
+        bar.setRemoveActive(false);
+        saveLineup(lineup);
+        picker.hide();
+        audio.playOneShot('confirmA');
         presentation.beginRace();
       } catch (error) {
         console.error('[race] cannot start race', error);
       }
     },
-  });
-
-  const bar = createBuildBar({
-    onPieceSelect: (type) => {
-      sfx.play('click');
-      selectedType = selectedType === type ? null : type;
-      tool = selectedType ? { kind: 'piece', type: selectedType } : { kind: 'none' };
-      bar.setSelected(selectedType);
-      if (selectedType) {
-        bar.setRemoveActive(false);
-      }
+    onBack: () => {
+      audio.playOneShot('click');
+      picker.hide();
     },
-    onUndo: () => {
-      sfx.play('click');
-      editor.undo();
-      rerender();
-    },
-    onRemoveToggle: () => {
-      sfx.play('click');
-      const active = tool.kind !== 'remove';
-      tool = active ? { kind: 'remove' } : { kind: 'none' };
-      bar.setRemoveActive(active);
-      if (active) {
-        selectedType = null;
-        bar.setSelected(null);
-      }
+    onToggle: () => {
+      audio.playOneShot('click');
     },
   });
 
-  const cluster = createCornerCluster({
-    onShelf: () => {
-      // Shelf UI is a later track; stub is inert for now.
-    },
-    onMuteToggle: (muted) => {
-      sfx.setMuted(muted);
-      localStorage.setItem('race-it:muted', String(muted));
-    },
-    onClearConfirmed: () => {
-      sfx.play('confirmB');
-      for (let y = 0; y < GRID_SIZE; y++) {
-        for (let x = 0; x < GRID_SIZE; x++) {
-          model.setCell(x, y, null);
-        }
-      }
-      editor = new TrackEditor(model);
-      rerender();
-    },
-  });
+  // One shared WebGL canvas renders the four tinted kart previews; it sits
+  // above the swatch grid and only paints when the picker is visible.
+  const kartPreview = new KartPreview({ container: picker.getPreviewSlot() });
+  const renderKartPreviews = (): void => {
+    const rect = picker.getPreviewSlot().getBoundingClientRect();
+    if (rect.width > 0 && rect.height > 0) {
+      kartPreview.render(rect.width, rect.height);
+    }
+  };
+  kartPreview
+    .load()
+    .then(renderKartPreviews)
+    .catch((error: unknown) => {
+      console.error('Failed to load kart preview models', error);
+    });
+  window.addEventListener('resize', renderKartPreviews);
 
   const appUi = document.createElement('div');
   appUi.className = 'app-ui';
-  appUi.append(cluster.root, go.root, bar.root, cluster.confirm);
+  appUi.append(cluster.root, go.root, bar.root, cluster.confirm, picker.root, shelf.root);
   root.append(appUi);
 
   const raceUi = document.createElement('div');
@@ -313,11 +423,14 @@ if (root && appReady()) {
     .load()
     .then(() => {
       view.scene.add(pieces.update(model.toSnapshot()));
+      return scenery.load();
+    })
+    .then(() => {
+      view.scene.add(scenery.update(model.toSnapshot()));
     })
     .catch((error: unknown) => {
-      console.error('Failed to load track pieces', error);
+      console.error('Failed to load track pieces or scenery', error);
     });
-
   karts
     .load()
     .then(() => {
@@ -328,10 +441,35 @@ if (root && appReady()) {
       console.error('Failed to load kart models', error);
     });
 
-  // Single per-frame pass: engine tick + presentation + render (scene owns rAF).
+  // Single per-frame pass: build feedback (build mode only) plus race
+  // presentation (owns engine ticking), then render (scene owns rAF).
   view.onFrame((dt) => {
+    feedback.tick(dt);
+    if (!raceEngine || raceEngine.state === 'idle') {
+      applyPieceFeedback(pieces.group, feedback, feedback.time);
+    }
     presentation?.update(dt);
   });
 
-  window.addEventListener('pagehide', () => view.dispose(), { once: true });
+  // iOS audio unlock: the WebAudio context may only resume inside a user
+  // gesture, so unlock on the very first touch anywhere (capture phase).
+  window.addEventListener(
+    'pointerdown',
+    () => {
+      audio.unlock();
+    },
+    { once: true, capture: true },
+  );
+  // Backgrounding: silence everything when the page hides, restore on return.
+  window.addEventListener('pagehide', () => {
+    window.removeEventListener('resize', renderKartPreviews);
+    kartPreview.dispose();
+    audio.suspendAll();
+    view.dispose();
+  });
+  document.addEventListener('visibilitychange', () => {
+    if (document.visibilityState === 'visible') {
+      audio.resumeAll();
+    }
+  });
 }

@@ -155,6 +155,22 @@ describe('KartRenderer', () => {
     expect(first.color.getHex()).toBe(0xffffff);
     expect(second.color.getHex()).toBe(0x000000);
   });
+
+  it('renders pose slots through a custom kart order (picker lineup)', async () => {
+    const scenes = [singleMeshScene(), singleMeshScene(), singleMeshScene(), singleMeshScene()];
+    const renderer = new KartRenderer();
+    await renderer.load(mockLoader(scenes));
+    // Engine kart 0 renders as kart model 3 (yellow), kart 1 as model 1 (blue).
+    renderer.setKartOrder([3, 1]);
+    renderer.update([pose(0), pose(1)]);
+    expect(renderer.group.children).toHaveLength(2);
+    const first = renderer.group.children[0] as THREE.Group;
+    const second = renderer.group.children[1] as THREE.Group;
+    const firstMaterial = (first.children[0] as THREE.Mesh).material as THREE.MeshLambertMaterial;
+    const secondMaterial = (second.children[0] as THREE.Mesh).material as THREE.MeshLambertMaterial;
+    expect(firstMaterial.color.getHex()).toBe(KART_COLORS[3]);
+    expect(secondMaterial.color.getHex()).toBe(KART_COLORS[1]);
+  });
 });
 
 // Native kart bounds measured with `node scripts/measure-glb-world.mjs`:

@@ -10,10 +10,14 @@ function click(root: ParentNode, selector: string): HTMLButtonElement {
 }
 
 describe('createGoButton', () => {
+  const onGo = vi.fn();
+  const onBlockedTap = vi.fn();
   let go: ReturnType<typeof createGoButton>;
 
   beforeEach(() => {
-    go = createGoButton({ onGo: vi.fn() });
+    onGo.mockClear();
+    onBlockedTap.mockClear();
+    go = createGoButton({ onGo, onBlockedTap });
   });
 
   it('renders a single big GO button', () => {
@@ -22,27 +26,37 @@ describe('createGoButton', () => {
     expect(buttons[0]).toBeTruthy();
   });
 
-  it('starts disabled (track not valid yet)', () => {
-    expect(click(go.root, 'button[data-action="go"]').disabled).toBe(true);
+  it('starts invalid while the track is not race-ready', () => {
+    expect(click(go.root, 'button[data-action="go"]').getAttribute('aria-disabled')).toBe('true');
   });
 
-  it('ignores taps while disabled', () => {
+  it('keeps the button tappable so invalid taps can give feedback', () => {
+    expect(click(go.root, 'button[data-action="go"]').disabled).toBe(false);
+  });
+
+  it('notifies onBlockedTap when tapped while invalid', () => {
     click(go.root, 'button[data-action="go"]').click();
-    expect(go.callbacks.onGo).not.toHaveBeenCalled();
+    expect(onBlockedTap).toHaveBeenCalledTimes(1);
+    expect(onGo).not.toHaveBeenCalled();
   });
 
-  it('setValid(true) enables the button and taps fire onGo', () => {
+  it('setValid(true) marks valid and taps fire onGo', () => {
     go.setValid(true);
     const button = click(go.root, 'button[data-action="go"]');
-    expect(button.disabled).toBe(false);
+    expect(button.getAttribute('aria-disabled')).toBe('false');
     button.click();
-    expect(go.callbacks.onGo).toHaveBeenCalledTimes(1);
+    expect(onGo).toHaveBeenCalledTimes(1);
+    expect(onBlockedTap).not.toHaveBeenCalled();
   });
 
-  it('setValid(false) disables again after being valid', () => {
+  it('setValid(false) marks invalid again and taps notify onBlockedTap', () => {
     go.setValid(true);
     go.setValid(false);
-    expect(click(go.root, 'button[data-action="go"]').disabled).toBe(true);
+    const button = click(go.root, 'button[data-action="go"]');
+    expect(button.getAttribute('aria-disabled')).toBe('true');
+    button.click();
+    expect(onGo).not.toHaveBeenCalled();
+    expect(onBlockedTap).toHaveBeenCalledTimes(1);
   });
 
   it('marks validity with a pulsing class when valid', () => {

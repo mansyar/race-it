@@ -1,2 +1,4 @@
+# pnpm 12 settings — build approvals (strictDepBuilds defaults to true).
+# sharp needs its postinstall to link platform binaries (musl on Alpine).
 allowBuilds:
   sharp: true

@@ -9,7 +9,6 @@ import type { Trophy } from '../ui/trophy';
 
 /** Winner color words for the trophy overlay (product-guidelines palette). */
 export const WINNER_COLOR_WORDS = ['Red', 'Blue', 'Green', 'Yellow'] as const;
-
 /** Duration of the winner victory spin, in seconds. */
 export const VICTORY_SPIN_SECONDS = 2.0;
 
@@ -31,6 +30,24 @@ export function victorySpinHeading(baseHeading: number, spinProgress: number): n
 /** Sink that places kart meshes for the current frame (KartRenderer-compatible). */
 export interface KartPoseSink {
   update(poses: KartPose[]): unknown;
+}
+
+/** Audio sink the presentation drives for the race's music/hum/jingle layers. */
+export interface RaceAudioDirector {
+  /** Starts (or continues) the looping background music. */
+  startMusic: () => void;
+  /** Fades in the procedural engine hum. */
+  startHum: () => void;
+  /** Fades out the engine hum. */
+  stopHum: () => void;
+  /** Plays the victory jingle once (music ducks underneath). */
+  playVictoryJingle: () => void;
+  /** Silences everything (mid-race pause). */
+  suspendAll: () => void;
+  /** Restores everything (mid-race resume). */
+  resumeAll: () => void;
+  /** Stops hum + music permanently (quit / back to the builder). */
+  stopAll: () => void;
 }
 
 /** Confetti burst lifecycle (ConfettiBurst-compatible). */
@@ -55,9 +72,20 @@ export interface RacePresentationOptions {
   trophy: Trophy;
   confetti: ConfettiLike;
   karts: KartPoseSink;
+  /**
+   * Race kart slot per engine kart index (car picker lineup). Engine kart 0
+   * renders/trophies as the color at kartOrder[0]; omitted = 0..n-1 order.
+   */
+  kartOrder?: number[];
   camera: CameraLike;
   /** Show/hide the builder HUD (palette, GO, shelf/clear). Mute stays. */
   onBuildUiChange?: (visible: boolean) => void;
+  /** Countdown step (3, 2, 1) — beep cue sink, synced to the light steps. */
+  onCountdownBeep?: (step: number) => void;
+  /** The countdown finished and the race started running — GO cue sink. */
+  onGo?: () => void;
+  /** Race audio layers (music, hum, jingle) driven by the race lifecycle. */
+  audio?: RaceAudioDirector;
 }
 
 export interface RacePresentation {
@@ -103,6 +131,14 @@ function cameraPhase(state: RaceState): RaceCameraPhase {
 }
 
 /**
+ * Quantizes countdown seconds into the traffic-light step (3, 2, 1) using the
+ * same ceil/clamp mapping as the light, so beeps stay synced to the discs.
+ */
+function countdownStep(remaining: number): number {
+  return Math.min(3, Math.max(1, Math.ceil(remaining)));
+}
+
+/**
  * Event-driven race presentation layer. The merged race engine remains the
  * source of truth; this controller maps engine events onto the traffic light,
  * pause HUD, trophy, confetti, kart poses, and the drifting race camera.
@@ -121,6 +157,7 @@ export function createRacePresentation(options: RacePresentationOptions): RacePr
   let hasSmoothedCamera = false;
   let smoothedPos = { x: 0, y: 0, z: 0 };
   let smoothedTarget = { x: 0, y: 0, z: 0 };
+  let lastCountdown = -1;
 
   function resetCelebration(): void {
     spinning = false;
@@ -146,14 +183,17 @@ export function createRacePresentation(options: RacePresentationOptions): RacePr
   const priorAgain = trophy.callbacks.onAgain;
   raceHud.callbacks.onPause = () => {
     priorPause();
+    options.audio?.suspendAll();
     engine.pause();
   };
   raceHud.callbacks.onResume = () => {
     priorResume();
     engine.resume();
+    options.audio?.resumeAll();
   };
   raceHud.callbacks.onQuit = () => {
     priorQuit();
+    options.audio?.stopAll();
     engine.abandon();
   };
   trophy.callbacks.onAgain = () => {
@@ -170,24 +210,31 @@ export function createRacePresentation(options: RacePresentationOptions): RacePr
   engine.on('stateChange', (state) => {
     if (state === 'countdown') {
       options.onBuildUiChange?.(false);
+      options.audio?.startMusic();
       resetCelebration();
       goFlashRemaining = 0;
       raceHud.hide();
       trafficLight.setCountdown(engine.countdownRemaining);
+      lastCountdown = countdownStep(engine.countdownRemaining);
+      options.onCountdownBeep?.(lastCountdown);
       hasSmoothedCamera = false;
       return;
     }
     if (state === 'running') {
+      options.onGo?.();
+      options.audio?.startHum();
       trafficLight.setGo();
       goFlashRemaining = GO_FLASH_SECONDS;
       raceHud.showPause();
       return;
     }
     if (state === 'finished') {
+      options.audio?.stopHum();
       raceHud.hide();
       return;
     }
     if (state === 'idle') {
+      options.audio?.stopAll();
       resetToBuildVisuals();
     }
   });
@@ -217,7 +264,15 @@ export function createRacePresentation(options: RacePresentationOptions): RacePr
 
   function updateTrafficLight(): void {
     if (engine.state === 'countdown') {
-      trafficLight.setCountdown(engine.countdownRemaining);
+      const remaining = engine.countdownRemaining;
+      trafficLight.setCountdown(remaining);
+      const step = countdownStep(remaining);
+      if (step !== lastCountdown) {
+        lastCountdown = step;
+        options.onCountdownBeep?.(step);
+      }
+    } else {
+      lastCountdown = -1;
     }
   }
 
@@ -239,8 +294,12 @@ export function createRacePresentation(options: RacePresentationOptions): RacePr
     if (engine.state !== 'finished' || !engine.karts.every((kart) => kart.finished)) {
       return;
     }
-    trophy.show(engine.result, [...WINNER_COLOR_WORDS]);
+    const words = options.kartOrder
+      ? options.kartOrder.map((kart) => WINNER_COLOR_WORDS[kart] ?? 'Winner')
+      : [...WINNER_COLOR_WORDS];
+    trophy.show(engine.result, words);
     trophyShown = true;
+    options.audio?.playVictoryJingle();
     raceHud.hide();
   }
 

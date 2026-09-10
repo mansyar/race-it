@@ -17,6 +17,8 @@ Preschoolers ages 3–5 (with a parent installing/curating). No reading ability 
 - Interaction: tap a piece from the bottom palette (straight, curve, start line, finish line), then tap a grid cell to place (raycast onto the table). Tap a placed piece to rotate; dedicated remove/long-press mode to delete.
 - Closed-loop validation gates the GO button; wordless pulsing-gap hints show what's missing.
 - Auto-save shelf on device; long-press a saved track to delete.
+- Auto scenery (trees, grandstands, barriers) on empty non-adjacent cells so the table feels like a physical toy set; never blocks placing track.
+- Toy micro-feedback: pieces pop in when placed; remove mode wiggles pieces with a red tint; soft contact shadow and chunky wood rim under the board.
 
 ### The Race
 - Kid taps 2–4 cars to enter and picks each car's color from big swatches (defaults work with one tap).

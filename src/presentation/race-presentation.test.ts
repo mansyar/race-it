@@ -78,6 +78,18 @@ interface Harness {
     aspect: number;
   };
   onBuildUiChange: ReturnType<typeof vi.fn>;
+  onCountdownBeep: ReturnType<typeof vi.fn>;
+  onGo: ReturnType<typeof vi.fn>;
+  audio: {
+    startMusic: ReturnType<typeof vi.fn>;
+    stopMusic: ReturnType<typeof vi.fn>;
+    startHum: ReturnType<typeof vi.fn>;
+    stopHum: ReturnType<typeof vi.fn>;
+    playVictoryJingle: ReturnType<typeof vi.fn>;
+    suspendAll: ReturnType<typeof vi.fn>;
+    resumeAll: ReturnType<typeof vi.fn>;
+    stopAll: ReturnType<typeof vi.fn>;
+  };
   priorOnPause: ReturnType<typeof vi.fn>;
   priorOnResume: ReturnType<typeof vi.fn>;
   priorOnQuit: ReturnType<typeof vi.fn>;
@@ -109,7 +121,7 @@ function packTarget(harness: Harness): { x: number; z: number } {
   };
 }
 
-function createHarness(options: { countdownSeconds?: number } = {}): Harness {
+function createHarness(options: { countdownSeconds?: number; kartOrder?: number[] } = {}): Harness {
   const engine = createRaceEngine(path, {
     seed: 42,
     countdownSeconds: options.countdownSeconds ?? 0.05,
@@ -144,6 +156,18 @@ function createHarness(options: { countdownSeconds?: number } = {}): Harness {
     aspect: 1.5,
   };
   const onBuildUiChange = vi.fn();
+  const onCountdownBeep = vi.fn();
+  const onGo = vi.fn();
+  const audio = {
+    startMusic: vi.fn(),
+    stopMusic: vi.fn(),
+    startHum: vi.fn(),
+    stopHum: vi.fn(),
+    playVictoryJingle: vi.fn(),
+    suspendAll: vi.fn(),
+    resumeAll: vi.fn(),
+    stopAll: vi.fn(),
+  };
 
   const presentation = createRacePresentation({
     engine,
@@ -154,7 +178,11 @@ function createHarness(options: { countdownSeconds?: number } = {}): Harness {
     confetti,
     karts,
     camera,
+    kartOrder: options.kartOrder,
     onBuildUiChange,
+    onCountdownBeep,
+    onGo,
+    audio,
   });
 
   return {
@@ -167,6 +195,9 @@ function createHarness(options: { countdownSeconds?: number } = {}): Harness {
     karts,
     camera,
     onBuildUiChange,
+    onCountdownBeep,
+    onGo,
+    audio,
     priorOnPause,
     priorOnResume,
     priorOnQuit,
@@ -370,6 +401,20 @@ describe('createRacePresentation', () => {
       expect(harness.trophy.root.textContent).toContain('WINS!');
     });
 
+    it('shows the trophy word for the picked color order once every kart finishes', () => {
+      // Engine kart 0 → yellow (3), kart 1 → blue (1).
+      const harness = createHarness({ kartOrder: [3, 1] });
+      harness.raceToAllFinished();
+      const winner = harness.engine.result?.winnerIndex ?? 0;
+      const order = [3, 1];
+      const expected = WINNER_COLOR_WORDS[order[winner] ?? 0];
+      if (!expected) {
+        throw new Error('Expected a winner color word');
+      }
+      expect(harness.trophy.root.textContent).toContain(expected);
+      expect(harness.trophy.root.textContent).not.toContain('Red');
+    });
+
     it('spins the winner kart yaw over the victory window', () => {
       harness.raceToFirstFinish();
       const winner = harness.engine.result?.winnerIndex;
@@ -481,6 +526,92 @@ describe('createRacePresentation', () => {
       expect(harness.light.root.classList.contains('hidden')).toBe(true);
       expect(harness.hud.root.classList.contains('hidden')).toBe(true);
       expect(harness.confetti.clear).toHaveBeenCalled();
+    });
+  });
+
+  describe('countdown & GO sounds', () => {
+    it('beeps once per countdown step, descending 3-2-1, then GO once', () => {
+      const stepped = createHarness({ countdownSeconds: 3 });
+      stepped.presentation.beginRace();
+      for (let i = 0; i < 220; i++) {
+        stepped.presentation.update(1 / 60);
+      }
+      const beeps = stepped.onCountdownBeep.mock.calls.map((call) => call[0]);
+      expect(beeps).toEqual([3, 2, 1]);
+      expect(stepped.onGo).toHaveBeenCalledTimes(1);
+    });
+
+    it('beeps once for a short countdown and plays GO when the race starts', () => {
+      harness.raceToRunning();
+      expect(harness.onCountdownBeep).toHaveBeenCalledTimes(1);
+      // A 0.05 s countdown only reaches step 1 before running.
+      expect(harness.onCountdownBeep).toHaveBeenCalledWith(1);
+      expect(harness.onGo).toHaveBeenCalledTimes(1);
+    });
+
+    it('does not beep or replay GO while running or finished', () => {
+      harness.raceToRunning();
+      const beepsInCountdown = harness.onCountdownBeep.mock.calls.length;
+      const goCalls = harness.onGo.mock.calls.length;
+      harness.presentation.update(0.5);
+      expect(harness.onCountdownBeep.mock.calls.length).toBe(beepsInCountdown);
+      expect(harness.onGo.mock.calls.length).toBe(goCalls);
+    });
+
+    it('replays the countdown beep and GO on RACE AGAIN', () => {
+      harness.raceToAllFinished();
+      const beepsBefore = harness.onCountdownBeep.mock.calls.length;
+      click('button[data-action="again"]', harness.trophy.root);
+      for (let i = 0; i < 10; i++) {
+        harness.presentation.update(1 / 60);
+      }
+      expect(harness.onCountdownBeep.mock.calls.length).toBeGreaterThan(beepsBefore);
+      expect(harness.onGo).toHaveBeenCalledTimes(2);
+    });
+  });
+
+  describe('race audio lifecycle', () => {
+    it('starts the music at the countdown and the hum at GO', () => {
+      const harness = createHarness();
+      harness.raceToRunning();
+      expect(harness.audio.startMusic).toHaveBeenCalledTimes(1);
+      expect(harness.audio.startHum).toHaveBeenCalledTimes(1);
+    });
+
+    it('keeps the music continuous and replays the hum across RACE AGAIN', () => {
+      const harness = createHarness();
+      harness.raceToAllFinished();
+      click('button[data-action="again"]', harness.trophy.root);
+      harness.presentation.update(0.06);
+      // Continuity is the director's job (startMusic is idempotent); the hum restarts.
+      expect(harness.audio.startMusic).toHaveBeenCalled();
+      expect(harness.audio.startHum).toHaveBeenCalledTimes(2);
+    });
+
+    it('stops the hum at the finish and plays the jingle with the trophy', () => {
+      const harness = createHarness();
+      harness.raceToAllFinished();
+      expect(harness.audio.stopHum).toHaveBeenCalled();
+      expect(harness.audio.playVictoryJingle).toHaveBeenCalledTimes(1);
+    });
+
+    it('pauses and resumes all audio with the HUD', () => {
+      const harness = createHarness();
+      harness.raceToRunning();
+      click('button[data-action="pause"]', harness.hud.root);
+      expect(harness.audio.suspendAll).toHaveBeenCalledTimes(1);
+      click('button[data-action="resume"]', harness.hud.overlay);
+      expect(harness.audio.resumeAll).toHaveBeenCalledTimes(1);
+    });
+
+    it('stops all audio when quitting to the builder', () => {
+      const harness = createHarness();
+      harness.raceToRunning();
+      click('button[data-action="pause"]', harness.hud.root);
+      click('button[data-action="quit"]', harness.hud.overlay);
+      click('button[data-confirm="yes"]', harness.hud.confirm);
+      harness.presentation.update(1 / 60);
+      expect(harness.audio.stopAll).toHaveBeenCalled();
     });
   });
 
