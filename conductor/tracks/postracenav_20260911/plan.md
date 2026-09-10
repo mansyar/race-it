@@ -22,7 +22,7 @@
 
 ## Phase 3 — E2E & Quality Gates
 
-- [ ] Task 3.1: E2E coverage first (Red) — new `e2e/postrace.spec.ts`: the seeded demo race plays to the trophy (Playwright timer virtualization or extended timeout), Build Again returns to the builder with the build bar visible and GO enabled, track intact; confirm the assertion fails without the wiring.
+- [x] Task 3.1: E2E coverage first (Red) — new `e2e/postrace.spec.ts`: the seeded demo race plays to the trophy (Playwright timer virtualization or extended timeout), Build Again returns to the builder with the build bar visible and GO enabled, track intact; confirm the assertion fails without the wiring. (01eb796 — extended timeout; Red confirmed against the pre-wiring revision 3cb67ef, failing exactly at the Build Again visibility assertion)
 - [ ] Task 3.2: quality gates — `pnpm build`, `$env:CI='true'; pnpm test`, coverage >80% on changed modules, `pnpm lint` clean.
 - [ ] Task 3.3: browser full-flow verification — portrait + landscape phone viewports: trophy → Build Again → GO → picker → RACE; RACE AGAIN replays with fresh speeds; pause/quit and shelf flows regression-free; `?perf`, `?race`, `?debug` hooks unchanged; screenshots captured.
 - [ ] Task: Phase Verification & Checkpoint (Refer to workflow.md)
