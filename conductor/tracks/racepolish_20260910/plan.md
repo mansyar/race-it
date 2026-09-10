@@ -28,7 +28,7 @@
 
 ## Phase 4 — Verification
 
-- [ ] Task 4.1: quality gates — `pnpm build`, `$env:CI='true'; pnpm test`, coverage >80% on changed modules, `pnpm lint` clean.
-- [ ] Task 4.2: browser full-flow verification — portrait + landscape phone viewports: countdown → race visible; camera follows the lead battle; pause/Resume/Quit flows; quit → builder; finish close-up + trophy + RACE AGAIN; `?race`, `?perf`, `?debug` hooks unchanged; screenshots captured.
-- [ ] Task 4.3: perf sanity — `?perf` draw calls/frame time with 4 karts + confetti during a seeded race; `race-perf.test.ts` green.
+- [x] Task 4.1: quality gates — `pnpm build`, `$env:CI='true'; pnpm test`, coverage >80% on changed modules, `pnpm lint` clean. (6322159)
+- [x] Task 4.2: browser full-flow verification — portrait + landscape phone viewports: countdown → race visible; camera follows the lead battle; pause/Resume/Quit flows; quit → builder; finish close-up + trophy + RACE AGAIN; `?race`, `?perf`, `?debug` hooks unchanged; screenshots captured. (6322159)
+- [x] Task 4.3: perf sanity — `?perf` draw calls/frame time with 4 karts + confetti during a seeded race; `race-perf.test.ts` green. (6322159)
 - [ ] Task: Phase Verification & Checkpoint (Refer to workflow.md)
