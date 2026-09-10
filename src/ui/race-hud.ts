@@ -84,6 +84,7 @@ export function createRaceHud(callbacks: {
   });
   resume.addEventListener('click', () => {
     overlay.hidden = true;
+    pause.classList.remove('hidden');
     callbacks.onResume();
   });
   quit.addEventListener('click', () => {

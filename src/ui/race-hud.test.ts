@@ -80,6 +80,15 @@ describe('createRaceHud', () => {
     expect(hud.overlay.hidden).toBe(true);
   });
 
+  it('resume brings the pause button back for another pause', () => {
+    hud.showPause();
+    click(hud.root, 'button[data-action="pause"]').click();
+    click(hud.overlay, 'button[data-action="resume"]').click();
+    expect(hud.root.querySelector('[data-action="pause"]')?.classList.contains('hidden')).toBe(
+      false,
+    );
+  });
+
   it('hides the confirm dialog until quit is tapped', () => {
     hud.showPause();
     click(hud.root, 'button[data-action="pause"]').click();
