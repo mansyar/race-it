@@ -32,7 +32,7 @@ function makeButton(
 }
 
 /**
- * Corner cluster (top-right): shelf stub, mute toggle, and clear-table with a
+ * Corner cluster (top-right): shelf button, mute toggle, and clear-table with a
  * full-screen confirm dialog so wipes never happen by accident.
  */
 export function createCornerCluster(callbacks: CornerClusterCallbacks): {

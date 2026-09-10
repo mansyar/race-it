@@ -1,3 +1,4 @@
+import type { GridSnapshot } from '../grid/grid-model';
 import { type SaveShelfResult, SHELF_CAPACITY, type ShelfEntry } from '../grid/shelf-store';
 import { drawSchematic } from '../render/shelf-schematic';
 
@@ -199,9 +200,12 @@ export function createShelfOverlay(callbacks: ShelfOverlayCallbacks): ShelfOverl
       confirm.hidden = true;
     }
 
-    for (let i = 0; i < entries.length && i < SHELF_CAPACITY; i++) {
-      renderOccupied(slotWrappers[i], entries[i]);
-    }
+    entries.slice(0, SHELF_CAPACITY).forEach((entry, index) => {
+      const wrapper = slotWrappers[index];
+      if (wrapper) {
+        renderOccupied(wrapper, entry);
+      }
+    });
     justSaved = false;
   }
 

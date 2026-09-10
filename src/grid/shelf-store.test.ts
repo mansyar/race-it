@@ -1,5 +1,5 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest';
-import { GRID_SIZE, GridModel } from './grid-model';
+import { type Cell, GRID_SIZE, GridModel } from './grid-model';
 import {
   deleteFromShelf,
   loadShelf,
@@ -40,9 +40,9 @@ describe('saveToShelf / loadShelf', () => {
 
     const entries = loadShelf();
     expect(entries).toHaveLength(1);
-    expect(entries[0].snapshot).toEqual(grid.toSnapshot());
-    expect(typeof entries[0].id).toBe('string');
-    expect(typeof entries[0].createdAt).toBe('number');
+    expect(entries[0]?.snapshot).toEqual(grid.toSnapshot());
+    expect(typeof entries[0]?.id).toBe('string');
+    expect(typeof entries[0]?.createdAt).toBe('number');
   });
 
   it('returns an empty shelf when nothing was saved', () => {
@@ -57,8 +57,8 @@ describe('saveToShelf / loadShelf', () => {
 
     const entries = loadShelf();
     expect(entries).toHaveLength(2);
-    expect(entries[0].snapshot).toEqual(second.toSnapshot());
-    expect(entries[1].snapshot).toEqual(first.toSnapshot());
+    expect(entries[0]?.snapshot).toEqual(second.toSnapshot());
+    expect(entries[1]?.snapshot).toEqual(first.toSnapshot());
   });
 
   it('returns an empty shelf for corrupt JSON instead of throwing', () => {
@@ -84,13 +84,16 @@ describe('saveToShelf / loadShelf', () => {
         {
           id: 'bad-piece',
           createdAt: 1,
-          snapshot: grid.toSnapshot().toSpliced(0, 1, { type: 'bomb', orientation: 0 }),
+          snapshot: grid.toSnapshot().toSpliced(0, 1, {
+            type: 'bomb',
+            orientation: 0,
+          } as unknown as Cell),
         },
       ]),
     );
     const entries = loadShelf();
     expect(entries).toHaveLength(1);
-    expect(entries[0].id).toBe('healthy-1');
+    expect(entries[0]?.id).toBe('healthy-1');
   });
 });
 
@@ -121,10 +124,14 @@ describe('deleteFromShelf', () => {
     const entries = loadShelf();
     expect(entries).toHaveLength(2);
 
-    deleteFromShelf(entries[1].id);
+    const target = entries[1];
+    if (!target) {
+      throw new Error('expected two entries');
+    }
+    deleteFromShelf(target.id);
     const remaining = loadShelf();
     expect(remaining).toHaveLength(1);
-    expect(remaining[0].snapshot).toEqual(second.toSnapshot());
+    expect(remaining[0]?.snapshot).toEqual(second.toSnapshot());
   });
 
   it('is a no-op for an unknown id', () => {
@@ -150,7 +157,11 @@ describe('storage resilience', () => {
     saveToShelf(loopGrid());
 
     const shelfEntries = loadShelf();
-    deleteFromShelf(shelfEntries[0].id);
+    const saved = shelfEntries[0];
+    if (!saved) {
+      throw new Error('expected one shelf entry');
+    }
+    deleteFromShelf(saved.id);
 
     expect(localStorage.getItem(TRACK_STORAGE_KEY)).not.toBeNull();
     expect(JSON.parse(localStorage.getItem(TRACK_STORAGE_KEY) ?? 'null')).toEqual(

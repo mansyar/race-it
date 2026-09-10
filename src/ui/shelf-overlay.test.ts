@@ -43,6 +43,14 @@ function occupiedCards(root: HTMLElement): HTMLButtonElement[] {
   return Array.from(root.querySelectorAll<HTMLButtonElement>('.shelf-slot.occupied .slot-card'));
 }
 
+function cardAt(cards: HTMLButtonElement[], index: number): HTMLButtonElement {
+  const card = cards[index];
+  if (!card) {
+    throw new Error(`expected an occupied card at index ${index}`);
+  }
+  return card;
+}
+
 function saveButton(root: HTMLElement): HTMLButtonElement {
   return root.querySelector<HTMLButtonElement>('[data-action="save"]') as HTMLButtonElement;
 }
@@ -82,8 +90,8 @@ describe('slot layout', () => {
     overlay.open();
     const cards = occupiedCards(root);
     expect(cards).toHaveLength(2);
-    expect(cards[0].dataset.entryId).toBe('a');
-    expect(cards[0].querySelector('canvas')).not.toBeNull();
+    expect(cardAt(cards, 0).dataset.entryId).toBe('a');
+    expect(cardAt(cards, 0).querySelector('canvas')).not.toBeNull();
     const dimmed = slots(root).filter((slot) => slot.classList.contains('empty'));
     expect(dimmed).toHaveLength(SHELF_CAPACITY - 2);
   });
@@ -121,9 +129,9 @@ describe('saving', () => {
     expect(onSave).toHaveBeenCalledTimes(1);
     const cards = occupiedCards(root);
     expect(cards).toHaveLength(2);
-    expect(cards[0].dataset.entryId).toBe('newer');
-    expect(cards[0].classList.contains('pop-in')).toBe(true);
-    expect(cards[1].dataset.entryId).toBe('older');
+    expect(cardAt(cards, 0).dataset.entryId).toBe('newer');
+    expect(cardAt(cards, 0).classList.contains('pop-in')).toBe(true);
+    expect(cardAt(cards, 1).dataset.entryId).toBe('older');
   });
 
   it('wiggles the save action red and adds nothing when the shelf is full', () => {
@@ -147,7 +155,7 @@ describe('loading', () => {
     const { overlay, root, onLoad, onClose } = makeHarness([entry('a'), entry('b')]);
     overlay.open();
 
-    occupiedCards(root)[1].click();
+    cardAt(occupiedCards(root), 1).click();
 
     expect(onLoad).toHaveBeenCalledWith('b');
     expect(onClose).toHaveBeenCalledTimes(1);
@@ -157,7 +165,7 @@ describe('loading', () => {
 
 describe('long-press delete', () => {
   function armCard(root: HTMLElement, cardIndex = 0): HTMLButtonElement {
-    const card = occupiedCards(root)[cardIndex];
+    const card = cardAt(occupiedCards(root), cardIndex);
     pointerDown(card);
     vi.advanceTimersByTime(600);
     pointerUp(card);
@@ -184,7 +192,7 @@ describe('long-press delete', () => {
     overlay.open();
     armCard(root);
 
-    const slot = occupiedCards(root)[0].closest('.shelf-slot') as HTMLElement;
+    const slot = cardAt(occupiedCards(root), 0).closest('.shelf-slot') as HTMLElement;
     slot.querySelector<HTMLButtonElement>('[data-confirm="yes"]')?.click();
 
     expect(onDelete).toHaveBeenCalledWith('a');
@@ -198,11 +206,11 @@ describe('long-press delete', () => {
     overlay.open();
     armCard(root);
 
-    const slot = occupiedCards(root)[0].closest('.shelf-slot') as HTMLElement;
+    const slot = cardAt(occupiedCards(root), 0).closest('.shelf-slot') as HTMLElement;
     slot.querySelector<HTMLButtonElement>('[data-confirm="no"]')?.click();
 
     expect(onDelete).not.toHaveBeenCalled();
-    const card = occupiedCards(root)[0];
+    const card = cardAt(occupiedCards(root), 0);
     expect(card.classList.contains('armed')).toBe(false);
     expect(slot.querySelector<HTMLElement>('.slot-confirm')?.hidden).toBe(true);
   });
@@ -211,7 +219,7 @@ describe('long-press delete', () => {
     const { overlay, root, onLoad, onDelete } = makeHarness([entry('a')]);
     overlay.open();
 
-    const card = occupiedCards(root)[0];
+    const card = cardAt(occupiedCards(root), 0);
     pointerDown(card);
     vi.advanceTimersByTime(100);
     pointerUp(card);

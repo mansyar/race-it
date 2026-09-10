@@ -37,7 +37,8 @@ export interface SchematicRect {
 
 /** Minimal 2D context surface used to rasterize a schematic. */
 export interface SchematicContext {
-  fillStyle: string;
+  /** Paint color; wide enough to accept a real CanvasRenderingContext2D. */
+  fillStyle: CanvasRenderingContext2D['fillStyle'];
   fillRect(x: number, y: number, w: number, h: number): void;
 }
 
@@ -55,7 +56,7 @@ export function schematicGlyphs(snapshot: GridSnapshot): SchematicGlyph[] {
   const glyphs: SchematicGlyph[] = [];
   for (let i = 0; i < snapshot.length; i++) {
     const cell = snapshot[i];
-    if (cell !== null) {
+    if (cell !== null && cell !== undefined) {
       glyphs.push({
         x: i % GRID_SIZE,
         y: Math.floor(i / GRID_SIZE),

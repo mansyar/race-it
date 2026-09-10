@@ -102,13 +102,13 @@ describe('schematicRects', () => {
   it('draws a vertical bar for a straight piece at orientation 0', () => {
     const rects = schematicRects([{ x: 0, y: 0, type: 'straight', orientation: 0 }], SIZE);
     expect(rects).toHaveLength(1);
-    expect(rects[0].h).toBeGreaterThan(rects[0].w);
+    expect(rects[0]?.h).toBeGreaterThan(rects[0]?.w ?? 0);
   });
 
   it('draws a horizontal bar for a straight piece at orientation 90', () => {
     const rects = schematicRects([{ x: 0, y: 0, type: 'straight', orientation: 90 }], SIZE);
     expect(rects).toHaveLength(1);
-    expect(rects[0].w).toBeGreaterThan(rects[0].h);
+    expect(rects[0]?.w).toBeGreaterThan(rects[0]?.h ?? 0);
   });
 
   it('keeps every rect inside the canvas bounds for a mixed grid', () => {
@@ -134,8 +134,8 @@ describe('schematicRects', () => {
     const glyphs = [{ x: 2, y: 3, type: 'straight' as const, orientation: 0 as const }];
     const small = schematicRects(glyphs, 60);
     const large = schematicRects(glyphs, 120);
-    expect(large[0].x).toBeCloseTo(small[0].x * 2);
-    expect(large[0].w).toBeCloseTo(small[0].w * 2);
+    expect(large[0]?.x).toBeCloseTo((small[0]?.x ?? 0) * 2);
+    expect(large[0]?.w).toBeCloseTo((small[0]?.w ?? 0) * 2);
   });
 
   it('marks the start pad with the start fill', () => {
@@ -180,10 +180,14 @@ describe('drawSchematic', () => {
     drawSchematic(ctx, snapshot, SIZE);
     const expected = schematicRects(schematicGlyphs(snapshot), SIZE);
     expect(ctx.calls).toHaveLength(expected.length);
-    for (let i = 0; i < expected.length; i++) {
-      expect(ctx.calls[i].fill).toBe(expected[i].fill);
-      expect(ctx.calls[i].rect).toEqual(expected[i]);
-    }
+    expected.forEach((rect, index) => {
+      const call = ctx.calls[index];
+      if (!call) {
+        throw new Error(`missing paint call at index ${index}`);
+      }
+      expect(call.fill).toBe(rect.fill);
+      expect(call.rect).toEqual(rect);
+    });
   });
 
   it('paints nothing for an empty grid', () => {
