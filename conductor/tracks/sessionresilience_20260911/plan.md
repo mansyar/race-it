@@ -44,3 +44,6 @@
 - [ ] Task: Phase Verification & Checkpoint (Refer to workflow.md)
 
 > **Note on Phase 5:** releasing remains with a future "Ship" track; this merge only lands the work on master.
+
+## Phase: Review Fixes
+- [x] Task: Apply review suggestions (65c9382) — gate audio resume on `RacePresentation.isHolding()` so a held race stays silent behind the overlay until Resume.
