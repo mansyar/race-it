@@ -8,8 +8,8 @@
 
 ## Phase 1 — Pause HUD Fix
 
-- [ ] Task 1.1: stylesheet contract tests first (Red) — new `src/style.test.ts`: `src/style.css` defines `[hidden]` overrides resolving to `display: none` for `.race-overlay` and `.race-confirm` (fails until the rule lands). Guards the exact bug class: author `display` rules defeating the `hidden` attribute — invisible to jsdom DOM tests.
-- [ ] Task 1.2: add `.race-overlay[hidden], .race-confirm[hidden] { display: none; }` to `src/style.css` beside the `.confirm-overlay[hidden]` precedent (Green); full suite stays green; browser check — post-countdown race unobstructed; pause → Resume/Quit flows correct.
+- [x] Task 1.1: stylesheet contract tests first (Red) (f48a9e9) — new `src/style.test.ts`: `src/style.css` defines `[hidden]` overrides resolving to `display: none` for `.race-overlay` and `.race-confirm` (fails until the rule lands). Guards the exact bug class: author `display` rules defeating the `hidden` attribute — invisible to jsdom DOM tests.
+- [x] Task 1.2: add `.race-overlay[hidden], .race-confirm[hidden] { display: none; }` (f48a9e9) to `src/style.css` beside the `.confirm-overlay[hidden]` precedent (Green); full suite stays green; browser check — post-countdown race unobstructed; pause → Resume/Quit flows correct.
 - [ ] Task: Phase Verification & Checkpoint (Refer to workflow.md)
 
 ## Phase 2 — Pack-Fitting Race Camera
