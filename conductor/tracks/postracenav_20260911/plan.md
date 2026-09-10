@@ -26,3 +26,7 @@
 - [x] Task 3.2: quality gates — `pnpm build`, `$env:CI='true'; pnpm test`, coverage >80% on changed modules, `pnpm lint` clean. (all green — 422 tests, coverage src/presentation 97.35% stmts / 97.31% lines, src/ui 98.55% stmts / 98.52% lines)
 - [x] Task 3.3: browser full-flow verification — portrait + landscape phone viewports: trophy → Build Again → GO → picker → RACE; RACE AGAIN replays with fresh speeds; pause/quit and shelf flows regression-free; `?perf`, `?race`, `?debug` hooks unchanged; screenshots captured. (Playwright full-flow 4/4 passed + smoke/shelf regression 2/2; screenshots in `test-results/postrace-verify/`; two pre-existing issues found and logged: resume leaves the pause button hidden for the rest of the race, and the car picker overflows at 844x390 short landscape)
 - [ ] Task: Phase Verification & Checkpoint (Refer to workflow.md)
+
+## Phase: Review Fixes
+
+- [x] Task: Apply review suggestions — 092462a (from the post-implementation code review)
