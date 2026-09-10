@@ -6,7 +6,7 @@
 
 **Dev commands:** `pnpm install` · `pnpm dev` · `$env:CI='true'; pnpm test` · `$env:CI='true'; pnpm test -- --coverage` (target >80%) · `pnpm lint` (Biome) · `pnpm build`
 
-## Phase 1 — Trophy Build Again Affordance
+## Phase 1 — Trophy Build Again Affordance [checkpoint: 14ad574]
 
 - [x] Task 1.1: trophy contract tests first (Red) — extend `src/ui/trophy.test.ts`: `.build-again-button` (`data-action="build-again"`) renders below `.again-button` inside the trophy card; inline SVG icon present; non-empty `aria-label`; no visible `textContent`; button and card share one hidden lifecycle (`show`/`hide`); click fires `onBuildAgain` exactly once with no confirm overlay; existing RACE AGAIN assertions untouched. (3a9cfe2)
 - [x] Task 1.2: implement the affordance (Green) — `src/ui/trophy.ts`: add `onBuildAgain` to the `Trophy` interface and a subordinate icon button beneath RACE AGAIN; wordless (icon + aria-label only). (3a9cfe2)
