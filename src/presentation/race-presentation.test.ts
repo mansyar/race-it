@@ -1,12 +1,16 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest';
-import { createRaceEngine, type RaceEngine } from '../race/engine';
+import { createRaceEngine, type Kart, type RaceEngine } from '../race/engine';
 import type { LoopCell } from '../race/path';
-import type { KartPose } from '../render/kart-rig';
+import { type KartPose, kartPose } from '../render/kart-rig';
+import { computeCameraPlacement } from '../render/layout';
+import { LOOK_AHEAD_DISTANCE, RACE_ZOOM_FLOOR } from '../render/race-camera';
 import { createRaceHud } from '../ui/race-hud';
 import { createTrafficLight } from '../ui/traffic-light';
 import { createTrophy } from '../ui/trophy';
 import {
+  CAMERA_SMOOTH_RATE,
   createRacePresentation,
+  leadBattle,
   type RacePresentation,
   VICTORY_SPIN_SECONDS,
   victorySpinHeading,
@@ -24,6 +28,29 @@ const path: LoopCell[] = [
   { x: 5, y: 7, type: 'curve', orientation: 0 },
   { x: 5, y: 6, type: 'straight', orientation: 0 },
 ];
+
+/** Minimal Kart for lead-battle selection tests. */
+function kart(index: number, progress: number): Kart {
+  return {
+    index,
+    lane: 0,
+    startProgress: 0,
+    speed: 1,
+    progress,
+    finished: false,
+    finishTime: null,
+  };
+}
+
+/** Straight-line distance from the camera to its target for a build placement. */
+function buildDistanceOf(aspect: number): number {
+  const build = computeCameraPlacement(aspect);
+  return Math.hypot(
+    build.position.x - build.target.x,
+    build.position.y - build.target.y,
+    build.position.z - build.target.z,
+  );
+}
 
 function click(selector: string, root: ParentNode): void {
   const button = root.querySelector<HTMLButtonElement>(selector);
@@ -46,7 +73,7 @@ interface Harness {
   };
   karts: { update: ReturnType<typeof vi.fn>; lastPoses: KartPose[] };
   camera: {
-    position: { x: number; y: number; z: number; set: (x: number, y: number, z: number) => void };
+    position: { x: number; y: number; z: number; set: ReturnType<typeof vi.fn> };
     lookAt: ReturnType<typeof vi.fn>;
     aspect: number;
   };
@@ -73,6 +100,25 @@ interface Harness {
   raceToAllFinished(): void;
   /** Ticks until the winner crosses the finish line. */
   raceToFirstFinish(): void;
+}
+
+/** Expected raw pack target: pair midpoint nudged along the lead travel direction. */
+function packTarget(harness: Harness): { x: number; z: number } {
+  const { engine } = harness;
+  const { leadIndex, rivalIndex } = leadBattle(engine.karts);
+  const lead = engine.karts[leadIndex];
+  if (!lead) {
+    throw new Error('Expected a lead kart');
+  }
+  const leadPose = kartPose(path, lead.progress, lead.lane);
+  const rival = rivalIndex === null ? null : engine.karts[rivalIndex];
+  const rivalPose = rival ? kartPose(path, rival.progress, rival.lane) : null;
+  const midX = rivalPose ? (leadPose.x + rivalPose.x) / 2 : leadPose.x;
+  const midZ = rivalPose ? (leadPose.z + rivalPose.z) / 2 : leadPose.z;
+  return {
+    x: midX + Math.cos(leadPose.heading) * LOOK_AHEAD_DISTANCE,
+    z: midZ - Math.sin(leadPose.heading) * LOOK_AHEAD_DISTANCE,
+  };
 }
 
 function createHarness(options: { countdownSeconds?: number; kartOrder?: number[] } = {}): Harness {
@@ -204,6 +250,17 @@ describe('victorySpinHeading', () => {
   });
 });
 
+describe('leadBattle', () => {
+  it('finds the leader and the closest rival by progress', () => {
+    const karts = [kart(0, 10), kart(1, 30), kart(2, 20), kart(3, 5)];
+    expect(leadBattle(karts)).toEqual({ leadIndex: 1, rivalIndex: 2 });
+  });
+
+  it('returns a null rival for a lone kart', () => {
+    expect(leadBattle([kart(0, 10)])).toEqual({ leadIndex: 0, rivalIndex: null });
+  });
+});
+
 describe('createRacePresentation', () => {
   let harness: Harness;
 
@@ -287,6 +344,38 @@ describe('createRacePresentation', () => {
       expect(harness.camera.position.set).toHaveBeenCalled();
       expect(harness.camera.lookAt).toHaveBeenCalled();
     });
+
+    it('aims the camera at the lead pair nudged along the travel direction', () => {
+      harness.raceToRunning();
+      const expected = packTarget(harness);
+      const look = harness.camera.lookAt.mock.calls.at(-1);
+      expect(look?.[0]).toBeCloseTo(expected.x, 5);
+      expect(look?.[2]).toBeCloseTo(expected.z, 5);
+      // The pack framing is closer than the full-board build placement.
+      const call = harness.camera.position.set.mock.calls.at(-1);
+      const distance = Math.hypot(
+        (call?.[0] ?? 0) - expected.x,
+        (call?.[1] ?? 0) - 0,
+        (call?.[2] ?? 0) - expected.z,
+      );
+      expect(distance).toBeLessThan(buildDistanceOf(harness.camera.aspect));
+    });
+
+    it('eases between pack poses instead of snapping after the first frame', () => {
+      harness.raceToRunning();
+      const firstLook = harness.camera.lookAt.mock.calls.at(-1);
+      if (!firstLook) {
+        throw new Error('Expected an initial camera target');
+      }
+      harness.presentation.update(1 / 60);
+      const nextTarget = packTarget(harness);
+      const t = 1 - Math.exp((-CAMERA_SMOOTH_RATE * 1) / 60);
+      const expectedX = firstLook[0] + (nextTarget.x - firstLook[0]) * t;
+      const expectedZ = firstLook[2] + (nextTarget.z - firstLook[2]) * t;
+      const look = harness.camera.lookAt.mock.calls.at(-1);
+      expect(look?.[0]).toBeCloseTo(expectedX, 3);
+      expect(look?.[2]).toBeCloseTo(expectedZ, 3);
+    });
   });
 
   describe('finish celebration', () => {
@@ -352,6 +441,21 @@ describe('createRacePresentation', () => {
       harness.raceToAllFinished();
       const pause = harness.hud.root.querySelector('[data-action="pause"]');
       expect(pause?.classList.contains('hidden')).toBe(true);
+    });
+
+    it('holds close on the finish area through the celebration', () => {
+      harness.raceToAllFinished();
+      // Let the smoothed camera settle onto the finish hold.
+      for (let i = 0; i < 120; i++) {
+        harness.presentation.update(1 / 60);
+      }
+      const look = harness.camera.lookAt.mock.calls.at(-1);
+      // Finish = start cell (5,5) -> world (-1, -1).
+      expect(look?.[0]).toBeCloseTo(-1, 2);
+      expect(look?.[2]).toBeCloseTo(-1, 2);
+      const call = harness.camera.position.set.mock.calls.at(-1);
+      const distance = Math.hypot((call?.[0] ?? 0) + 1, call?.[1] ?? 0, (call?.[2] ?? 0) + 1);
+      expect(distance).toBeCloseTo(buildDistanceOf(harness.camera.aspect) * RACE_ZOOM_FLOOR, 1);
     });
   });
 

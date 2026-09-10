@@ -1,6 +1,7 @@
 import * as THREE from 'three';
 import { describe, expect, it } from 'vitest';
 import { KARTS } from '../assets/manifest';
+import { LANE_OFFSET, ROW_SPACING } from '../race/engine';
 import {
   KART_COLORS,
   KART_FORWARD_ROTATION,
@@ -115,6 +116,46 @@ describe('KartRenderer', () => {
     expect(renderer.group.children[1]?.position.x).toBeCloseTo(pose(1).x);
   });
 
+  it('ignores extra poses beyond the loaded karts', async () => {
+    const scenes = [singleMeshScene(), singleMeshScene(), singleMeshScene(), singleMeshScene()];
+    const renderer = new KartRenderer();
+    await renderer.load(mockLoader(scenes));
+    renderer.update([pose(0), pose(1), pose(2), pose(3), pose(4)]);
+    expect(renderer.group.children).toHaveLength(4);
+  });
+
+  it('passes through materials without a color channel untouched', async () => {
+    const scene = new THREE.Object3D();
+    const material = new THREE.MeshNormalMaterial();
+    scene.add(new THREE.Mesh(new THREE.BoxGeometry(1, 1, 1), material));
+    const renderer = new KartRenderer();
+    await renderer.load(
+      mockLoader([scene, singleMeshScene(), singleMeshScene(), singleMeshScene()]),
+    );
+    renderer.update([pose(0), pose(1), pose(2), pose(3)]);
+    const mesh = renderer.group.children[0]?.children[0] as THREE.Mesh;
+    expect(mesh.material).toBe(material);
+  });
+
+  it('tints every entry of an array material', async () => {
+    const scene = new THREE.Object3D();
+    const first = new THREE.MeshLambertMaterial({ color: 0xffffff });
+    const second = new THREE.MeshLambertMaterial({ color: 0x000000 });
+    scene.add(new THREE.Mesh(new THREE.BoxGeometry(1, 1, 1), [first, second]));
+    const renderer = new KartRenderer();
+    await renderer.load(
+      mockLoader([scene, singleMeshScene(), singleMeshScene(), singleMeshScene()]),
+    );
+    renderer.update([pose(0), pose(1), pose(2), pose(3)]);
+    const mesh = renderer.group.children[0]?.children[0] as THREE.Mesh;
+    const materials = mesh.material as THREE.MeshLambertMaterial[];
+    expect(materials).toHaveLength(2);
+    expect(materials[0]?.color.getHex()).toBe(KART_COLORS[0]);
+    expect(materials[1]?.color.getHex()).toBe(KART_COLORS[0]);
+    expect(first.color.getHex()).toBe(0xffffff);
+    expect(second.color.getHex()).toBe(0x000000);
+  });
+
   it('renders pose slots through a custom kart order (picker lineup)', async () => {
     const scenes = [singleMeshScene(), singleMeshScene(), singleMeshScene(), singleMeshScene()];
     const renderer = new KartRenderer();
@@ -129,5 +170,26 @@ describe('KartRenderer', () => {
     const secondMaterial = (second.children[0] as THREE.Mesh).material as THREE.MeshLambertMaterial;
     expect(firstMaterial.color.getHex()).toBe(KART_COLORS[3]);
     expect(secondMaterial.color.getHex()).toBe(KART_COLORS[1]);
+  });
+});
+
+// Native kart bounds measured with `node scripts/measure-glb-world.mjs`:
+// size [width 0.974, height 1.329, length 1.428], identical for all four karts.
+const NATIVE_KART_WIDTH = 0.974;
+const NATIVE_KART_LENGTH = 1.428;
+
+describe('start-lineup clearance', () => {
+  it('scales karts to the 0.55 watchability bump', () => {
+    expect(KART_SCALE).toBe(0.55);
+  });
+
+  it('keeps side-by-side karts clear at the lane gap', () => {
+    const width = NATIVE_KART_WIDTH * KART_SCALE;
+    expect(2 * LANE_OFFSET - width).toBeGreaterThan(0.1);
+  });
+
+  it('keeps nose-to-tail karts clear at the row gap', () => {
+    const length = NATIVE_KART_LENGTH * KART_SCALE;
+    expect(ROW_SPACING - length).toBeGreaterThan(0.1);
   });
 });
