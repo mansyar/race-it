@@ -160,3 +160,72 @@ describe('createBuildScene frame loop', () => {
     expect(cancelCount).toBe(1);
   });
 });
+
+describe('createBuildScene pixel-ratio caps', () => {
+  let resizeCallback: (() => void) | null = null;
+  let container: HTMLDivElement;
+
+  beforeEach(() => {
+    Object.defineProperty(window, 'devicePixelRatio', { value: 3, configurable: true });
+    vi.stubGlobal('requestAnimationFrame', () => 1);
+    vi.stubGlobal('cancelAnimationFrame', () => {});
+    class CapturingResizeObserver {
+      constructor(callback: () => void) {
+        resizeCallback = callback;
+      }
+      observe = vi.fn();
+      disconnect = vi.fn();
+    }
+    vi.stubGlobal('ResizeObserver', CapturingResizeObserver);
+    container = document.createElement('div');
+    Object.defineProperty(container, 'clientWidth', { value: 800, configurable: true });
+    Object.defineProperty(container, 'clientHeight', { value: 600, configurable: true });
+    document.body.append(container);
+  });
+
+  function rendererMocks(view: ReturnType<typeof createBuildScene>): {
+    setPixelRatio: ReturnType<typeof vi.fn>;
+    setSize: ReturnType<typeof vi.fn>;
+  } {
+    return view.renderer as unknown as {
+      setPixelRatio: ReturnType<typeof vi.fn>;
+      setSize: ReturnType<typeof vi.fn>;
+    };
+  }
+
+  it('boots at the high cap: min of device ratio and 2', () => {
+    const view = createBuildScene(container);
+    expect(rendererMocks(view).setPixelRatio).toHaveBeenLastCalledWith(2);
+  });
+
+  it('applies the mid and low caps immediately and re-sizes the buffer', () => {
+    const view = createBuildScene(container);
+    const { setPixelRatio, setSize } = rendererMocks(view);
+    const sizesBefore = setSize.mock.calls.length;
+
+    view.setPixelRatioCap('mid');
+    expect(setPixelRatio).toHaveBeenLastCalledWith(1.5);
+    expect(setSize.mock.calls.length).toBe(sizesBefore + 1);
+
+    view.setPixelRatioCap('low');
+    expect(setPixelRatio).toHaveBeenLastCalledWith(1);
+    expect(setSize.mock.calls.length).toBe(sizesBefore + 2);
+  });
+
+  it('restores the high cap when asked', () => {
+    const view = createBuildScene(container);
+    view.setPixelRatioCap('low');
+    view.setPixelRatioCap('high');
+    expect(rendererMocks(view).setPixelRatio).toHaveBeenLastCalledWith(2);
+  });
+
+  it('keeps the active cap when the container resizes', () => {
+    const view = createBuildScene(container);
+    view.setPixelRatioCap('low');
+    if (!resizeCallback) {
+      throw new Error('ResizeObserver callback was not captured');
+    }
+    resizeCallback();
+    expect(rendererMocks(view).setPixelRatio).toHaveBeenLastCalledWith(1);
+  });
+});
