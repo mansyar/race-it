@@ -53,6 +53,16 @@ interface Harness {
   onBuildUiChange: ReturnType<typeof vi.fn>;
   onCountdownBeep: ReturnType<typeof vi.fn>;
   onGo: ReturnType<typeof vi.fn>;
+  audio: {
+    startMusic: ReturnType<typeof vi.fn>;
+    stopMusic: ReturnType<typeof vi.fn>;
+    startHum: ReturnType<typeof vi.fn>;
+    stopHum: ReturnType<typeof vi.fn>;
+    playVictoryJingle: ReturnType<typeof vi.fn>;
+    suspendAll: ReturnType<typeof vi.fn>;
+    resumeAll: ReturnType<typeof vi.fn>;
+    stopAll: ReturnType<typeof vi.fn>;
+  };
   priorOnPause: ReturnType<typeof vi.fn>;
   priorOnResume: ReturnType<typeof vi.fn>;
   priorOnQuit: ReturnType<typeof vi.fn>;
@@ -102,6 +112,16 @@ function createHarness(options: { countdownSeconds?: number } = {}): Harness {
   const onBuildUiChange = vi.fn();
   const onCountdownBeep = vi.fn();
   const onGo = vi.fn();
+  const audio = {
+    startMusic: vi.fn(),
+    stopMusic: vi.fn(),
+    startHum: vi.fn(),
+    stopHum: vi.fn(),
+    playVictoryJingle: vi.fn(),
+    suspendAll: vi.fn(),
+    resumeAll: vi.fn(),
+    stopAll: vi.fn(),
+  };
 
   const presentation = createRacePresentation({
     engine,
@@ -115,6 +135,7 @@ function createHarness(options: { countdownSeconds?: number } = {}): Harness {
     onBuildUiChange,
     onCountdownBeep,
     onGo,
+    audio,
   });
 
   return {
@@ -129,6 +150,7 @@ function createHarness(options: { countdownSeconds?: number } = {}): Harness {
     onBuildUiChange,
     onCountdownBeep,
     onGo,
+    audio,
     priorOnPause,
     priorOnResume,
     priorOnQuit,
@@ -390,9 +412,9 @@ describe('createRacePresentation', () => {
 
   describe('countdown & GO sounds', () => {
     it('beeps once per countdown step, descending 3-2-1, then GO once', () => {
-      const stepped = createHarness({ countdownSeconds: 1.2 });
+      const stepped = createHarness({ countdownSeconds: 3 });
       stepped.presentation.beginRace();
-      for (let i = 0; i < 90; i++) {
+      for (let i = 0; i < 220; i++) {
         stepped.presentation.update(1 / 60);
       }
       const beeps = stepped.onCountdownBeep.mock.calls.map((call) => call[0]);
@@ -403,7 +425,8 @@ describe('createRacePresentation', () => {
     it('beeps once for a short countdown and plays GO when the race starts', () => {
       harness.raceToRunning();
       expect(harness.onCountdownBeep).toHaveBeenCalledTimes(1);
-      expect(harness.onCountdownBeep).toHaveBeenCalledWith(3);
+      // A 0.05 s countdown only reaches step 1 before running.
+      expect(harness.onCountdownBeep).toHaveBeenCalledWith(1);
       expect(harness.onGo).toHaveBeenCalledTimes(1);
     });
 
@@ -428,7 +451,51 @@ describe('createRacePresentation', () => {
     });
   });
 
-  describe('update', () => {
+  describe('race audio lifecycle', () => {
+  it('starts the music at the countdown and the hum at GO', () => {
+    const harness = createHarness();
+    harness.raceToRunning();
+    expect(harness.audio.startMusic).toHaveBeenCalledTimes(1);
+    expect(harness.audio.startHum).toHaveBeenCalledTimes(1);
+  });
+
+  it('keeps the music continuous and replays the hum across RACE AGAIN', () => {
+    const harness = createHarness();
+    harness.raceToAllFinished();
+    click('button[data-action="again"]', harness.trophy.root);
+    harness.presentation.update(1 / 60);
+    expect(harness.audio.startMusic).toHaveBeenCalledTimes(1);
+    expect(harness.audio.startHum).toHaveBeenCalledTimes(2);
+  });
+
+  it('stops the hum at the finish and plays the jingle with the trophy', () => {
+    const harness = createHarness();
+    harness.raceToAllFinished();
+    expect(harness.audio.stopHum).toHaveBeenCalled();
+    expect(harness.audio.playVictoryJingle).toHaveBeenCalledTimes(1);
+  });
+
+  it('pauses and resumes all audio with the HUD', () => {
+    const harness = createHarness();
+    harness.raceToRunning();
+    click('button[data-action="pause"]', harness.hud.root);
+    expect(harness.audio.suspendAll).toHaveBeenCalledTimes(1);
+    click('button[data-action="resume"]', harness.hud.overlay);
+    expect(harness.audio.resumeAll).toHaveBeenCalledTimes(1);
+  });
+
+  it('stops all audio when quitting to the builder', () => {
+    const harness = createHarness();
+    harness.raceToRunning();
+    click('button[data-action="pause"]', harness.hud.root);
+    click('button[data-action="quit"]', harness.hud.overlay);
+    click('button[data-confirm="yes"]', harness.hud.confirm);
+    harness.presentation.update(1 / 60);
+    expect(harness.audio.stopAll).toHaveBeenCalled();
+  });
+});
+
+describe('update', () => {
     it('ticks the engine each frame', () => {
       harness.presentation.beginRace();
       const stateBefore = harness.engine.state;

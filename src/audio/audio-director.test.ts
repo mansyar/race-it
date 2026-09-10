@@ -1,34 +1,141 @@
-import { beforeEach, describe, expect, it } from 'vitest';
-import { SFX } from '../assets/manifest';
-import { COUNTDOWN_RATES, createAudioDirector, GAINS, type SfxName } from './audio-director';
+import { beforeEach, describe, expect, it, vi } from 'vitest';
+import { MUSIC, SFX } from '../assets/manifest';
+import {
+  COUNTDOWN_RATES,
+  createAudioDirector,
+  GAINS,
+  type SfxName,
+} from './audio-director';
 
-interface FakeGainNode {
-  gain: { value: number };
+interface RampCall {
+  method: 'setValueAtTime' | 'linearRampToValueAtTime' | 'cancelScheduledValues';
+  value: number;
+  time: number;
+}
+
+interface FakeParam {
+  value: number;
+  ramps: RampCall[];
+  setValueAtTime: (value: number, time: number) => void;
+  linearRampToValueAtTime: (value: number, time: number) => void;
+  cancelScheduledValues: (time: number) => void;
+}
+
+function createFakeParam(value: number): FakeParam {
+  const ramps: RampCall[] = [];
+  return {
+    value,
+    ramps,
+    setValueAtTime(v, t) {
+      ramps.push({ method: 'setValueAtTime', value: v, time: t });
+    },
+    linearRampToValueAtTime(v, t) {
+      ramps.push({ method: 'linearRampToValueAtTime', value: v, time: t });
+    },
+    cancelScheduledValues(t) {
+      ramps.push({ method: 'cancelScheduledValues', value: 0, time: t });
+    },
+  };
+}
+
+interface FakeNode {
+  kind: 'gain' | 'oscillator' | 'filter';
+  gain?: FakeParam;
+  type?: string;
+  frequency?: FakeParam;
   connects: unknown[];
   connect: (destination: unknown) => void;
+  starts: number;
+  stops: number;
+  start: () => void;
+  stop: () => void;
 }
 
 interface FakeContext {
   destination: unknown;
-  nodes: FakeGainNode[];
-  createGain: () => FakeGainNode;
+  nodes: FakeNode[];
+  suspends: number;
+  resumes: number;
+  createGain: () => FakeNode;
+  createOscillator: () => FakeNode;
+  createBiquadFilter: () => FakeNode;
+  suspend: () => void;
+  resume: () => void;
 }
 
 function createFakeContext(): FakeContext {
-  const nodes: FakeGainNode[] = [];
+  const nodes: FakeNode[] = [];
   return {
     destination: { label: 'destination' },
     nodes,
+    suspends: 0,
+    resumes: 0,
     createGain() {
-      const node: FakeGainNode = {
-        gain: { value: 1 },
+      const node: FakeNode = {
+        kind: 'gain',
+        gain: createFakeParam(1),
         connects: [],
         connect(destination) {
           this.connects.push(destination);
         },
+        starts: 0,
+        stops: 0,
+        start() {
+          this.starts += 1;
+        },
+        stop() {
+          this.stops += 1;
+        },
       };
       nodes.push(node);
       return node;
+    },
+    createOscillator() {
+      const node: FakeNode = {
+        kind: 'oscillator',
+        type: 'sawtooth',
+        frequency: createFakeParam(440),
+        connects: [],
+        connect(destination) {
+          this.connects.push(destination);
+        },
+        starts: 0,
+        stops: 0,
+        start() {
+          this.starts += 1;
+        },
+        stop() {
+          this.stops += 1;
+        },
+      };
+      nodes.push(node);
+      return node;
+    },
+    createBiquadFilter() {
+      const node: FakeNode = {
+        kind: 'filter',
+        type: 'lowpass',
+        connects: [],
+        connect(destination) {
+          this.connects.push(destination);
+        },
+        starts: 0,
+        stops: 0,
+        start() {
+          this.starts += 1;
+        },
+        stop() {
+          this.stops += 1;
+        },
+      };
+      nodes.push(node);
+      return node;
+    },
+    suspend() {
+      this.suspends += 1;
+    },
+    resume() {
+      this.resumes += 1;
     },
   };
 }
@@ -37,9 +144,21 @@ interface PlayedEntry {
   url: string;
   volume: number;
   playbackRate: number;
+  loop: boolean;
 }
 
-function masterNodeOf(context: FakeContext): FakeGainNode {
+interface FakeElement {
+  url: string;
+  volume: number;
+  playbackRate: number;
+  loop: boolean;
+  plays: number;
+  pauses: number;
+  play: () => void;
+  pause: () => void;
+}
+
+function masterNodeOf(context: FakeContext): FakeNode {
   const node = context.nodes[0];
   if (!node) {
     throw new Error('expected the master gain node to exist');
@@ -47,27 +166,63 @@ function masterNodeOf(context: FakeContext): FakeGainNode {
   return node;
 }
 
+function humGainOf(context: FakeContext): FakeNode {
+  const master = masterNodeOf(context);
+  const node = context.nodes.find((candidate) => candidate.kind === 'gain' && candidate !== master);
+  if (!node) {
+    throw new Error('expected the hum gain node to exist');
+  }
+  return node;
+}
+
+function rampValuesOf(node: FakeNode, method: RampCall['method']): number[] {
+  const gain = node.gain;
+  if (!gain) {
+    throw new Error('expected the node to expose a gain parameter');
+  }
+  return gain.ramps.filter((call) => call.method === method).map((call) => call.value);
+}
+
+function oscillatorsOf(context: FakeContext): FakeNode[] {
+  return context.nodes.filter((node) => node.kind === 'oscillator');
+}
+
 describe('createAudioDirector', () => {
   let played: PlayedEntry[];
+  let elements: FakeElement[];
   let context: FakeContext;
 
   beforeEach(() => {
     localStorage.clear();
     played = [];
+    elements = [];
     context = createFakeContext();
   });
 
   function createDirector() {
     return createAudioDirector({
       makeAudio: (url) => {
-        const element = {
+        const element: FakeElement = {
           url,
           volume: 1,
           playbackRate: 1,
+          loop: false,
+          plays: 0,
+          pauses: 0,
           play() {
-            played.push({ url: this.url, volume: this.volume, playbackRate: this.playbackRate });
+            this.plays += 1;
+            played.push({
+              url: this.url,
+              volume: this.volume,
+              playbackRate: this.playbackRate,
+              loop: this.loop,
+            });
+          },
+          pause() {
+            this.pauses += 1;
           },
         };
+        elements.push(element);
         return element;
       },
       makeAudioContext: () => context,
@@ -85,7 +240,7 @@ describe('createAudioDirector', () => {
     createDirector();
     expect(context.nodes).toHaveLength(1);
     const masterNode = masterNodeOf(context);
-    expect(masterNode.gain.value).toBe(GAINS.master);
+    expect(masterNode.gain?.value).toBe(GAINS.master);
     expect(masterNode.connects).toContain(context.destination);
   });
 
@@ -111,14 +266,14 @@ describe('createAudioDirector', () => {
   it('silences the master gain while muted', () => {
     const director = createDirector();
     director.setMuted(true);
-    expect(masterNodeOf(context).gain.value).toBe(0);
+    expect(masterNodeOf(context).gain?.value).toBe(0);
   });
 
   it('restores master gain and playback after unmute', () => {
     const director = createDirector();
     director.setMuted(true);
     director.setMuted(false);
-    expect(masterNodeOf(context).gain.value).toBe(GAINS.master);
+    expect(masterNodeOf(context).gain?.value).toBe(GAINS.master);
     director.playOneShot('confirmA');
     expect(played).toHaveLength(1);
   });
@@ -133,7 +288,7 @@ describe('createAudioDirector', () => {
     localStorage.setItem('race-it:muted', 'true');
     const director = createDirector();
     expect(director.isMuted()).toBe(true);
-    expect(masterNodeOf(context).gain.value).toBe(0);
+    expect(masterNodeOf(context).gain?.value).toBe(0);
   });
 
   it('reports its mute state', () => {
@@ -160,10 +315,10 @@ describe('createAudioDirector', () => {
     const director = createDirector();
     director.playCountdownBeep(99);
     director.playCountdownBeep(0);
-    expect(played.map((entry) => entry.playbackRate)).toEqual([
-      COUNTDOWN_RATES[0],
-      COUNTDOWN_RATES[2],
-    ]);
+    const first = played[0];
+    const last = played[played.length - 1];
+    expect(first?.playbackRate).toBe(COUNTDOWN_RATES[0]);
+    expect(last?.playbackRate).toBe(COUNTDOWN_RATES[COUNTDOWN_RATES.length - 1]);
   });
 
   it('does not play countdown beeps while muted', () => {
@@ -171,5 +326,149 @@ describe('createAudioDirector', () => {
     director.setMuted(true);
     director.playCountdownBeep(3);
     expect(played).toHaveLength(0);
+  });
+
+  it('starts the music loop at music gain', () => {
+    const director = createDirector();
+    director.startMusic();
+    expect(played).toHaveLength(1);
+    const entry = played[0];
+    expect(entry?.url).toBe(MUSIC.loop);
+    expect(entry?.volume).toBe(GAINS.music);
+    expect(entry?.loop).toBe(true);
+  });
+
+  it('does not restart the music while it is already playing', () => {
+    const director = createDirector();
+    director.startMusic();
+    director.startMusic();
+    expect(played).toHaveLength(1);
+  });
+
+  it('pauses and forgets the music on stopMusic', () => {
+    const director = createDirector();
+    director.startMusic();
+    const musicElement = elements[0];
+    if (!musicElement) {
+      throw new Error('expected the music element to exist');
+    }
+    director.stopMusic();
+    expect(musicElement.pauses).toBe(1);
+    director.startMusic();
+    expect(played).toHaveLength(2);
+  });
+
+  it('ramps the hum gain up to the hum stage on startHum', () => {
+    const director = createDirector();
+    director.startHum();
+    expect(oscillatorsOf(context).length).toBeGreaterThan(0);
+    const humGain = humGainOf(context);
+    expect(rampValuesOf(humGain, 'linearRampToValueAtTime')).toContain(GAINS.hum);
+    expect(humGain.connects).toContain(masterNodeOf(context));
+  });
+
+  it('does not start the hum twice', () => {
+    const director = createDirector();
+    director.startHum();
+    director.startHum();
+    expect(oscillatorsOf(context)).toHaveLength(2);
+  });
+
+  it('ramps the hum gain down and stops the oscillators on stopHum', () => {
+    const director = createDirector();
+    director.startHum();
+    director.stopHum();
+    const humGain = humGainOf(context);
+    expect(rampValuesOf(humGain, 'linearRampToValueAtTime')).toContain(0);
+    for (const oscillator of oscillatorsOf(context)) {
+      expect(oscillator.stops).toBeGreaterThan(0);
+    }
+  });
+
+  it('ducks the music for the victory jingle and swells back', () => {
+    vi.useFakeTimers();
+    try {
+      const director = createDirector();
+      director.startMusic();
+      const musicElement = elements[0];
+      if (!musicElement) {
+        throw new Error('expected the music element to exist');
+      }
+      director.playVictoryJingle();
+      expect(played.some((entry) => entry.url === SFX.jingle)).toBe(true);
+      expect(musicElement.volume).toBeCloseTo(GAINS.music * (1 - 0.4));
+      vi.advanceTimersByTime(3000);
+      expect(musicElement.volume).toBeCloseTo(GAINS.music);
+    } finally {
+      vi.useRealTimers();
+    }
+  });
+
+  it('plays the victory jingle without ducking when no music is playing', () => {
+    const director = createDirector();
+    director.playVictoryJingle();
+    expect(played.map((entry) => entry.url)).toEqual([SFX.jingle]);
+  });
+
+  it('suspends everything on suspendAll and restores on resumeAll', () => {
+    const director = createDirector();
+    director.startMusic();
+    director.startHum();
+    const musicElement = elements[0];
+    if (!musicElement) {
+      throw new Error('expected the music element to exist');
+    }
+    director.suspendAll();
+    expect(context.suspends).toBe(1);
+    expect(musicElement.pauses).toBe(1);
+    expect(rampValuesOf(humGainOf(context), 'linearRampToValueAtTime')).toContain(0);
+    director.resumeAll();
+    expect(context.resumes).toBe(1);
+    expect(musicElement.plays).toBe(2);
+    expect(rampValuesOf(humGainOf(context), 'linearRampToValueAtTime')).toContain(GAINS.hum);
+  });
+
+  it('stopAll stops the hum and the music for good', () => {
+    const director = createDirector();
+    director.startMusic();
+    director.startHum();
+    const musicElement = elements[0];
+    if (!musicElement) {
+      throw new Error('expected the music element to exist');
+    }
+    const musicPlaysBefore = musicElement.plays;
+    director.stopAll();
+    expect(musicElement.pauses).toBe(1);
+    expect(rampValuesOf(humGainOf(context), 'linearRampToValueAtTime')).toContain(0);
+    director.resumeAll();
+    expect(musicElement.plays).toBe(musicPlaysBefore);
+  });
+
+  it('silences the music while muted and starts it after unmute', () => {
+    const director = createDirector();
+    director.setMuted(true);
+    director.startMusic();
+    expect(played).toHaveLength(0);
+    director.setMuted(false);
+    expect(played).toHaveLength(1);
+  });
+
+  it('pauses a running music loop while muting and resumes it after unmuting', () => {
+    const director = createDirector();
+    director.startMusic();
+    const musicElement = elements[0];
+    if (!musicElement) {
+      throw new Error('expected the music element to exist');
+    }
+    director.setMuted(true);
+    expect(musicElement.pauses).toBe(1);
+    director.setMuted(false);
+    expect(musicElement.plays).toBe(2);
+  });
+
+  it('unlocks the audio context on demand', () => {
+    const director = createDirector();
+    director.unlock();
+    expect(context.resumes).toBe(1);
   });
 });
