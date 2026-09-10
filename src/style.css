@@ -502,3 +502,86 @@ body {
 .hidden {
   display: none;
 }
+
+/* Install hint (iOS Safari only): a collapsible pill with a wordless
+   Add-to-Home-Screen guide. Other environments never create the DOM. */
+.install-hint {
+  position: fixed;
+  left: 16px;
+  bottom: 168px;
+  z-index: 2;
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 12px;
+}
+
+/* display:flex above would defeat the `hidden` attribute (same trap the race
+   overlay hit), so opt back out explicitly. */
+.install-hint[hidden] {
+  display: none;
+}
+
+.install-big {
+  min-width: 64px;
+  min-height: 64px;
+}
+
+.install-pill {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 64px;
+  height: 64px;
+  border: 4px solid #fff;
+  border-radius: 32px;
+  background: var(--toy-red, #e63946);
+  color: #fff;
+  font-family: inherit;
+  box-shadow: 0 5px 0 rgba(0, 0, 0, 0.25);
+  touch-action: manipulation;
+  cursor: pointer;
+}
+
+.install-guide {
+  display: none;
+  align-items: center;
+  gap: 16px;
+  padding: 16px;
+  border: 4px solid var(--toy-ink, #4a3728);
+  border-radius: 24px;
+  background: rgba(246, 241, 231, 0.97);
+  color: var(--toy-ink, #4a3728);
+}
+
+.install-hint.expanded .install-pill {
+  display: none;
+}
+
+.install-hint.expanded .install-guide {
+  display: flex;
+}
+
+.install-step {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 64px;
+  height: 64px;
+  border: 3px dashed rgba(74, 55, 40, 0.4);
+  border-radius: 16px;
+}
+
+.install-dismiss {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border: 4px solid #fff;
+  border-radius: 32px;
+  background: var(--toy-wood, #c99a6b);
+  color: #fff;
+  font-family: inherit;
+  box-shadow: 0 5px 0 rgba(0, 0, 0, 0.25);
+  touch-action: manipulation;
+  cursor: pointer;
+}
