@@ -14,9 +14,9 @@
 - [x] Task: Phase Verification & Checkpoint (Refer to workflow.md)
 
 ## Phase 3: Android Rich Install Screenshots (FR3)
-- [ ] Task: Write failing test — manifest `screenshots` entries valid (`form_factor`, sizes within Chrome bounds, `platform: 'web'`)
-- [ ] Task: Implement build-time screenshot generation from real in-app scenes; wire into manifest config
-- [ ] Task: Verify coverage ≥80%, tests + lint + typecheck green; commit
+- [x] Task: Write failing test — manifest `screenshots` entries valid (`form_factor`, sizes within Chrome bounds, `platform: 'web'`) [9c82c85]
+- [x] Task: Implement build-time screenshot generation from real in-app scenes; wire into manifest config [25e667e]
+- [x] Task: Verify coverage ≥80%, tests + lint + typecheck green; commit [25e667e]
 - [ ] Task: Phase Verification & Checkpoint (Refer to workflow.md)
 
 ## Phase 4: Install Hint UI (FR4)
