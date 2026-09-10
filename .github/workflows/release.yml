@@ -106,4 +106,4 @@ jobs:
           WEBHOOK: ${{ secrets.COOLIFY_DEPLOY_WEBHOOK }}
           TOKEN: ${{ secrets.COOLIFY_API_TOKEN }}
         run: |
-          curl -fsS -X POST "$WEBHOOK" -H "Authorization: Bearer $TOKEN"
+          curl -fsS --max-time 120 -X POST "$WEBHOOK" -H "Authorization: Bearer $TOKEN"

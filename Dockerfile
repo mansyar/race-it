@@ -1,7 +1,7 @@
 # syntax=docker/dockerfile:1
 
 # --- Build stage: exact toolchain via packageManager field (pnpm 12.3.4) ---
-FROM node:24-alpine AS build
+FROM node:24.16.0-alpine AS build
 WORKDIR /app
 RUN corepack enable
 COPY package.json pnpm-lock.yaml pnpm-workspace.yaml ./
