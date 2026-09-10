@@ -12,6 +12,10 @@ test('boot, seed demo loop, and start a race', async ({ page }) => {
   const go = page.locator('button[data-action="go"]');
   await expect(go).toBeEnabled({ timeout: 15_000 });
 
+  // The valid GO button pulses forever; freeze the animation so the click
+  // passes Playwright's stability check.
+  await page.addStyleTag({ content: '.go-button button.pulsing { animation: none; }' });
+
   // Start the race: after the countdown the pause HUD appears (state 'running').
   await go.click();
   await expect(page.locator('button[data-action="pause"]')).toBeVisible({ timeout: 15_000 });
