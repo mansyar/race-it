@@ -12,13 +12,13 @@
 - [x] Task 1.2: add `.race-overlay[hidden], .race-confirm[hidden] { display: none; }` (f48a9e9) to `src/style.css` beside the `.confirm-overlay[hidden]` precedent (Green); full suite stays green; browser check — post-countdown race unobstructed; pause → Resume/Quit flows correct.
 - [x] Task: Phase Verification & Checkpoint (Refer to workflow.md)
 
-## Phase 2 — Pack-Fitting Race Camera
+## Phase 2 — Pack-Fitting Race Camera [checkpoint: a6ae57e]
 
 - [x] Task 2.1: race-camera tests rewritten to the new contract (Red) — `src/render/race-camera.test.ts`: build/countdown unchanged; running pose keeps leader + closest rival inside the frustum margin; tight pair clamps at 0.4× build distance; spread pair clamps at the full-board distance; target ≈ pair midpoint nudged ahead of the leader; `finished` → close hold on the finish point. Old drift/orbit/push-in assertions replaced. (a6ae57e)
 - [x] Task 2.2: implement the pure pack-fit solve in `src/render/race-camera.ts` (Green) — generalized frustum-fit distance (binary search in the `maxCornerNdc` style) + clamps; no THREE imports. (a6ae57e)
 - [x] Task 2.3: presentation camera tests first (Red) — `src/presentation/race-presentation.test.ts`: lead + closest-rival selection from kart world poses; look-ahead nudge; retuned smoothing for the close follow; existing camera expectations updated; `race-perf.test.ts` stays green. (a6ae57e)
 - [x] Task 2.4: wire into `race-presentation.ts` `updateCamera` (Green) — pass pair + finish point, keep the `CameraLike` seam; finished-state close hold through confetti + victory spin. (a6ae57e)
-- [ ] Task: Phase Verification & Checkpoint (Refer to workflow.md) — browser: camera follows the lead battle on a phone viewport.
+- [x] Task: Phase Verification & Checkpoint (Refer to workflow.md) — browser: camera follows the lead battle on a phone viewport.
 
 ## Phase 3 — Kart Visibility
 
