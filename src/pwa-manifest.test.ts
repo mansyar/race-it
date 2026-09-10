@@ -24,9 +24,10 @@ describe('PWA manifest contract', () => {
 
   it('stays installable on any orientation with the full icon set', () => {
     expect(pwaManifest.orientation).toBe('any');
-    const sizes = pwaManifest.icons.map((icon) => icon.sizes);
+    const icons = pwaManifest.icons ?? [];
+    const sizes = icons.map((icon) => icon.sizes);
     expect(sizes).toContain('192x192');
     expect(sizes).toContain('512x512');
-    expect(pwaManifest.icons.some((icon) => icon.purpose === 'maskable')).toBe(true);
+    expect(icons.some((icon) => icon.purpose === 'maskable')).toBe(true);
   });
 });
