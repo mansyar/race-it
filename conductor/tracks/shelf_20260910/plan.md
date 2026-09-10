@@ -45,3 +45,6 @@
 - [x] Task: Refactor, run full gates: `pnpm check` (Biome), `tsc --noEmit`, Vitest coverage, build
 - [x] Task: Commit `feat(app): Wire track shelf into build mode` + attach git note
 - [x] Task: Phase Verification & Checkpoint (Refer to workflow.md) — final checkpoint before review
+
+## Phase: Review Fixes
+- [x] Task: Apply review suggestions 56645de
