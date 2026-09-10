@@ -20,7 +20,13 @@ function createFakeContext(): FakeContext {
     destination: { label: 'destination' },
     nodes,
     createGain() {
-      const node: FakeGainNode = { gain: { value: 1 }, connects: [], connect(destination) { this.connects.push(destination); } };
+      const node: FakeGainNode = {
+        gain: { value: 1 },
+        connects: [],
+        connect(destination) {
+          this.connects.push(destination);
+        },
+      };
       nodes.push(node);
       return node;
     },
@@ -30,6 +36,14 @@ function createFakeContext(): FakeContext {
 interface PlayedEntry {
   url: string;
   volume: number;
+}
+
+function masterNodeOf(context: FakeContext): FakeGainNode {
+  const node = context.nodes[0];
+  if (!node) {
+    throw new Error('expected the master gain node to exist');
+  }
+  return node;
 }
 
 describe('createAudioDirector', () => {
@@ -68,17 +82,22 @@ describe('createAudioDirector', () => {
   it('creates a master gain at 0.9 routed to the destination', () => {
     createDirector();
     expect(context.nodes).toHaveLength(1);
-    expect(context.nodes[0].gain.value).toBe(GAINS.master);
-    expect(context.nodes[0].connects).toContain(context.destination);
+    const masterNode = masterNodeOf(context);
+    expect(masterNode.gain.value).toBe(GAINS.master);
+    expect(masterNode.connects).toContain(context.destination);
   });
 
-  it.each(Object.keys(SFX) as SfxName[])('routes one-shot %s through the audio factory at one-shot gain', (name) => {
-    const director = createDirector();
-    director.playOneShot(name);
-    expect(played).toHaveLength(1);
-    expect(played[0].url).toBe(SFX[name]);
-    expect(played[0].volume).toBe(GAINS.oneShot);
-  });
+  it.each(Object.keys(SFX) as SfxName[])(
+    'routes one-shot %s through the audio factory at one-shot gain',
+    (name) => {
+      const director = createDirector();
+      director.playOneShot(name);
+      expect(played).toHaveLength(1);
+      const entry = played[0];
+      expect(entry?.url).toBe(SFX[name]);
+      expect(entry?.volume).toBe(GAINS.oneShot);
+    },
+  );
 
   it('does not play one-shots while muted', () => {
     const director = createDirector();
@@ -90,14 +109,14 @@ describe('createAudioDirector', () => {
   it('silences the master gain while muted', () => {
     const director = createDirector();
     director.setMuted(true);
-    expect(context.nodes[0].gain.value).toBe(0);
+    expect(masterNodeOf(context).gain.value).toBe(0);
   });
 
   it('restores master gain and playback after unmute', () => {
     const director = createDirector();
     director.setMuted(true);
     director.setMuted(false);
-    expect(context.nodes[0].gain.value).toBe(GAINS.master);
+    expect(masterNodeOf(context).gain.value).toBe(GAINS.master);
     director.playOneShot('confirmA');
     expect(played).toHaveLength(1);
   });
@@ -112,7 +131,7 @@ describe('createAudioDirector', () => {
     localStorage.setItem('race-it:muted', 'true');
     const director = createDirector();
     expect(director.isMuted()).toBe(true);
-    expect(context.nodes[0].gain.value).toBe(0);
+    expect(masterNodeOf(context).gain.value).toBe(0);
   });
 
   it('reports its mute state', () => {

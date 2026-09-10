@@ -12,13 +12,13 @@ export interface PlayableAudio {
 /** Minimal WebAudio gain node surface used by the director. */
 export interface GainNodeLike {
   gain: { value: number };
-  connect: (destination: unknown) => void;
+  connect(destination: unknown): void;
 }
 
 /** Minimal WebAudio context surface used by the director. */
 export interface AudioContextLike {
   destination: unknown;
-  createGain: () => GainNodeLike;
+  createGain(): GainNodeLike;
 }
 
 /** Mix gain stages: SFX (0.8) > music (0.35) > hum (0.15) under master (0.9). */
@@ -53,8 +53,10 @@ export interface AudioDirectorOptions {
  * @returns The director facade.
  */
 export function createAudioDirector(options: AudioDirectorOptions = {}): AudioDirector {
-  const makeAudio = options.makeAudio ?? ((url: string) => new Audio(url));
-  const context = (options.makeAudioContext ?? (() => new AudioContext()))();
+  const makeAudio: (url: string) => PlayableAudio = options.makeAudio ?? ((url) => new Audio(url));
+  const makeAudioContext: () => AudioContextLike =
+    options.makeAudioContext ?? (() => new AudioContext());
+  const context = makeAudioContext();
   const masterGain = context.createGain();
   masterGain.gain.value = GAINS.master;
   masterGain.connect(context.destination);
