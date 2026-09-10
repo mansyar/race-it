@@ -1,6 +1,7 @@
 import * as THREE from 'three';
-import { beforeEach, describe, expect, it } from 'vitest';
-import type { Cell, GridSnapshot } from '../grid/grid-model';
+import { beforeEach, describe, expect, it, vi } from 'vitest';
+import type { Cell, GridSnapshot, PieceType } from '../grid/grid-model';
+import { GRID_SIZE } from '../grid/grid-model';
 import { gridToWorld } from './layout';
 import { buildPiece, PieceRenderer } from './piece-renderer';
 import { checkerTexture } from './piece-visuals';
@@ -116,5 +117,150 @@ describe('PieceRenderer', () => {
 
     renderer.update(empty);
     expect(renderer.group.children.length).toBe(0);
+  });
+});
+
+describe('PieceRenderer instanced mode', () => {
+  let renderer: PieceRenderer;
+
+  beforeEach(async () => {
+    renderer = new PieceRenderer();
+    await renderer.load(fakeLoaderFactory([]));
+  });
+
+  function emptyGrid(): GridSnapshot {
+    return new Array<GridSnapshot[number]>(144).fill(null);
+  }
+
+  function place(grid: GridSnapshot, x: number, y: number, cell: Cell): void {
+    grid[y * GRID_SIZE + x] = cell;
+  }
+
+  function instancedMeshes(): THREE.InstancedMesh[] {
+    return renderer.group.children.filter(
+      (child): child is THREE.InstancedMesh => child instanceof THREE.InstancedMesh,
+    );
+  }
+
+  function instancedFor(type: PieceType): THREE.InstancedMesh | undefined {
+    return instancedMeshes().find((mesh) => mesh.userData.pieceType === type);
+  }
+
+  function expectMatrixToBeClose(actual: THREE.Matrix4, expected: THREE.Matrix4): void {
+    actual.elements.forEach((value, index) => {
+      expect(value).toBeCloseTo(expected.elements[index] ?? 0, 5);
+    });
+  }
+
+  it('batches placed road tiles into one InstancedMesh per type with per-type counts', () => {
+    const grid = emptyGrid();
+    place(grid, 1, 1, { type: 'straight', orientation: 0 });
+    place(grid, 2, 1, { type: 'straight', orientation: 90 });
+    place(grid, 3, 1, { type: 'curve', orientation: 0 });
+    place(grid, 4, 1, { type: 'finish', orientation: 180 });
+
+    renderer.setRenderMode('instanced');
+    renderer.update(grid);
+
+    expect(instancedMeshes().length).toBe(3);
+    expect(instancedFor('straight')?.count).toBe(2);
+    expect(instancedFor('curve')?.count).toBe(1);
+    expect(instancedFor('finish')?.count).toBe(1);
+  });
+
+  it('matches the individual path matrices exactly (position, rotation, seam fix, fit)', () => {
+    const grid = emptyGrid();
+    place(grid, 2, 3, { type: 'straight', orientation: 90 });
+    place(grid, 5, 7, { type: 'curve', orientation: 180 });
+    renderer.setRenderMode('instanced');
+    renderer.update(grid);
+
+    const references: [PieceType, Cell, number, number][] = [
+      ['straight', { type: 'straight', orientation: 90 }, 2, 3],
+      ['curve', { type: 'curve', orientation: 180 }, 5, 7],
+    ];
+    for (const [type, cell, x, y] of references) {
+      const mesh = instancedFor(type);
+      if (!mesh) {
+        throw new Error(`no instanced mesh for ${type}`);
+      }
+      const reference = buildPiece(
+        renderer.templates.get(type) as THREE.Object3D,
+        cell,
+        x,
+        y,
+        checkerTexture(),
+      );
+      reference.updateMatrix();
+      const model = reference.children[0] as THREE.Object3D;
+      model.updateMatrix();
+      const expected = new THREE.Matrix4().multiplyMatrices(reference.matrix, model.matrix);
+      const actual = new THREE.Matrix4();
+      mesh.getMatrixAt(0, actual);
+      expectMatrixToBeClose(actual, expected);
+    }
+  });
+
+  it('rebuilds instances on update and disposes stale buffers', () => {
+    const grid = emptyGrid();
+    place(grid, 1, 1, { type: 'straight', orientation: 0 });
+    place(grid, 2, 1, { type: 'straight', orientation: 0 });
+    renderer.setRenderMode('instanced');
+    renderer.update(grid);
+    const stale = instancedMeshes();
+    expect(stale.length).toBe(1);
+    const disposeSpies = stale.map((mesh) => vi.spyOn(mesh, 'dispose'));
+
+    const smaller = emptyGrid();
+    place(smaller, 4, 4, { type: 'curve', orientation: 0 });
+    renderer.update(smaller);
+
+    expect(instancedFor('straight')).toBeUndefined();
+    expect(instancedFor('curve')?.count).toBe(1);
+    expect(disposeSpies[0]?.mock.calls.length).toBe(1);
+  });
+
+  it('switches modes cleanly and leaves individual output unchanged', () => {
+    const grid = emptyGrid();
+    place(grid, 1, 1, { type: 'straight', orientation: 0 });
+    place(grid, 2, 1, { type: 'finish', orientation: 0 });
+    renderer.update(grid);
+
+    expect(instancedMeshes().length).toBe(0);
+    expect(renderer.group.children.length).toBe(2);
+    const straightHolder = renderer.group.children[0] as THREE.Object3D;
+    expect(straightHolder.children.length).toBe(1);
+    const finishHolder = renderer.group.children[1] as THREE.Object3D;
+    expect(finishHolder.children.length).toBe(3);
+
+    renderer.setRenderMode('instanced');
+    expect(instancedMeshes().length).toBe(2);
+    const holders = renderer.group.children.filter(
+      (child) => child.userData.cellIndex !== undefined,
+    );
+    expect(holders.length).toBe(2);
+
+    renderer.setRenderMode('individual');
+    expect(instancedMeshes().length).toBe(0);
+    expect(renderer.group.children.length).toBe(2);
+    expect((renderer.group.children[0] as THREE.Object3D).children.length).toBe(1);
+  });
+
+  it('keeps checker overlays and finish flags per-piece in instanced mode', () => {
+    const grid = emptyGrid();
+    place(grid, 1, 1, { type: 'start', orientation: 0 });
+    place(grid, 2, 1, { type: 'finish', orientation: 0 });
+    place(grid, 3, 1, { type: 'straight', orientation: 0 });
+    renderer.setRenderMode('instanced');
+    renderer.update(grid);
+
+    const holders = new Map(
+      renderer.group.children
+        .filter((child) => child.userData.cellIndex !== undefined)
+        .map((child) => [child.userData.cellIndex as number, child] as const),
+    );
+    expect(holders.get(1 * GRID_SIZE + 1)?.children.length).toBe(1);
+    expect(holders.get(1 * GRID_SIZE + 2)?.children.length).toBe(2);
+    expect(holders.get(1 * GRID_SIZE + 3)?.children.length).toBe(0);
   });
 });
