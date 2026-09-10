@@ -12,7 +12,8 @@
     "test:coverage": "vitest run --coverage",
     "lint": "biome check .",
     "format": "biome format --write .",
-    "pwa-assets": "pwa-assets-generator"
+    "pwa-assets": "pwa-assets-generator",
+    "capture:screenshots": "node scripts/capture-screenshots.mjs"
   },
   "dependencies": {
     "three": "^0.185.1"
