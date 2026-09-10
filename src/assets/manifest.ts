@@ -12,6 +12,11 @@ import treeUrl from './models/treeSmall.glb?url';
 import clickUrl from './sfx/click_001.ogg?url';
 import confirmAUrl from './sfx/confirmation_001.ogg?url';
 import confirmBUrl from './sfx/confirmation_002.ogg?url';
+import confirmGoUrl from './sfx/confirmation_003.ogg?url';
+import countdownUrl from './sfx/tick_001.ogg?url';
+import nopeUrl from './sfx/error_001.ogg?url';
+import placeUrl from './sfx/pluck_001.ogg?url';
+import removeUrl from './sfx/scratch_002.ogg?url';
 
 /** Track piece models from Kenney Racing Kit (CC0). */
 export const MODELS = {
@@ -44,4 +49,14 @@ export const SFX = {
   click: clickUrl,
   confirmA: confirmAUrl,
   confirmB: confirmBUrl,
+  /** Brighter GO tone (distinct from confirmA/confirmB). */
+  go: confirmGoUrl,
+  /** Countdown beep; pitch rises via playbackRate per remaining step. */
+  countdown: countdownUrl,
+  /** Toy pluck when a piece is placed. */
+  place: placeUrl,
+  /** Scratch-out when a piece is removed. */
+  remove: removeUrl,
+  /** Gentle wobble for blocked actions (occupied cell, invalid GO tap). */
+  nope: nopeUrl,
 } as const;

@@ -8,7 +8,7 @@
 - [x] Task: Phase Verification & Checkpoint (Refer to workflow.md) — 0443faa
 
 ## Phase 2: Countdown, GO & Build Feedback Sounds
-- [ ] Task: Source Kenney CC0 one-shot assets (countdown beep, GO tone, place pop, remove sound, "nope" wobble) — add to `src/assets/sfx/` with license notes; extend `assets/manifest.ts` `SFX` map
+- [~] Task: Source Kenney CC0 one-shot assets (countdown beep, GO tone, place pop, remove sound, "nope" wobble) — add to `src/assets/sfx/` with license notes; extend `assets/manifest.ts` `SFX` map
 - [ ] Task: Write failing tests — countdown scheduler (3 rising beeps synced to `countdownRemaining` events + distinct GO), placement pop / removal sound / blocked-GO "nope" triggers
 - [ ] Task: Implement — wire countdown + GO into `race-presentation.ts` (countdown state events); wire pop/remove/nope into `main.ts` (placement result, remove-mode tap, disabled GO attempt)
 - [ ] Task: Verify coverage ≥80%, tests + lint + typecheck green
