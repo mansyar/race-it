@@ -28,8 +28,8 @@
 - [x] Task: Manual verification plan executed (dev server + on-device sound check: countdown, hum, music, jingle, mute, pause/backgrounding) — 1d1bb87
 - [x] Task: Phase Verification & Checkpoint (Refer to workflow.md) — 1d1bb87
 
-## Phase 5: Release v0.3.0
+## Phase 5: Release v0.3.0 [checkpoint: b05d357]
 - [x] Task: Merge `feature/race-audio` to `master` — 56935a1
 - [x] Task: Bump version to 0.3.0, tag `v0.3.0`, push (release pipeline builds, publishes GHCR, deploys via Coolify webhook) — b05d357
-- [~] Task: Verify deployed PWA serves new audio assets over HTTPS
-- [ ] Task: Phase Verification & Checkpoint (Refer to workflow.md)
+- [x] Task: Verify deployed PWA serves new audio assets over HTTPS — b05d357
+- [x] Task: Phase Verification & Checkpoint (Refer to workflow.md) — b05d357
