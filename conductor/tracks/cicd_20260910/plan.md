@@ -33,7 +33,7 @@
 - [x] Task 4.5: User adds 2 repo secrets (`COOLIFY_DEPLOY_WEBHOOK`, `COOLIFY_API_TOKEN`); verify via `gh secret list` `(secrets set 2026-09-10)`
 - [ ] Task: Phase Verification & Checkpoint (Refer to workflow.md)
 
-## Phase 5 — End-to-End Pipeline Verification
+## Phase 5 — End-to-End Pipeline Verification [checkpoint: 9a9558c]
 
 - [x] Task 5.1: Merge branch to `master`; bump `package.json` to 0.2.0; tag `v0.2.0` and push → release workflow runs: GHCR image published (both tags), GitHub Release published with type-grouped notes, Coolify deploy triggered via authenticated webhook `(9a9558c)`
 - [x] Task 5.2: Verify deployed PWA at Coolify URL (SW registered, offline boots, race runs); confirm efficiency — second pipeline run hits caches (no full reinstall) `(deploy verified 2026-09-10)`
