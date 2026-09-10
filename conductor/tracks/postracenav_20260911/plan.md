@@ -13,7 +13,7 @@
 - [x] Task 1.3: styles with contract test first (Red) — style test asserts `.build-again-button` has a ≥64px min touch target, sits below `.again-button`, and hides with `.trophy.hidden`; implement in `src/style.css` (Green) with portrait/landscape + safe-area consistency. (a40c607)
 - [ ] Task: Phase Verification & Checkpoint (Refer to workflow.md) — browser: trophy shows both actions; Build Again visibly subordinate; tap target comfortable.
 
-## Phase 2 — Return-to-Builder Wiring
+## Phase 2 — Return-to-Builder Wiring [checkpoint: 23687f5]
 
 - [x] Task 2.1: presentation tests first (Red) — `src/presentation/race-presentation.test.ts`: callback rewiring preserves `onBuildAgain`; invoking it → engine `abandon()` (idle), audio `stopAll()`, HUD hidden, confetti cleared, trophy hidden, `onBuildUiChange(true)`, camera target eases back to build placement (smoothed, no snap). (db0a3c5)
 - [x] Task 2.2: implement the reset path (Green) — `race-presentation.ts`: route Build Again through the existing `resetToBuild()` / idle reset visuals, preserving the main-provided callback; `src/race/*` untouched. (db0a3c5)
