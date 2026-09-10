@@ -39,4 +39,7 @@
 - [x] Task: Merge `feature/pwa-install` to `master` (merge-only per decision - no version tag; deployment to Coolify deferred to the next tagged release) [c11b3af]
 - [x] Task: Phase Verification & Checkpoint (Refer to workflow.md)
 
-> **Note on Phase 7:** since we merge without tagging, the Coolify deploy won't trigger — on-device verification in Phase 6 uses `vite preview` production build locally. The live HTTPS verification folds into the next tagged release.
+> **Note on Phase 7:** since we merge without tagging, the Coolify deploy won't trigger - on-device verification in Phase 6 uses `vite preview` production build locally. The live HTTPS verification folds into the next tagged release.
+
+## Phase: Review Fixes
+- [x] Task: Apply review suggestions edaad99
