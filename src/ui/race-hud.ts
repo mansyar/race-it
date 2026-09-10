@@ -108,6 +108,8 @@ export function createRaceHud(callbacks: {
       pause.classList.remove('hidden');
     },
     showOverlay() {
+      root.classList.remove('hidden');
+      pause.classList.add('hidden');
       overlay.hidden = false;
       confirm.hidden = true;
     },

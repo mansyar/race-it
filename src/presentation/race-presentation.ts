@@ -95,6 +95,11 @@ export interface RacePresentation {
   update(dt: number): void;
   /** Abandons any race and restores builder visuals. */
   resetToBuild(): void;
+  /**
+   * Holds an in-flight race (countdown/running) behind the resume/quit
+   * overlay for interruptions (app hidden or switched away). No-op otherwise.
+   */
+  holdForInterruption(): void;
 }
 
 /**
@@ -158,6 +163,7 @@ export function createRacePresentation(options: RacePresentationOptions): RacePr
   let smoothedPos = { x: 0, y: 0, z: 0 };
   let smoothedTarget = { x: 0, y: 0, z: 0 };
   let lastCountdown = -1;
+  let held = false;
 
   function resetCelebration(): void {
     spinning = false;
@@ -188,11 +194,13 @@ export function createRacePresentation(options: RacePresentationOptions): RacePr
   };
   raceHud.callbacks.onResume = () => {
     priorResume();
+    held = false;
     engine.resume();
     options.audio?.resumeAll();
   };
   raceHud.callbacks.onQuit = () => {
     priorQuit();
+    held = false;
     options.audio?.stopAll();
     engine.abandon();
   };
@@ -208,6 +216,7 @@ export function createRacePresentation(options: RacePresentationOptions): RacePr
   };
 
   engine.on('stateChange', (state) => {
+    held = false;
     if (state === 'countdown') {
       options.onBuildUiChange?.(false);
       options.audio?.startMusic();
@@ -372,6 +381,15 @@ export function createRacePresentation(options: RacePresentationOptions): RacePr
       karts.update(poses);
       confetti.update(dt);
       updateCamera(dt, poses);
+    },
+    holdForInterruption() {
+      if (held || (engine.state !== 'countdown' && engine.state !== 'running')) {
+        return;
+      }
+      held = true;
+      engine.pause();
+      options.audio?.suspendAll();
+      raceHud.showOverlay();
     },
     resetToBuild() {
       engine.abandon();
