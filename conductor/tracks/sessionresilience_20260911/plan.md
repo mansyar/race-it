@@ -12,7 +12,7 @@
 - `RaceHud.showOverlay()` currently only reveals the overlay; auto-hold from countdown needs it to also reveal the root and hide the pause button (matching the post-pause-tap state).
 
 ## Phase 1 — Screen Wake Lock Controller (FR3)
-- [ ] Task 1.1: contract tests first (Red) — new `src/wake-lock.test.ts` with an injected fake navigator: requests `'screen'` when visible & supported; silently no-ops when the API is absent; `setVisible(false)` releases; `setVisible(true)` re-acquires; a system `release` while still visible re-acquires once; `request()` rejection is swallowed (no throw; next visible flip retries); `dispose()` releases and blocks future requests; `active` reflects held state.
+- [~] Task 1.1: contract tests first (Red) — new `src/wake-lock.test.ts` with an injected fake navigator: requests `'screen'` when visible & supported; silently no-ops when the API is absent; `setVisible(false)` releases; `setVisible(true)` re-acquires; a system `release` while still visible re-acquires once; `request()` rejection is swallowed (no throw; next visible flip retries); `dispose()` releases and blocks future requests; `active` reflects held state.
 - [ ] Task 1.2: implement `src/wake-lock.ts` (Green) — feature detection (`navigator.wakeLock?.request`), sentinel + `release` listener, injectable navigator, dispose-safe.
 - [ ] Task 1.3: refactor + coverage ≥80% on the new module; JSDoc; `$env:CI='true'; pnpm test` + `pnpm lint` green; commit.
 - [ ] Task: Phase Verification & Checkpoint (Refer to workflow.md)
