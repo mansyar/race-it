@@ -1,6 +1,6 @@
 import * as THREE from 'three';
 import { appReady } from './app';
-import { MODELS, SCENERY, SFX } from './assets/manifest';
+import { CARS, MODELS, SCENERY, SFX } from './assets/manifest';
 import { createSfx } from './audio/sfx';
 import type { GridModel, PieceType } from './grid/grid-model';
 import { GRID_SIZE } from './grid/grid-model';
@@ -8,8 +8,10 @@ import { TrackEditor } from './grid/track-editor';
 import { loadOrSeedTrack, saveTrack } from './grid/track-store';
 import { validateTrack } from './grid/track-validator';
 import { createRaceEngine, type RaceEngine } from './race/engine';
+import { loadLineup, saveLineup } from './race/lineup';
 import { extractLoopPath } from './race/path';
 import { type BuildTool, handleCellTap } from './render/interaction';
+import { KartPreview } from './render/kart-preview';
 import { fillPerfPattern } from './render/perf-harness';
 import { applyPieceFeedback } from './render/piece-feedback-apply';
 import { PieceRenderer } from './render/piece-renderer';
@@ -18,15 +20,16 @@ import { SceneryRenderer } from './render/scenery-render';
 import { PieceFeedback } from './render/toy-feedback';
 import './style.css';
 import { createBuildBar } from './ui/build-bar';
+import { createCarPicker } from './ui/car-picker';
 import { createCornerCluster } from './ui/corner-cluster';
 import { createGoButton } from './ui/go-button';
 
 // Referenced so the production build emits every GLB/OGG for service-worker
-// precaching; the race-mode renderer (Track 2) and audio (Track 3) consume
-// them at runtime.
+// precaching; renderers, the car picker, and audio consume them at runtime.
 const ASSET_URLS: readonly string[] = [
   ...Object.values(MODELS),
   ...Object.values(SCENERY),
+  ...Object.values(CARS),
   ...Object.values(SFX),
 ];
 void ASSET_URLS.length;
@@ -209,17 +212,10 @@ if (root && appReady()) {
 
   const go = createGoButton({
     onGo: () => {
-      raceEngine = createRaceEngine(extractLoopPath(model));
-      raceEngine.on('kartFinish', ({ index, time }) => {
-        console.info(`[race] kart ${index} finished at ${time.toFixed(2)}s`);
-        if (raceEngine?.karts.every((kart) => kart.finished)) {
-          console.info('[race] result', raceEngine.result);
-          (window as unknown as Record<string, unknown>).__raceItRace = raceEngine;
-        }
-      });
-      feedback.setRemoveMode(false);
-      bar.setRemoveActive(false);
-      raceEngine.start();
+      sfx.play('click');
+      picker.setLineup(loadLineup());
+      picker.show();
+      renderKartPreviews();
     },
   });
 
@@ -272,8 +268,53 @@ if (root && appReady()) {
     },
   });
 
+  const picker = createCarPicker({
+    onRace: (lineup) => {
+      sfx.play('confirmA');
+      saveLineup(lineup);
+      picker.hide();
+      raceEngine = createRaceEngine(extractLoopPath(model), {
+        kartCount: lineup.karts.length,
+      });
+      raceEngine.on('kartFinish', ({ index, time }) => {
+        console.info(`[race] kart ${index} finished at ${time.toFixed(2)}s`);
+        if (raceEngine?.karts.every((kart) => kart.finished)) {
+          console.info('[race] result', raceEngine.result);
+          (window as unknown as Record<string, unknown>).__raceItRace = raceEngine;
+        }
+      });
+      feedback.setRemoveMode(false);
+      bar.setRemoveActive(false);
+      raceEngine.start();
+    },
+    onBack: () => {
+      sfx.play('click');
+      picker.hide();
+    },
+    onToggle: () => {
+      sfx.play('click');
+    },
+  });
+
+  // One shared WebGL canvas renders the four tinted kart previews; it sits
+  // above the swatch grid and only paints when the picker is visible.
+  const kartPreview = new KartPreview({ container: picker.getPreviewSlot() });
+  const renderKartPreviews = (): void => {
+    const rect = picker.getPreviewSlot().getBoundingClientRect();
+    if (rect.width > 0 && rect.height > 0) {
+      kartPreview.render(rect.width, rect.height);
+    }
+  };
+  kartPreview
+    .load()
+    .then(renderKartPreviews)
+    .catch((error: unknown) => {
+      console.error('Failed to load kart preview models', error);
+    });
+  window.addEventListener('resize', renderKartPreviews);
+
   const appUi = document.createElement('div');
-  appUi.append(cluster.root, go.root, bar.root, cluster.confirm);
+  appUi.append(cluster.root, go.root, bar.root, cluster.confirm, picker.root);
   root.append(appUi);
 
   go.setValid(validateTrack(model).valid);
@@ -291,5 +332,13 @@ if (root && appReady()) {
       console.error('Failed to load track pieces or scenery', error);
     });
 
-  window.addEventListener('pagehide', () => view.dispose(), { once: true });
+  window.addEventListener(
+    'pagehide',
+    () => {
+      window.removeEventListener('resize', renderKartPreviews);
+      kartPreview.dispose();
+      view.dispose();
+    },
+    { once: true },
+  );
 }

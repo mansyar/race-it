@@ -114,7 +114,9 @@ describe('createCarPicker', () => {
     picker.show();
     picker.root
       .querySelectorAll('button[data-action="kart"], button[data-action="race"]')
-      .forEach((button) => button.remove());
+      .forEach((button) => {
+        button.remove();
+      });
     expect(() => picker.setLineup(DEFAULT_LINEUP)).not.toThrow();
   });
 
