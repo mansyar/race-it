@@ -115,6 +115,46 @@ describe('KartRenderer', () => {
     expect(renderer.group.children).toHaveLength(2);
     expect(renderer.group.children[1]?.position.x).toBeCloseTo(pose(1).x);
   });
+
+  it('ignores extra poses beyond the loaded karts', async () => {
+    const scenes = [singleMeshScene(), singleMeshScene(), singleMeshScene(), singleMeshScene()];
+    const renderer = new KartRenderer();
+    await renderer.load(mockLoader(scenes));
+    renderer.update([pose(0), pose(1), pose(2), pose(3), pose(4)]);
+    expect(renderer.group.children).toHaveLength(4);
+  });
+
+  it('passes through materials without a color channel untouched', async () => {
+    const scene = new THREE.Object3D();
+    const material = new THREE.MeshNormalMaterial();
+    scene.add(new THREE.Mesh(new THREE.BoxGeometry(1, 1, 1), material));
+    const renderer = new KartRenderer();
+    await renderer.load(
+      mockLoader([scene, singleMeshScene(), singleMeshScene(), singleMeshScene()]),
+    );
+    renderer.update([pose(0), pose(1), pose(2), pose(3)]);
+    const mesh = renderer.group.children[0]?.children[0] as THREE.Mesh;
+    expect(mesh.material).toBe(material);
+  });
+
+  it('tints every entry of an array material', async () => {
+    const scene = new THREE.Object3D();
+    const first = new THREE.MeshLambertMaterial({ color: 0xffffff });
+    const second = new THREE.MeshLambertMaterial({ color: 0x000000 });
+    scene.add(new THREE.Mesh(new THREE.BoxGeometry(1, 1, 1), [first, second]));
+    const renderer = new KartRenderer();
+    await renderer.load(
+      mockLoader([scene, singleMeshScene(), singleMeshScene(), singleMeshScene()]),
+    );
+    renderer.update([pose(0), pose(1), pose(2), pose(3)]);
+    const mesh = renderer.group.children[0]?.children[0] as THREE.Mesh;
+    const materials = mesh.material as THREE.MeshLambertMaterial[];
+    expect(materials).toHaveLength(2);
+    expect(materials[0]?.color.getHex()).toBe(KART_COLORS[0]);
+    expect(materials[1]?.color.getHex()).toBe(KART_COLORS[0]);
+    expect(first.color.getHex()).toBe(0xffffff);
+    expect(second.color.getHex()).toBe(0x000000);
+  });
 });
 
 // Native kart bounds measured with `node scripts/measure-glb-world.mjs`:
