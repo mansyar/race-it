@@ -13,14 +13,14 @@
 - [x] Task: Commit `feat(grid): Add multi-track shelf persistence` + attach git note
 - [x] Task: Phase Verification & Checkpoint (Refer to workflow.md)
 
-## Phase 2: Card Schematic Renderer (`src/render/shelf-schematic.ts`)
+## Phase 2: Card Schematic Renderer (`src/render/shelf-schematic.ts`) [checkpoint: edc945e]
 - [x] Task: Write failing tests (TDD Red)
     - Renders piece glyphs (straight/curve/start/finish) at correct grid positions with rotations respected
     - Empty cells blank; snapshot with mixed pieces renders all; no exceptions on odd input
 - [x] Task: Implement canvas-based top-down schematic renderer (Green)
 - [x] Task: Refactor & verify coverage
 - [x] Task: Commit `feat(render): Add shelf card schematic renderer` + attach git note
-- [ ] Task: Phase Verification & Checkpoint (Refer to workflow.md)
+- [x] Task: Phase Verification & Checkpoint (Refer to workflow.md)
 
 ## Phase 3: Shelf Overlay UI (`src/ui/shelf-overlay.ts`)
 - [ ] Task: Write failing tests (TDD Red)
