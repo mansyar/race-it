@@ -33,3 +33,6 @@
 - [x] Task: Bump version to 0.3.0, tag `v0.3.0`, push (release pipeline builds, publishes GHCR, deploys via Coolify webhook) — b05d357
 - [x] Task: Verify deployed PWA serves new audio assets over HTTPS — b05d357
 - [x] Task: Phase Verification & Checkpoint (Refer to workflow.md) — b05d357
+
+## Phase: Review Fixes
+- [x] Task: Apply review suggestions (cancel stale jingle duck timer, document hum overlap + iOS resume) — 7576924

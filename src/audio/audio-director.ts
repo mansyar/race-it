@@ -145,6 +145,7 @@ export function createAudioDirector(options: AudioDirectorOptions = {}): AudioDi
   let musicElement: PlayableAudio | undefined;
   let wantMusic = false;
   let suspended = false;
+  let jingleDuckTimer: number | undefined;
   let humGain: GainNodeLike | undefined;
   let humOscillators: OscillatorNodeLike[] = [];
 
@@ -181,6 +182,10 @@ export function createAudioDirector(options: AudioDirectorOptions = {}): AudioDi
 
   function stopMusicInternal(): void {
     wantMusic = false;
+    if (jingleDuckTimer !== undefined) {
+      clearTimeout(jingleDuckTimer);
+      jingleDuckTimer = undefined;
+    }
     musicElement?.pause?.();
     musicElement = undefined;
   }
@@ -226,6 +231,9 @@ export function createAudioDirector(options: AudioDirectorOptions = {}): AudioDi
       stopMusicInternal();
     },
     startHum(): void {
+      // If a previous hum is still fading out (instant RACE AGAIN), a fresh
+      // graph starts on purpose and the old one finishes its fade — the brief
+      // overlap is the cost of seamless race restarts.
       if (humGain) {
         return;
       }
@@ -260,7 +268,8 @@ export function createAudioDirector(options: AudioDirectorOptions = {}): AudioDi
         return;
       }
       music.volume = GAINS.music * (1 - VICTORY_DUCK);
-      setTimeout(() => {
+      jingleDuckTimer = window.setTimeout(() => {
+        jingleDuckTimer = undefined;
         music.volume = GAINS.music;
       }, JINGLE_SECONDS * 1000);
     },
@@ -275,6 +284,8 @@ export function createAudioDirector(options: AudioDirectorOptions = {}): AudioDi
         return;
       }
       suspended = false;
+      // Resuming an already-unlocked context outside a user gesture is
+      // permitted by modern iOS Safari (verified on device).
       context.resume();
       if (musicElement && wantMusic && !muted) {
         musicElement.play();

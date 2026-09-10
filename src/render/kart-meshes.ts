@@ -6,8 +6,13 @@ import type { KartPose } from './kart-rig';
 /** Vivid toy palette per kart index (product guidelines: red/blue/green/yellow). */
 export const KART_COLORS: readonly number[] = [0xef3340, 0x2f6fed, 0x2ecc71, 0xf7c948];
 
-/** Kenney kart GLBs are roughly 2 units long natively; 0.4 fits the 2-unit track cells (~0.8 units). */
-export const KART_SCALE = 0.4;
+/**
+ * Kenney karts measure ~1.43 long x ~0.97 wide natively (all four identical;
+ * `scripts/measure-glb-world.mjs`). 0.55 keeps start-lineup clearance — lane
+ * gap 2x0.35 vs 0.54 wide, row gap 1.2 vs 0.79 long — while reading
+ * noticeably larger on screen than the original 0.4.
+ */
+export const KART_SCALE = 0.55;
 
 /** Wheels hover just above the road surface (y = 0). */
 export const KART_Y_OFFSET = 0.05;

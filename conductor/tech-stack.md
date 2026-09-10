@@ -16,6 +16,7 @@ Vanilla TypeScript + Three.js, no UI framework, no game engine. A lean static PW
 | PWA assets | **@vite-pwa/assets-generator** | 1.0.2 | Generates icons/splash assets for manifest. |
 | Testing | **Vitest** | 5.0.0 | Unit tests for track validation, race logic, storage. Supports Vite ^8 ✔. |
 | E2E testing | **Playwright** | exact pin at install | Chromium-only smoke suite (boot + demo-loop race) against the production build via `vite preview`; browsers cached in CI. |
+| Test typings | **@types/node** | 22.20.1 | Dev-only Node API typings (fs/path/url imports) for tests that read project files, e.g. the stylesheet contract test. Module-scoped imports only — `tsconfig` keeps `types: ["vite/client"]`, so app code gains no Node globals. |
 | Lint/Format | **Biome** | 2.5.12 | Single fast tool for linting + formatting; config MUST be aligned with `conductor/code_styleguides/` (Google TS style): single quotes, explicit semicolons, named exports only (no default exports), `===`, no `any`, no `_`-prefixed identifiers. |
 
 ## Storage
@@ -25,8 +26,13 @@ Vanilla TypeScript + Three.js, no UI framework, no game engine. A lean static PW
 ## Assets
 - **Kenney Racing Kit** — track tiles, scenery (glTF/GLB, CC0).
 - **Kenney Car Kit** — kart racers (glTF/GLB, CC0).
-- **Kenney audio packs** — SFX + one music loop (CC0).
+- **Kenney audio packs (CC0)** — Interface Sounds (UI clicks, confirmations, countdown tick, GO tone, place/remove/nope), Music Jingles (victory jingle), Music Loops ("Polka Train" background loop); OGGs imported at build time, license files kept alongside.
 - GLB assets imported at build time; optimized (Draco/meshopt only if device-floor perf demands it).
+
+## Audio
+- **`src/audio/audio-director.ts`** — single audio hub on WebAudio: shared master gain (0.9), one-shots (0.8), music loop (0.35), engine hum (0.15); mute persisted at `race-it:muted` and silences the master graph.
+- **Procedural engine hum** — oscillator blend (80/160 Hz sawtooth) through a 400 Hz low-pass on the graph; 400 ms linear fades; audible only while the race runs.
+- **Lifecycle** — music starts at the countdown and continues through RACE AGAIN; hum at GO; victory jingle ducks music ~40% then swells back; pause suspends, resume restores, quit stops for good; `pagehide` silences and `visibilitychange` restores; iOS unlock via `resume()` on the first pointerdown gesture.
 
 ## Runtime & Hosting
 - **Runtime:** modern evergreen mobile browsers — iOS Safari 16+, Android Chrome 110+.

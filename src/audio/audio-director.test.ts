@@ -1,6 +1,13 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { MUSIC, SFX } from '../assets/manifest';
-import { COUNTDOWN_RATES, createAudioDirector, GAINS, type SfxName } from './audio-director';
+import {
+  COUNTDOWN_RATES,
+  createAudioDirector,
+  GAINS,
+  JINGLE_SECONDS,
+  type SfxName,
+  VICTORY_DUCK,
+} from './audio-director';
 
 interface RampCall {
   method: 'setValueAtTime' | 'linearRampToValueAtTime' | 'cancelScheduledValues';
@@ -480,5 +487,25 @@ describe('createAudioDirector', () => {
     const director = createDirector();
     director.unlock();
     expect(context.resumes).toBe(1);
+  });
+
+  it('cancels the pending jingle duck when the music stops', () => {
+    vi.useFakeTimers();
+    try {
+      const director = createDirector();
+      director.startMusic();
+      const musicElement = elements[0];
+      if (!musicElement) {
+        throw new Error('expected the music element to exist');
+      }
+      director.playVictoryJingle();
+      expect(musicElement.volume).toBeCloseTo(GAINS.music * (1 - VICTORY_DUCK));
+      director.stopMusic();
+      vi.advanceTimersByTime(JINGLE_SECONDS * 1000);
+      // The discarded element must not get its volume restored by a stale timer.
+      expect(musicElement.volume).toBeCloseTo(GAINS.music * (1 - VICTORY_DUCK));
+    } finally {
+      vi.useRealTimers();
+    }
   });
 });

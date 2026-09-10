@@ -36,7 +36,7 @@ describe('createCornerCluster', () => {
     expect(cluster.callbacks.onMuteToggle).toHaveBeenCalledWith(false);
   });
 
-  it('reports shelf taps (stub in this track)', () => {
+  it('reports shelf taps', () => {
     click(cluster.root, 'button[data-action="shelf"]').click();
     expect(cluster.callbacks.onShelf).toHaveBeenCalledTimes(1);
   });

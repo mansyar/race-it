@@ -1,97 +1,151 @@
 import { describe, expect, it } from 'vitest';
-import type { CameraPlacement } from './layout';
-import { MAX_DRIFT, MAX_ORBIT_RAD, PUSH_IN_MAX, raceCameraPose } from './race-camera';
+import { CAMERA_VERTICAL_FOV_DEG, type CameraPlacement } from './layout';
+import {
+  LOOK_AHEAD_DISTANCE,
+  PACK_FRAMING_FILL,
+  RACE_ZOOM_CEILING,
+  RACE_ZOOM_FLOOR,
+  type RaceCameraInput,
+  raceCameraPose,
+} from './race-camera';
 
 const buildPlacement: CameraPlacement = {
   position: { x: 0, y: 15.32, z: 12.86 },
   target: { x: 0, y: 0, z: 1.2 },
 };
 
-const angleBetween = (
-  a: { x: number; y: number; z: number },
-  b: { x: number; y: number; z: number },
-): number => {
-  const dot = a.x * b.x + a.y * b.y + a.z * b.z;
-  const norm = Math.hypot(a.x, a.y, a.z) * Math.hypot(b.x, b.y, b.z);
-  return Math.acos(Math.min(1, Math.max(-1, dot / norm)));
+const baseDistance = (): number => {
+  const dx = buildPlacement.position.x - buildPlacement.target.x;
+  const dy = buildPlacement.position.y - buildPlacement.target.y;
+  const dz = buildPlacement.position.z - buildPlacement.target.z;
+  return Math.hypot(dx, dy, dz);
 };
+
+const poseDistance = (pose: CameraPlacement): number => {
+  const dx = pose.position.x - pose.target.x;
+  const dy = pose.position.y - pose.target.y;
+  const dz = pose.position.z - pose.target.z;
+  return Math.hypot(dx, dy, dz);
+};
+
+/**
+ * Independent NDC oracle: largest |NDC| of the ground points when viewed from
+ * the given pose. Mirrors the projection used by the build-camera solver so the
+ * race solver can be checked against the same frustum.
+ */
+const maxPointNdc = (
+  pose: CameraPlacement,
+  aspect: number,
+  points: readonly { x: number; z: number }[],
+): number => {
+  const view = {
+    y: pose.target.y - pose.position.y,
+    z: pose.target.z - pose.position.z,
+  };
+  const len = Math.hypot(view.y, view.z);
+  const dY = view.y / len;
+  const dZ = view.z / len;
+  const uY = -dZ;
+  const uZ = dY;
+  const tanV = Math.tan((CAMERA_VERTICAL_FOV_DEG * Math.PI) / 360);
+  const tanH = tanV * aspect;
+  let max = 0;
+  for (const point of points) {
+    const vx = point.x - pose.position.x;
+    const vy = -pose.position.y;
+    const vz = point.z - pose.position.z;
+    const depth = vy * dY + vz * dZ;
+    const ndcX = vx / (depth * tanH);
+    const ndcY = (vy * uY + vz * uZ) / (depth * tanV);
+    max = Math.max(max, Math.abs(ndcX), Math.abs(ndcY));
+  }
+  return max;
+};
+
+const runningInput = (overrides: Partial<RaceCameraInput> = {}): RaceCameraInput => ({
+  phase: 'running',
+  lead: { x: 2, z: 6 },
+  rival: { x: 0, z: 4 },
+  heading: { x: 1, z: 0 },
+  finishPoint: { x: 0, z: 0 },
+  buildPlacement,
+  aspect: 9 / 16,
+  ...overrides,
+});
 
 describe('raceCameraPose', () => {
   it('returns the build placement untouched in build phase', () => {
-    const pose = raceCameraPose('build', { x: 4, z: 0 }, 0, buildPlacement);
+    const pose = raceCameraPose(runningInput({ phase: 'build' }));
     expect(pose).toEqual(buildPlacement);
   });
 
-  it('returns the build placement untouched during countdown', () => {
-    const pose = raceCameraPose('countdown', { x: 4, z: 0 }, 0, buildPlacement);
-    expect(pose).toEqual(buildPlacement);
-  });
-
-  it('keeps the build placement when the lead kart is at the camera focus', () => {
-    const pose = raceCameraPose('running', { x: 0, z: 1.2 }, 0, buildPlacement);
-    expect(pose.position.x).toBeCloseTo(buildPlacement.position.x);
-    expect(pose.position.z).toBeCloseTo(buildPlacement.position.z);
-    expect(pose.target.x).toBeCloseTo(buildPlacement.target.x);
-    expect(pose.target.z).toBeCloseTo(buildPlacement.target.z);
-  });
-
-  it('drifts the target toward a distant lead kart but clamps to the max drift', () => {
-    const pose = raceCameraPose('running', { x: 50, z: 0 }, 0, buildPlacement);
-    const offsetX = pose.target.x - buildPlacement.target.x;
-    expect(offsetX).toBeGreaterThan(0);
-    expect(offsetX).toBeLessThanOrEqual(MAX_DRIFT + 1e-9);
-  });
-
-  it('bounds the orbit to the max orbit angle', () => {
-    const pose = raceCameraPose('running', { x: 50, z: -50 }, 0, buildPlacement);
-    const dir = {
-      x: pose.position.x - pose.target.x,
-      y: pose.position.y - pose.target.y,
-      z: pose.position.z - pose.target.z,
-    };
-    const baseDir = {
-      x: buildPlacement.position.x - buildPlacement.target.x,
-      y: buildPlacement.position.y - buildPlacement.target.y,
-      z: buildPlacement.position.z - buildPlacement.target.z,
-    };
-    expect(angleBetween(dir, baseDir)).toBeLessThanOrEqual(MAX_ORBIT_RAD + 1e-9);
-  });
-
-  it('pushes the camera in toward the target during drift', () => {
-    const pose = raceCameraPose('running', { x: 50, z: 0 }, 0, buildPlacement);
-    const dist = Math.hypot(
-      pose.position.x - pose.target.x,
-      pose.position.y - pose.target.y,
-      pose.position.z - pose.target.z,
-    );
-    const baseDist = Math.hypot(
-      buildPlacement.position.x - buildPlacement.target.x,
-      buildPlacement.position.y - buildPlacement.target.y,
-      buildPlacement.position.z - buildPlacement.target.z,
-    );
-    expect(dist).toBeLessThan(baseDist);
-    expect(dist).toBeGreaterThanOrEqual(baseDist * (1 - PUSH_IN_MAX));
-  });
-
-  it('settles back onto the build placement as the race nears completion', () => {
-    const early = raceCameraPose('running', { x: 50, z: 0 }, 0.1, buildPlacement);
-    const late = raceCameraPose('running', { x: 50, z: 0 }, 0.9, buildPlacement);
-    expect(Math.abs(late.target.x - buildPlacement.target.x)).toBeLessThan(
-      Math.abs(early.target.x - buildPlacement.target.x),
-    );
-  });
-
-  it('returns the build placement once the race is finished', () => {
-    const pose = raceCameraPose('finished', { x: 50, z: 0 }, 1, buildPlacement);
-    expect(pose).toEqual(buildPlacement);
-  });
-
-  it('leaves the aspect-dependent build placement untouched in countdown', () => {
+  it('returns the aspect-dependent build placement untouched during countdown', () => {
     const wide: CameraPlacement = {
       position: { x: 0, y: 12.1, z: 9.4 },
       target: { x: 0, y: 0, z: 1.2 },
     };
-    const pose = raceCameraPose('countdown', { x: 3, z: 2 }, 0, wide);
+    const pose = raceCameraPose(runningInput({ phase: 'countdown', buildPlacement: wide }));
     expect(pose).toEqual(wide);
+  });
+
+  it('clamps a tight pair at the zoom floor (0.4x the build distance)', () => {
+    const input = runningInput({ lead: { x: 3, z: 3 }, rival: { x: 3.2, z: 3.1 } });
+    const pose = raceCameraPose(input);
+    expect(poseDistance(pose)).toBeCloseTo(baseDistance() * RACE_ZOOM_FLOOR, 6);
+  });
+
+  it('clamps a spread-out pair at the zoom ceiling (the full-board distance)', () => {
+    const input = runningInput({ lead: { x: 40, z: 0 }, rival: { x: -40, z: 4 } });
+    const pose = raceCameraPose(input);
+    expect(poseDistance(pose)).toBeCloseTo(baseDistance() * RACE_ZOOM_CEILING, 6);
+  });
+
+  it('frames both karts inside the pack margin when the zoom is not clamped', () => {
+    const input = runningInput();
+    const pose = raceCameraPose(input);
+    const distance = poseDistance(pose);
+    expect(distance).toBeGreaterThan(baseDistance() * RACE_ZOOM_FLOOR);
+    expect(distance).toBeLessThan(baseDistance() * RACE_ZOOM_CEILING);
+    expect(
+      maxPointNdc(pose, input.aspect, [input.lead, input.rival as { x: number; z: number }]),
+    ).toBeLessThanOrEqual(PACK_FRAMING_FILL + 1e-9);
+    // The camera keeps the fixed diorama azimuth: straight behind the target.
+    expect(pose.position.x).toBeCloseTo(pose.target.x, 6);
+  });
+
+  it('aims at the pair midpoint nudged ahead of the leader along its heading', () => {
+    const input = runningInput();
+    const pose = raceCameraPose(input);
+    // runningInput() defaults: lead (2,6), rival (0,4) -> midpoint (1,5).
+    const midpoint = { x: 1, z: 5 };
+    expect(pose.target.x).toBeCloseTo(midpoint.x + LOOK_AHEAD_DISTANCE, 6);
+    expect(pose.target.z).toBeCloseTo(midpoint.z, 6);
+    expect(pose.target.y).toBe(0);
+  });
+
+  it('nudges along whichever way the leader is heading', () => {
+    const input = runningInput({ heading: { x: 0, z: -1 } });
+    const pose = raceCameraPose(input);
+    expect(pose.target.x).toBeCloseTo(1, 6);
+    expect(pose.target.z).toBeCloseTo(5 - LOOK_AHEAD_DISTANCE, 6);
+  });
+
+  it('handles a lone leader (no rival) with the same clamps', () => {
+    const input = runningInput({ rival: null });
+    const pose = raceCameraPose(input);
+    const distance = poseDistance(pose);
+    expect(distance).toBeGreaterThanOrEqual(baseDistance() * RACE_ZOOM_FLOOR - 1e-9);
+    expect(distance).toBeLessThanOrEqual(baseDistance() * RACE_ZOOM_CEILING + 1e-9);
+    expect(pose.target.x).toBeCloseTo(input.lead.x + LOOK_AHEAD_DISTANCE, 6);
+    expect(pose.target.z).toBeCloseTo(input.lead.z, 6);
+  });
+
+  it('holds close on the finish point once the race is finished', () => {
+    const input = runningInput({ phase: 'finished', finishPoint: { x: 2, z: -4 } });
+    const pose = raceCameraPose(input);
+    expect(pose.target.x).toBeCloseTo(2, 6);
+    expect(pose.target.z).toBeCloseTo(-4, 6);
+    expect(pose.target.y).toBe(0);
+    expect(poseDistance(pose)).toBeCloseTo(baseDistance() * RACE_ZOOM_FLOOR, 6);
   });
 });
