@@ -23,8 +23,8 @@
 - [x] Task: Phase Verification & Checkpoint (Refer to workflow.md) — 1d1bb87
 
 ## Phase 4: Integration & Quality Gates
-- [ ] Task: Verify new-audio size budget (≤ ~1.5 MB) and service-worker precache inclusion via `ASSET_URLS`; Playwright E2E smoke passes on production build
-- [ ] Task: iOS audio-unlock check — first audio starts within user gesture; no audio before first tap; `resume()` on visibility return
+- [x] Task: Verify new-audio size budget (≤ ~1.5 MB) and service-worker precache inclusion via `ASSET_URLS`; Playwright E2E smoke passes on production build — 1d1bb87
+- [x] Task: iOS audio-unlock check — first audio starts within user gesture; no audio before first tap; `resume()` on visibility return — 1d1bb87
 - [ ] Task: Manual verification plan executed (dev server + on-device sound check: countdown, hum, music, jingle, mute, pause/backgrounding)
 - [ ] Task: Phase Verification & Checkpoint (Refer to workflow.md)
 
