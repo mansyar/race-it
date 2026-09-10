@@ -128,10 +128,7 @@ describe('createScreenWakeLock', () => {
     const first = createSentinel();
     const second = createSentinel();
     const third = createSentinel();
-    request
-      .mockResolvedValueOnce(first)
-      .mockResolvedValueOnce(second)
-      .mockResolvedValueOnce(third);
+    request.mockResolvedValueOnce(first).mockResolvedValueOnce(second).mockResolvedValueOnce(third);
     const lock = createScreenWakeLock(host);
 
     lock.setVisible(true);
@@ -171,6 +168,21 @@ describe('createScreenWakeLock', () => {
 
     expect(request).toHaveBeenCalledTimes(2);
     expect(lock.active).toBe(true);
+  });
+
+  it('ignores release failures while hiding', async () => {
+    const { host, request } = createHost();
+    const sentinel = createSentinel();
+    sentinel.release.mockRejectedValueOnce(new Error('release failed'));
+    request.mockResolvedValue(sentinel);
+    const lock = createScreenWakeLock(host);
+
+    lock.setVisible(true);
+    await flush();
+    expect(() => lock.setVisible(false)).not.toThrow();
+    await flush();
+
+    expect(lock.active).toBe(false);
   });
 
   it('releases a lock that resolves after the page was hidden', async () => {
