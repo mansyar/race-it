@@ -40,6 +40,26 @@ describe('createRaceHud', () => {
     expect(hud.overlay.hidden).toBe(true);
   });
 
+  it('showOverlay reveals the HUD root and hides the pause button', () => {
+    hud.showPause();
+    hud.showOverlay();
+    expect(hud.root.classList.contains('hidden')).toBe(false);
+    expect(hud.root.querySelector('[data-action="pause"]')?.classList.contains('hidden')).toBe(
+      true,
+    );
+    expect(hud.overlay.hidden).toBe(false);
+    expect(hud.confirm.hidden).toBe(true);
+  });
+
+  it('showOverlay works from the countdown state when the pause button never appeared', () => {
+    hud.showOverlay();
+    expect(hud.root.classList.contains('hidden')).toBe(false);
+    expect(hud.root.querySelector('[data-action="pause"]')?.classList.contains('hidden')).toBe(
+      true,
+    );
+    expect(hud.overlay.hidden).toBe(false);
+  });
+
   it('tapping pause opens the resume/quit overlay', () => {
     hud.showPause();
     click(hud.root, 'button[data-action="pause"]').click();

@@ -529,6 +529,73 @@ describe('createRacePresentation', () => {
     });
   });
 
+  describe('holdForInterruption', () => {
+    it('holds a running race behind the resume/quit overlay and suspends audio', () => {
+      harness.raceToRunning();
+      const progressBefore = harness.engine.karts[0]?.progress ?? 0;
+      harness.presentation.holdForInterruption();
+      expect(harness.hud.overlay.hidden).toBe(false);
+      expect(harness.hud.root.classList.contains('hidden')).toBe(false);
+      expect(
+        harness.hud.root.querySelector('[data-action="pause"]')?.classList.contains('hidden'),
+      ).toBe(true);
+      expect(harness.audio.suspendAll).toHaveBeenCalledTimes(1);
+      harness.presentation.update(0.5);
+      expect(harness.engine.karts[0]?.progress).toBeCloseTo(progressBefore);
+    });
+
+    it('holds a countdown even though the HUD root was never revealed', () => {
+      harness.presentation.beginRace();
+      harness.presentation.update(0.01);
+      expect(harness.engine.state).toBe('countdown');
+      harness.presentation.holdForInterruption();
+      expect(harness.hud.root.classList.contains('hidden')).toBe(false);
+      expect(harness.hud.overlay.hidden).toBe(false);
+      expect(harness.audio.suspendAll).toHaveBeenCalledTimes(1);
+    });
+
+    it('is a no-op in the builder (idle)', () => {
+      harness.presentation.holdForInterruption();
+      expect(harness.audio.suspendAll).not.toHaveBeenCalled();
+      expect(harness.hud.overlay.hidden).toBe(true);
+      expect(harness.hud.root.classList.contains('hidden')).toBe(true);
+    });
+
+    it('is a no-op once the trophy is showing', () => {
+      harness.raceToAllFinished();
+      expect(harness.trophy.root.classList.contains('hidden')).toBe(false);
+      harness.presentation.holdForInterruption();
+      expect(harness.hud.overlay.hidden).toBe(true);
+      expect(harness.audio.suspendAll).not.toHaveBeenCalled();
+    });
+
+    it('a second hold changes nothing', () => {
+      harness.raceToRunning();
+      harness.presentation.holdForInterruption();
+      harness.presentation.holdForInterruption();
+      expect(harness.audio.suspendAll).toHaveBeenCalledTimes(1);
+    });
+
+    it('resumes the race from the hold overlay', () => {
+      harness.raceToRunning();
+      const progressBefore = harness.engine.karts[0]?.progress ?? 0;
+      harness.presentation.holdForInterruption();
+      click('button[data-action="resume"]', harness.hud.overlay);
+      harness.presentation.update(0.3);
+      expect(harness.engine.karts[0]?.progress).toBeGreaterThan(progressBefore);
+      expect(harness.audio.resumeAll).toHaveBeenCalledTimes(1);
+      expect(harness.hud.overlay.hidden).toBe(true);
+    });
+
+    it('can hold again after a resume', () => {
+      harness.raceToRunning();
+      harness.presentation.holdForInterruption();
+      click('button[data-action="resume"]', harness.hud.overlay);
+      harness.presentation.holdForInterruption();
+      expect(harness.audio.suspendAll).toHaveBeenCalledTimes(2);
+    });
+  });
+
   describe('countdown & GO sounds', () => {
     it('beeps once per countdown step, descending 3-2-1, then GO once', () => {
       const stepped = createHarness({ countdownSeconds: 3 });
