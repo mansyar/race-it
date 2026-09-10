@@ -1,10 +1,10 @@
 # PWA Install Experience — Implementation Plan
 
-## Phase 1: Manifest Polish & Install Identity (FR1)
+## Phase 1: Manifest Polish & Install Identity (FR1) [checkpoint: 095b744]
 - [x] Task: Write failing unit test validating the manifest contract (`id: '/'`, `display: 'standalone'`, `lang`, `categories`, icons & theme colors unchanged, parent-warm description) against `vite.config.ts` (1992a34)
 - [x] Task: Implement manifest changes in `vite.config.ts`; confirm `vite build` emits the corrected `manifest.webmanifest` (095b744)
 - [x] Task: Verify coverage ≥80% on new test, `pnpm test` + Biome + `tsc --noEmit` green; commit (095b744)
-- [~] Task: Phase Verification & Checkpoint (Refer to workflow.md)
+- [x] Task: Phase Verification & Checkpoint (Refer to workflow.md)
 
 ## Phase 2: iOS Splash Screens (FR2)
 - [ ] Task: Add splash generation (build-time script extending `pwa-assets.config.ts` pipeline) + `apple-touch-startup-image` media-query links for device-floor iPhone/iPad, portrait & landscape, toy-cream background
