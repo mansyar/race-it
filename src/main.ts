@@ -19,6 +19,7 @@ import { KartPreview } from './render/kart-preview';
 import { fillPerfPattern } from './render/perf-harness';
 import { applyPieceFeedback } from './render/piece-feedback-apply';
 import { PieceRenderer } from './render/piece-renderer';
+import { createQualityController } from './render/quality-controller';
 import { createBuildScene } from './render/scene';
 import { SceneryRenderer } from './render/scenery-render';
 import { PieceFeedback } from './render/toy-feedback';
@@ -91,6 +92,17 @@ if (root && appReady()) {
     }
     rerender();
   });
+
+  // Adaptive quality: boot at the stored (or `?tier=`-forced) level and step it
+  // from the frame loop; the scene applies the matching pixel-ratio cap.
+  const quality = createQualityController({
+    search: window.location.search,
+    storage: window.localStorage,
+    onChange: (tier) => {
+      view.setPixelRatioCap(tier);
+    },
+  });
+  view.setPixelRatioCap(quality.tier);
 
   // Debug mode: `?perf` fills the whole board (worst case, 144 pieces) and
   // exposes renderer stats on the window for manual fps/draw-call measurement.
@@ -476,6 +488,7 @@ if (root && appReady()) {
       applyPieceFeedback(pieces.group, feedback, feedback.time);
     }
     presentation?.update(dt);
+    quality.tick(dt);
   });
 
   // iOS audio unlock: the WebAudio context may only resume inside a user
