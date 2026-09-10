@@ -7,3 +7,4 @@
 - [x] **Track: Car Picker & Race Setup** *Archived: [carpicker_20260910](./archive/carpicker_20260910/index.md)*
 - [x] **Track: CI/CD Pipeline & Containerized Deployment** *Archived: [cicd_20260910](./archive/cicd_20260910/index.md)*
 - [x] **Track: Race Audio & Music** *Link: [audio_20260910](./tracks/audio_20260910/index.md)*
+- [ ] **Track: PWA Install Experience** *Link: [pwainstall_20260910](./tracks/pwainstall_20260910/index.md)*
