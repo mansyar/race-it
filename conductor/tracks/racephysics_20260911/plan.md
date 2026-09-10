@@ -10,8 +10,8 @@
 
 ## Phase 1 — Distance-Normalized Fairness (bug fix)
 
-- [ ] Task 1.1: fairness simulation harness first (Red) — new `src/race/fairness.test.ts`: fixed-seed sweep (2-4 karts × 8/14/48-cell loops, coarse fixed dt for CI speed) asserting (a) back-row slots win on the demo loop at all — currently 0, the bug; (b) every slot's win share within `[0.5/n, 2/n]`; (c) photo-finish rate 30-65% on the 14-cell loop; (d) first finish 30-45 s; (e) same-seed determinism. Current measured shares documented in the failure output.
-- [ ] Task 1.2: implement distance normalization in `src/race/engine.ts` (Green) — fold the grid offset into pace (`pace = base · factor · (L - startProgress)/L`) in `rollKarts`; update `engine.test.ts` expectations (injected-rng coverage now includes per-row compensation; start lineup unchanged; duration band re-checked). Full suite + harness green.
+- [x] Task 1.1: fairness simulation harness first (Red) (3d7590f) — new `src/race/fairness.test.ts`: fixed-seed sweep (2-4 karts × 8/14/48-cell loops, coarse fixed dt for CI speed) asserting (a) back-row slots win on the demo loop at all — currently 0, the bug; (b) every slot's win share within `[0.5/n, 2/n]`; (c) photo-finish rate 30-65% on the 14-cell loop; (d) first finish 30-45 s; (e) same-seed determinism. Current measured shares documented in the failure output.
+- [x] Task 1.2: implement distance normalization in `src/race/engine.ts` (Green) (3d7590f) — fold the grid offset into pace (`pace = base · factor · (L - startProgress)/L`) in `rollKarts`; update `engine.test.ts` expectations (injected-rng coverage now includes per-row compensation; start lineup unchanged; duration band re-checked). Full suite + harness green.
 - [ ] Task: Phase Verification & Checkpoint (Refer to workflow.md) — review the before/after fairness table with the user.
 
 ## Phase 2 — Natural Pace Dynamics (engine)
