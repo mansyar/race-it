@@ -2,6 +2,7 @@ import * as THREE from 'three';
 import { GRID_SIZE } from '../grid/grid-model';
 import { BOARD_WORLD_SIZE, CELL_WORLD_SIZE, computeCameraPlacement, gridToWorld } from './layout';
 import { pickCell } from './picking';
+import type { QualityTier } from './quality-controller';
 
 /** Warm wood tone of the toy table. */
 const TABLE_COLOR = 0xc99a6b;
@@ -9,6 +10,13 @@ const TABLE_COLOR = 0xc99a6b;
 const TABLE_RIM_COLOR = 0x8b5a32;
 /** Faint etched grid line color. */
 const GRID_LINE_COLOR = 0xa87f52;
+
+/** Pixel-ratio caps per quality tier; `high` preserves the historical cap of 2. */
+const PIXEL_RATIO_CAPS: Record<QualityTier, number> = {
+  high: 2,
+  mid: 1.5,
+  low: 1,
+};
 
 /**
  * Soft radial contact-shadow texture so the diorama sits on the cream
@@ -49,10 +57,16 @@ export function createBuildScene(
   renderer: THREE.WebGLRenderer;
   /** Registers (or clears with null) the per-frame update hook; runs before render. */
   onFrame: (callback: ((dt: number) => void) | null) => void;
+  /** Applies a quality tier's pixel-ratio cap and resizes the buffer immediately. */
+  setPixelRatioCap: (tier: QualityTier) => void;
   dispose: () => void;
 } {
   const renderer = new THREE.WebGLRenderer({ antialias: true });
-  renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
+  let pixelRatioCap: QualityTier = 'high';
+  function applyPixelRatio(): void {
+    renderer.setPixelRatio(Math.min(window.devicePixelRatio, PIXEL_RATIO_CAPS[pixelRatioCap]));
+  }
+  applyPixelRatio();
   renderer.domElement.style.display = 'block';
   renderer.domElement.style.touchAction = 'none';
   container.appendChild(renderer.domElement);
@@ -173,6 +187,7 @@ export function createBuildScene(
     if (width === 0 || height === 0) {
       return;
     }
+    applyPixelRatio();
     // updateStyle (default true) is REQUIRED: it sets the canvas CSS size to
     // the container size. Without it the canvas displays at its pixel-buffer
     // size (clientWidth * devicePixelRatio), overflowing and cropping the view
@@ -209,6 +224,10 @@ export function createBuildScene(
     renderer,
     onFrame(callback: ((dt: number) => void) | null) {
       frameCallback = callback;
+    },
+    setPixelRatioCap(tier: QualityTier) {
+      pixelRatioCap = tier;
+      resize();
     },
     dispose: () => {
       cancelAnimationFrame(frame);
