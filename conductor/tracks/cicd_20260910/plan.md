@@ -26,10 +26,10 @@
 
 ## Phase 4 — Docker Image & Release Pipeline
 
-- [ ] Task 4.1: `Dockerfile` (node:24-alpine build stage → nginx:alpine; nginx.conf: SPA fallback + PWA-friendly cache headers) + `.dockerignore`
-- [ ] Task 4.2: Local verification — `docker build`, run container, curl smoke (if Docker available locally)
-- [ ] Task 4.3: `.github/workflows/release.yml` — on `v*` tags: build → build-push-action → `ghcr.io/mansyar/race-it:vX.Y.Z` + `:latest` (public) → POST deploy webhook with `Authorization: Bearer $COOLIFY_API_TOKEN` (`$COOLIFY_DEPLOY_WEBHOOK`); deploy runs serialized
-- [ ] Task 4.4: GitHub Release step — generate notes from `git log` between previous tag and new tag (first release: all commits), group by conventional-commit type (`feat`/`fix`/`chore`/`docs`/`test`/`refactor`/`style`) into a notes file; publish via `gh release create` (GITHUB_TOKEN). Notes stay on GitHub — not attached to the Coolify deploy
+- [x] Task 4.1: `Dockerfile` (node:24-alpine build stage → nginx:alpine; nginx.conf: SPA fallback + PWA-friendly cache headers) + `.dockerignore` `(8c587b6)`
+- [x] Task 4.2: Local verification — `docker build`, run container, curl smoke (if Docker available locally) `(2baedc9)`
+- [x] Task 4.3: `.github/workflows/release.yml` — on `v*` tags: build → build-push-action → `ghcr.io/mansyar/race-it:vX.Y.Z` + `:latest` (public) → POST deploy webhook with `Authorization: Bearer $COOLIFY_API_TOKEN` (`$COOLIFY_DEPLOY_WEBHOOK`); deploy runs serialized `(5973368)`
+- [x] Task 4.4: GitHub Release step — generate notes from `git log` between previous tag and new tag (first release: all commits), group by conventional-commit type (`feat`/`fix`/`chore`/`docs`/`test`/`refactor`/`style`) into a notes file; publish via `gh release create` (GITHUB_TOKEN). Notes stay on GitHub — not attached to the Coolify deploy `(5973368)`
 - [ ] Task 4.5: User adds 2 repo secrets (`COOLIFY_DEPLOY_WEBHOOK`, `COOLIFY_API_TOKEN`); verify via `gh secret list`
 - [ ] Task: Phase Verification & Checkpoint (Refer to workflow.md)
 
