@@ -33,7 +33,7 @@
 ## Phase 6: Integration & Quality Gates [checkpoint: bceea19]
 - [x] Task: Full gates green — `pnpm test` (+coverage ≥80%), Biome, `tsc --noEmit && vite build`, Playwright E2E smoke on production build [bceea19]
 - [x] Task: On-device verification executed — iOS Safari A2HS (icon, standalone, no white flash, hint behavior) + Android Chrome (rich sheet, standalone, no hint UI) [bceea19]
-- [~] Task: Phase Verification & Checkpoint (Refer to workflow.md)
+- [x] Task: Phase Verification & Checkpoint (Refer to workflow.md)
 
 ## Phase 7: Merge to master (no tag)
 - [ ] Task: Merge `feature/pwa-install` to `master` (merge-only per decision — no version tag; deployment to Coolify deferred to the next tagged release)
