@@ -235,6 +235,9 @@ if (root && appReady()) {
     onAgain: () => {
       audio.playOneShot('confirmA');
     },
+    onBuildAgain: () => {
+      audio.playOneShot('click');
+    },
   });
 
   const setBuildUiVisible = (visible: boolean): void => {
