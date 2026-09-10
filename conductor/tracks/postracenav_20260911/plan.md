@@ -23,6 +23,6 @@
 ## Phase 3 — E2E & Quality Gates
 
 - [x] Task 3.1: E2E coverage first (Red) — new `e2e/postrace.spec.ts`: the seeded demo race plays to the trophy (Playwright timer virtualization or extended timeout), Build Again returns to the builder with the build bar visible and GO enabled, track intact; confirm the assertion fails without the wiring. (01eb796 — extended timeout; Red confirmed against the pre-wiring revision 3cb67ef, failing exactly at the Build Again visibility assertion)
-- [ ] Task 3.2: quality gates — `pnpm build`, `$env:CI='true'; pnpm test`, coverage >80% on changed modules, `pnpm lint` clean.
-- [ ] Task 3.3: browser full-flow verification — portrait + landscape phone viewports: trophy → Build Again → GO → picker → RACE; RACE AGAIN replays with fresh speeds; pause/quit and shelf flows regression-free; `?perf`, `?race`, `?debug` hooks unchanged; screenshots captured.
+- [x] Task 3.2: quality gates — `pnpm build`, `$env:CI='true'; pnpm test`, coverage >80% on changed modules, `pnpm lint` clean. (all green — 422 tests, coverage src/presentation 97.35% stmts / 97.31% lines, src/ui 98.55% stmts / 98.52% lines)
+- [x] Task 3.3: browser full-flow verification — portrait + landscape phone viewports: trophy → Build Again → GO → picker → RACE; RACE AGAIN replays with fresh speeds; pause/quit and shelf flows regression-free; `?perf`, `?race`, `?debug` hooks unchanged; screenshots captured. (Playwright full-flow 4/4 passed + smoke/shelf regression 2/2; screenshots in `test-results/postrace-verify/`; two pre-existing issues found and logged: resume leaves the pause button hidden for the rest of the race, and the car picker overflows at 844x390 short landscape)
 - [ ] Task: Phase Verification & Checkpoint (Refer to workflow.md)
