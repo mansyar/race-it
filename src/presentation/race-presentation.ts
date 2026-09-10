@@ -17,7 +17,7 @@ export const VICTORY_SPIN_SECONDS = 2.0;
 export const GO_FLASH_SECONDS = 0.8;
 
 /** Exponential camera smoothing rate (higher = snappier follow). */
-const CAMERA_SMOOTH_RATE = 6;
+export const CAMERA_SMOOTH_RATE = 8;
 
 /**
  * Adds a full yaw turn over the victory spin window. Progress is clamped to
@@ -69,18 +69,30 @@ export interface RacePresentation {
   resetToBuild(): void;
 }
 
-function leadKart(karts: Kart[]): Kart {
-  const first = karts[0];
-  if (!first) {
-    throw new RangeError('leadKart: karts must not be empty');
-  }
-  let lead = first;
-  for (const kart of karts) {
-    if (kart.progress > lead.progress) {
-      lead = kart;
+/**
+ * Indices of the lead battle: the leading kart and its closest rival (the
+ * kart with the next-highest progress). The rival is null for a lone kart.
+ */
+export function leadBattle(karts: readonly Kart[]): {
+  leadIndex: number;
+  rivalIndex: number | null;
+} {
+  let leadIndex = -1;
+  let rivalIndex = -1;
+  for (let i = 0; i < karts.length; i++) {
+    const kart = karts[i];
+    if (!kart) {
+      continue;
+    }
+    const lead = leadIndex < 0 ? undefined : karts[leadIndex];
+    if (!lead || kart.progress > lead.progress) {
+      rivalIndex = leadIndex;
+      leadIndex = i;
+    } else if (rivalIndex < 0 || kart.progress > (karts[rivalIndex]?.progress ?? -1)) {
+      rivalIndex = i;
     }
   }
-  return lead;
+  return { leadIndex, rivalIndex: rivalIndex < 0 ? null : rivalIndex };
 }
 
 function cameraPhase(state: RaceState): RaceCameraPhase {
@@ -242,16 +254,28 @@ export function createRacePresentation(options: RacePresentationOptions): RacePr
     }
   }
 
-  function updateCamera(dt: number): void {
+  function updateCamera(dt: number, poses: KartPose[]): void {
     if (path.length === 0 || engine.karts.length === 0) {
       return;
     }
     const build = computeCameraPlacement(camera.aspect);
     const phase = cameraPhase(engine.state);
-    const lead = leadKart(engine.karts);
-    const leadWorld = kartPose(path, lead.progress, 0);
-    const finishRatio = Math.max(0, lead.progress / engine.lapLength);
-    const targetPose = raceCameraPose(phase, leadWorld, finishRatio, build);
+    const { leadIndex, rivalIndex } = leadBattle(engine.karts);
+    const leadPose = poses[leadIndex];
+    if (!leadPose) {
+      return;
+    }
+    const rivalPose = rivalIndex === null ? undefined : poses[rivalIndex];
+    const heading = { x: Math.cos(leadPose.heading), z: -Math.sin(leadPose.heading) };
+    const targetPose = raceCameraPose({
+      phase,
+      lead: { x: leadPose.x, z: leadPose.z },
+      rival: rivalPose ? { x: rivalPose.x, z: rivalPose.z } : null,
+      heading,
+      finishPoint: finishOrigin,
+      buildPlacement: build,
+      aspect: camera.aspect,
+    });
 
     if (!hasSmoothedCamera) {
       smoothedPos = { ...targetPose.position };
@@ -285,9 +309,10 @@ export function createRacePresentation(options: RacePresentationOptions): RacePr
       updateTrafficLight();
       updateVictorySpin(dt);
       updateTrophy();
-      karts.update(currentPoses());
+      const poses = currentPoses();
+      karts.update(poses);
       confetti.update(dt);
-      updateCamera(dt);
+      updateCamera(dt, poses);
     },
     resetToBuild() {
       engine.abandon();
