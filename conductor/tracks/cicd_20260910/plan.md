@@ -18,7 +18,7 @@
 - [x] Task 2.2: **Green:** install chromium, run suite locally, confirm passes; commit `test(e2e): add boot-and-race smoke suite` `(d14bbb7)`
 - [ ] Task: Phase Verification & Checkpoint (Refer to workflow.md)
 
-## Phase 3 — CI Workflow (push & PR checks)
+## Phase 3 — CI Workflow (push & PR checks) [checkpoint: 6f42e53]
 
 - [x] Task 3.1: `.github/workflows/ci.yml` — 4 parallel jobs, fail-fast: **check** (Biome lint+format) · **unit** (Vitest + coverage ≥80% gate) · **build** (`tsc --noEmit && vite build`, upload dist artifact) · **e2e** (download artifact, Playwright). pnpm store cache + Playwright browser cache; concurrency cancel-in-progress `(913527b)`
 - [x] Task 3.2: Push branch, verify CI green on GitHub (all 4 jobs) `(6f42e53)`
