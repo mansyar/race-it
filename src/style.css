@@ -504,8 +504,7 @@ body {
   flex-direction: column;
   align-items: center;
   gap: 12px;
-  padding: max(16px, env(safe-area-inset-top, 0px)) 16px
-    max(16px, env(safe-area-inset-bottom, 0px));
+  padding: max(16px, env(safe-area-inset-top, 0px)) 16px max(16px, env(safe-area-inset-bottom, 0px));
   background: rgba(74, 55, 40, 0.55);
 }
 
