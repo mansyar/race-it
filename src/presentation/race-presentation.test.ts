@@ -51,6 +51,8 @@ interface Harness {
     aspect: number;
   };
   onBuildUiChange: ReturnType<typeof vi.fn>;
+  onCountdownBeep: ReturnType<typeof vi.fn>;
+  onGo: ReturnType<typeof vi.fn>;
   priorOnPause: ReturnType<typeof vi.fn>;
   priorOnResume: ReturnType<typeof vi.fn>;
   priorOnQuit: ReturnType<typeof vi.fn>;
@@ -98,6 +100,8 @@ function createHarness(options: { countdownSeconds?: number } = {}): Harness {
     aspect: 1.5,
   };
   const onBuildUiChange = vi.fn();
+  const onCountdownBeep = vi.fn();
+  const onGo = vi.fn();
 
   const presentation = createRacePresentation({
     engine,
@@ -109,6 +113,8 @@ function createHarness(options: { countdownSeconds?: number } = {}): Harness {
     karts,
     camera,
     onBuildUiChange,
+    onCountdownBeep,
+    onGo,
   });
 
   return {
@@ -121,6 +127,8 @@ function createHarness(options: { countdownSeconds?: number } = {}): Harness {
     karts,
     camera,
     onBuildUiChange,
+    onCountdownBeep,
+    onGo,
     priorOnPause,
     priorOnResume,
     priorOnQuit,
@@ -377,6 +385,46 @@ describe('createRacePresentation', () => {
       expect(harness.light.root.classList.contains('hidden')).toBe(true);
       expect(harness.hud.root.classList.contains('hidden')).toBe(true);
       expect(harness.confetti.clear).toHaveBeenCalled();
+    });
+  });
+
+  describe('countdown & GO sounds', () => {
+    it('beeps once per countdown step, descending 3-2-1, then GO once', () => {
+      const stepped = createHarness({ countdownSeconds: 1.2 });
+      stepped.presentation.beginRace();
+      for (let i = 0; i < 90; i++) {
+        stepped.presentation.update(1 / 60);
+      }
+      const beeps = stepped.onCountdownBeep.mock.calls.map((call) => call[0]);
+      expect(beeps).toEqual([3, 2, 1]);
+      expect(stepped.onGo).toHaveBeenCalledTimes(1);
+    });
+
+    it('beeps once for a short countdown and plays GO when the race starts', () => {
+      harness.raceToRunning();
+      expect(harness.onCountdownBeep).toHaveBeenCalledTimes(1);
+      expect(harness.onCountdownBeep).toHaveBeenCalledWith(3);
+      expect(harness.onGo).toHaveBeenCalledTimes(1);
+    });
+
+    it('does not beep or replay GO while running or finished', () => {
+      harness.raceToRunning();
+      const beepsInCountdown = harness.onCountdownBeep.mock.calls.length;
+      const goCalls = harness.onGo.mock.calls.length;
+      harness.presentation.update(0.5);
+      expect(harness.onCountdownBeep.mock.calls.length).toBe(beepsInCountdown);
+      expect(harness.onGo.mock.calls.length).toBe(goCalls);
+    });
+
+    it('replays the countdown beep and GO on RACE AGAIN', () => {
+      harness.raceToAllFinished();
+      const beepsBefore = harness.onCountdownBeep.mock.calls.length;
+      click('button[data-action="again"]', harness.trophy.root);
+      for (let i = 0; i < 10; i++) {
+        harness.presentation.update(1 / 60);
+      }
+      expect(harness.onCountdownBeep.mock.calls.length).toBeGreaterThan(beepsBefore);
+      expect(harness.onGo).toHaveBeenCalledTimes(2);
     });
   });
 

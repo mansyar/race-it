@@ -1,6 +1,6 @@
 import { beforeEach, describe, expect, it } from 'vitest';
 import { SFX } from '../assets/manifest';
-import { createAudioDirector, GAINS, type SfxName } from './audio-director';
+import { COUNTDOWN_RATES, createAudioDirector, GAINS, type SfxName } from './audio-director';
 
 interface FakeGainNode {
   gain: { value: number };
@@ -36,6 +36,7 @@ function createFakeContext(): FakeContext {
 interface PlayedEntry {
   url: string;
   volume: number;
+  playbackRate: number;
 }
 
 function masterNodeOf(context: FakeContext): FakeGainNode {
@@ -62,8 +63,9 @@ describe('createAudioDirector', () => {
         const element = {
           url,
           volume: 1,
+          playbackRate: 1,
           play() {
-            played.push({ url: this.url, volume: this.volume });
+            played.push({ url: this.url, volume: this.volume, playbackRate: this.playbackRate });
           },
         };
         return element;
@@ -139,5 +141,35 @@ describe('createAudioDirector', () => {
     expect(director.isMuted()).toBe(false);
     director.setMuted(true);
     expect(director.isMuted()).toBe(true);
+  });
+
+  it('plays countdown beeps with a rising playback rate per remaining step', () => {
+    const director = createDirector();
+    director.playCountdownBeep(3);
+    director.playCountdownBeep(2);
+    director.playCountdownBeep(1);
+    expect(played).toHaveLength(3);
+    expect(played.map((entry) => entry.playbackRate)).toEqual([...COUNTDOWN_RATES]);
+    for (const entry of played) {
+      expect(entry.url).toBe(SFX.countdown);
+      expect(entry.volume).toBe(GAINS.oneShot);
+    }
+  });
+
+  it('clamps out-of-range countdown steps', () => {
+    const director = createDirector();
+    director.playCountdownBeep(99);
+    director.playCountdownBeep(0);
+    expect(played.map((entry) => entry.playbackRate)).toEqual([
+      COUNTDOWN_RATES[0],
+      COUNTDOWN_RATES[2],
+    ]);
+  });
+
+  it('does not play countdown beeps while muted', () => {
+    const director = createDirector();
+    director.setMuted(true);
+    director.playCountdownBeep(3);
+    expect(played).toHaveLength(0);
   });
 });
