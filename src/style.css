@@ -159,3 +159,135 @@ body {
     transform: scale(1.08);
   }
 }
+
+.car-picker {
+  position: fixed;
+  inset: 0;
+  z-index: 20;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 24px;
+  background: var(--toy-cream);
+  padding: max(16px, env(safe-area-inset-top, 0px)) 16px max(16px, env(safe-area-inset-bottom, 0px));
+}
+
+.car-picker.hidden {
+  display: none;
+}
+
+.car-picker__back {
+  position: absolute;
+  top: calc(12px + env(safe-area-inset-top, 0px));
+  right: 12px;
+  min-width: 64px;
+  min-height: 64px;
+  border: 3px solid var(--toy-ink);
+  border-radius: 32px;
+  background: #fff;
+  color: var(--toy-ink);
+  font-size: 28px;
+  font-weight: bold;
+  box-shadow: 0 4px 0 var(--toy-ink);
+  cursor: pointer;
+  touch-action: manipulation;
+}
+
+.car-picker__back:active {
+  box-shadow: 0 1px 0 var(--toy-ink);
+  transform: translateY(3px);
+}
+
+.car-picker__stage {
+  position: relative;
+  display: grid;
+  grid-template-columns: repeat(2, minmax(140px, 200px));
+  gap: 20px;
+}
+
+.car-picker__previews {
+  position: absolute;
+  inset: -10px;
+  pointer-events: none;
+}
+
+.car-picker__previews canvas {
+  width: 100%;
+  height: 100%;
+  display: block;
+}
+
+.swatch {
+  min-width: 140px;
+  min-height: 140px;
+  padding: 0;
+  border: 3px solid var(--toy-ink);
+  border-radius: 24px;
+  background: #fff;
+  box-shadow: 0 4px 0 var(--toy-ink);
+  cursor: pointer;
+  touch-action: manipulation;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.swatch:active {
+  box-shadow: 0 1px 0 var(--toy-ink);
+  transform: translateY(3px);
+}
+
+.swatch__disc {
+  width: 56px;
+  height: 56px;
+  border-radius: 50%;
+  border: 3px solid var(--toy-ink);
+}
+
+.swatch:not(.selected) {
+  opacity: 0.35;
+  box-shadow: none;
+  transform: scale(0.94);
+}
+
+.swatch[data-color="red"] .swatch__disc {
+  background: #e5484d;
+}
+
+.swatch[data-color="blue"] .swatch__disc {
+  background: #3f7fd9;
+}
+
+.swatch[data-color="green"] .swatch__disc {
+  background: #3fae5a;
+}
+
+.swatch[data-color="yellow"] .swatch__disc {
+  background: #f0b90a;
+}
+
+.car-picker__race {
+  min-width: 160px;
+  min-height: 72px;
+  padding: 0 32px;
+  border: 4px solid #fff;
+  border-radius: 36px;
+  background: var(--toy-red, #e63946);
+  color: #fff;
+  font-size: 40px;
+  font-weight: bold;
+  letter-spacing: 2px;
+  font-family: inherit;
+  box-shadow: 0 6px 0 rgba(0, 0, 0, 0.25);
+  cursor: pointer;
+  touch-action: manipulation;
+}
+
+.car-picker__race:disabled {
+  opacity: 0.35;
+}
+
+.car-picker__race.hint {
+  animation: go-pulse 1.2s ease-in-out infinite;
+}
