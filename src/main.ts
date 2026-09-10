@@ -2,6 +2,7 @@ import * as THREE from 'three';
 import { appReady } from './app';
 import { KARTS, MODELS, MUSIC, SCENERY, SFX } from './assets/manifest';
 import { createAudioDirector } from './audio/audio-director';
+import { installGestureGuards } from './gesture-guards';
 import type { GridModel, PieceType } from './grid/grid-model';
 import { GRID_SIZE } from './grid/grid-model';
 import { deleteFromShelf, loadShelf, saveToShelf } from './grid/shelf-store';
@@ -91,6 +92,10 @@ if (root && appReady()) {
     }
     rerender();
   });
+
+  // Toddler-proof the play surface: no long-press context menus or callouts,
+  // no double-tap/pinch zoom, and no native drag ghosts on the toy table.
+  installGestureGuards(root);
 
   // Debug mode: `?perf` fills the whole board (worst case, 144 pieces) and
   // exposes renderer stats on the window for manual fps/draw-call measurement.
