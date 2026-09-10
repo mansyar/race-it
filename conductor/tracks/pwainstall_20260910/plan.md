@@ -20,10 +20,10 @@
 - [x] Task: Phase Verification & Checkpoint (Refer to workflow.md) [25e667e]
 
 ## Phase 4: Install Hint UI (FR4)
-- [~] Task: Write failing tests — install-context detector (iOS Safari only, not standalone/installed, not dismissed); pill renders on build screen only, hidden in race/countdown/trophy; expand shows wordless step guide; X dismiss persists to `localStorage`; ≥64px targets; zero render on Android/desktop
-- [ ] Task: Implement `src/ui/install-hint.ts` + `src/ui/install-context.ts`; wire into `main.ts` build screen
-- [ ] Task: Verify coverage ≥80% on new modules, tests + lint + typecheck green; commit
-- [ ] Task: Phase Verification & Checkpoint (Refer to workflow.md)
+- [x] Task: Write failing tests — install-context detector (iOS Safari only, not standalone/installed, not dismissed); pill renders on build screen only, hidden in race/countdown/trophy; expand shows wordless step guide; X dismiss persists to `localStorage`; ≥64px targets; zero render on Android/desktop [8560c76]
+- [x] Task: Implement `src/ui/install-hint.ts` + `src/ui/install-context.ts`; wire into `main.ts` build screen [8560c76]
+- [x] Task: Verify coverage ≥80% on new modules, tests + lint + typecheck green; commit [8560c76]
+- [~] Task: Phase Verification & Checkpoint (Refer to workflow.md)
 
 ## Phase 5: CI Installability Gate (FR5)
 - [ ] Task: Add Lighthouse CI job to `ci.yml` (against `vite preview` production build; assert installable/PWA pass; reuse pnpm cache setup) + `lighthouserc` config
