@@ -20,6 +20,9 @@ export const BOB_WAVELENGTH = 1.6;
 /** Acceleration (world units per second squared) that reaches full pitch. */
 export const PITCH_REFERENCE_ACCEL = 2;
 
+/** Seconds of post-finish roll-out: the winner decelerates to rest. */
+export const RUNOUT_SECONDS = 1;
+
 /** Phase offset per kart slot so the pack does not bob in lockstep. */
 const BOB_PHASE_STEP = 2.1;
 
@@ -54,6 +57,17 @@ export interface VisualPoseOptions {
 
 function clamp(value: number, min: number, max: number): number {
   return Math.min(max, Math.max(min, value));
+}
+
+/**
+ * Distance travelled during the post-finish roll-out: the kart decelerates
+ * linearly from `pace` to rest over RUNOUT_SECONDS, then holds. Bounded by
+ * pace x RUNOUT_SECONDS / 2 (half a world unit at racing pace).
+ */
+export function runoutOffset(elapsed: number, pace: number): number {
+  const t = clamp(elapsed, 0, RUNOUT_SECONDS);
+  const boundedPace = clamp(pace, 0, 1);
+  return boundedPace * (t - (t * t) / (2 * RUNOUT_SECONDS));
 }
 
 function wrapAngle(a: number): number {

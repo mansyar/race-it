@@ -1,7 +1,7 @@
 import { type Kart, type RaceEngine, type RaceState, TARGET_RACE_SECONDS } from '../race/engine';
 import type { LoopCell } from '../race/path';
-import { visualPose } from '../render/kart-motion';
-import type { KartPose } from '../render/kart-rig';
+import { RUNOUT_SECONDS, runoutOffset, visualPose } from '../render/kart-motion';
+import { type KartPose, kartPose } from '../render/kart-rig';
 import { computeCameraPlacement, gridToWorld } from '../render/layout';
 import { type RaceCameraPhase, raceCameraPose } from '../render/race-camera';
 import type { RaceHud } from '../ui/race-hud';
@@ -155,6 +155,7 @@ export function createRacePresentation(options: RacePresentationOptions): RacePr
   let winnerIndex: number | null = null;
   let trophyShown = false;
   let confettiSeed = 1;
+  let runoutPace: number | null = null;
   let hasSmoothedCamera = false;
   let smoothedPos = { x: 0, y: 0, z: 0 };
   let smoothedTarget = { x: 0, y: 0, z: 0 };
@@ -166,6 +167,7 @@ export function createRacePresentation(options: RacePresentationOptions): RacePr
   function resetCelebration(): void {
     spinning = false;
     spinElapsed = 0;
+    runoutPace = null;
     winnerIndex = null;
     trophyShown = false;
     trophy.hide();
@@ -280,12 +282,28 @@ export function createRacePresentation(options: RacePresentationOptions): RacePr
         kartIndex: index,
       }),
     );
-    if (spinning && winnerIndex !== null) {
+    if (winnerIndex !== null) {
       const base = poses[winnerIndex];
-      if (base) {
+      const winner = engine.karts[winnerIndex];
+      if (base && winner) {
+        if (runoutPace === null) {
+          runoutPace = Math.min(1, Math.max(0, paces[winnerIndex] ?? 1));
+        }
+        // The engine freezes finished karts; the roll-out is a visual offset
+        // past the line, capped at half a unit at racing pace.
+        const rolled = kartPose(
+          path,
+          winner.progress + runoutOffset(spinElapsed, runoutPace),
+          winner.lane,
+        );
         poses[winnerIndex] = {
           ...base,
-          heading: victorySpinHeading(base.heading, spinElapsed / VICTORY_SPIN_SECONDS),
+          x: rolled.x,
+          z: rolled.z,
+          heading: victorySpinHeading(
+            rolled.heading,
+            spinning ? (spinElapsed - RUNOUT_SECONDS) / VICTORY_SPIN_SECONDS : 1,
+          ),
         };
       }
     }
@@ -338,7 +356,7 @@ export function createRacePresentation(options: RacePresentationOptions): RacePr
       return;
     }
     spinElapsed += dt;
-    if (spinElapsed >= VICTORY_SPIN_SECONDS) {
+    if (spinElapsed >= RUNOUT_SECONDS + VICTORY_SPIN_SECONDS) {
       spinning = false;
     }
   }

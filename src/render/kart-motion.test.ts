@@ -6,6 +6,8 @@ import {
   HEADING_WINDOW,
   MAX_PITCH,
   MAX_ROLL,
+  RUNOUT_SECONDS,
+  runoutOffset,
   type VisualPose,
   visualPose,
 } from './kart-motion';
@@ -256,5 +258,38 @@ describe('purity', () => {
     expect(Math.abs(pose.roll)).toBeLessThanOrEqual(MAX_ROLL + 1e-9);
     expect(Math.abs(pose.pitch)).toBeLessThanOrEqual(MAX_PITCH + 1e-9);
     expect(Math.abs(pose.bob)).toBeLessThanOrEqual(BOB_AMPLITUDE + 1e-12);
+  });
+});
+
+describe('finish run-out', () => {
+  it('holds the kart still before crossing and for zero pace', () => {
+    expect(runoutOffset(0, 1)).toBe(0);
+    expect(runoutOffset(-0.5, 1)).toBe(0);
+    expect(runoutOffset(0.4, 0)).toBe(0);
+  });
+
+  it('decelerates monotonically and settles inside the run-out window', () => {
+    let previous = 0;
+    let previousDelta = Number.POSITIVE_INFINITY;
+    for (let t = 0.05; t <= 2; t += 0.05) {
+      const offset = runoutOffset(t, 1);
+      expect(offset).toBeGreaterThanOrEqual(previous);
+      if (t <= RUNOUT_SECONDS) {
+        const delta = offset - previous;
+        expect(delta).toBeLessThanOrEqual(previousDelta + 1e-12);
+        previousDelta = delta;
+      }
+      previous = offset;
+    }
+    // Linear deceleration to rest: total roll-out is half the window x pace.
+    expect(runoutOffset(RUNOUT_SECONDS, 1)).toBeCloseTo(RUNOUT_SECONDS / 2, 10);
+    // Fully settled once the window elapses (well under the ~2 unit cap).
+    expect(runoutOffset(RUNOUT_SECONDS + 0.5, 1)).toBe(runoutOffset(RUNOUT_SECONDS, 1));
+    expect(runoutOffset(2, 1)).toBeLessThan(2);
+  });
+
+  it('scales with pace and clamps out-of-range pace', () => {
+    expect(runoutOffset(RUNOUT_SECONDS, 0.5)).toBeCloseTo(RUNOUT_SECONDS / 4, 10);
+    expect(runoutOffset(RUNOUT_SECONDS, 2)).toBe(runoutOffset(RUNOUT_SECONDS, 1));
   });
 });

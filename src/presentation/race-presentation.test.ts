@@ -1,8 +1,14 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { createRaceEngine, type Kart, type RaceEngine } from '../race/engine';
 import type { LoopCell } from '../race/path';
-import { BOB_AMPLITUDE, MAX_PITCH, MAX_ROLL, type VisualPose } from '../render/kart-motion';
-import type { KartPose } from '../render/kart-rig';
+import {
+  BOB_AMPLITUDE,
+  MAX_PITCH,
+  MAX_ROLL,
+  RUNOUT_SECONDS,
+  type VisualPose,
+} from '../render/kart-motion';
+import { type KartPose, kartPose } from '../render/kart-rig';
 import { computeCameraPlacement } from '../render/layout';
 import { LOOK_AHEAD_DISTANCE, RACE_ZOOM_FLOOR } from '../render/race-camera';
 import { createRaceHud } from '../ui/race-hud';
@@ -417,7 +423,14 @@ describe('createRacePresentation', () => {
     });
 
     it('spins the winner kart yaw over the victory window', () => {
-      harness.raceToFirstFinish();
+      // Roll to the winner's crossing so the spin clock starts at one frame.
+      harness.presentation.beginRace();
+      for (let i = 0; i < 60 * 60; i++) {
+        harness.presentation.update(1 / 60);
+        if (harness.engine.result) {
+          break;
+        }
+      }
       const winner = harness.engine.result?.winnerIndex;
       expect(winner).toBeGreaterThanOrEqual(0);
       const winnerIndex = winner ?? 0;
@@ -427,13 +440,14 @@ describe('createRacePresentation', () => {
         throw new Error('Expected a winner pose at finish');
       }
       const beforeHeading = before.heading;
-      harness.presentation.update(VICTORY_SPIN_SECONDS / 2);
+      // Skip the roll-out, then half of the spin window.
+      harness.presentation.update(RUNOUT_SECONDS - 1 / 60 + VICTORY_SPIN_SECONDS / 2);
       const after = harness.karts.lastPoses[winnerIndex];
       if (!after) {
         throw new Error('Expected a winner pose mid-spin');
       }
       const delta = after.heading - beforeHeading;
-      // Half a turn of extra yaw after halfway through the spin.
+      // Half a turn of extra yaw halfway through the spin.
       expect(Math.abs(delta)).toBeGreaterThan(1);
       expect(Math.abs(delta)).toBeLessThanOrEqual(Math.PI + 0.2);
     });
@@ -457,6 +471,112 @@ describe('createRacePresentation', () => {
       const call = harness.camera.position.set.mock.calls.at(-1);
       const distance = Math.hypot((call?.[0] ?? 0) + 1, call?.[1] ?? 0, (call?.[2] ?? 0) + 1);
       expect(distance).toBeCloseTo(buildDistanceOf(harness.camera.aspect) * RACE_ZOOM_FLOOR, 1);
+    });
+  });
+
+  describe('finish run-out', () => {
+    function wrap(a: number): number {
+      return Math.atan2(Math.sin(a), Math.cos(a));
+    }
+
+    /** Ticks until the winner crosses the line (first finish event). */
+    function raceToWinnerCrossing(): void {
+      harness.presentation.beginRace();
+      for (let i = 0; i < 60 * 60; i++) {
+        harness.presentation.update(1 / 60);
+        if (harness.engine.result) {
+          break;
+        }
+      }
+    }
+
+    it('rolls the winner forward past the line and settles within about a unit', () => {
+      raceToWinnerCrossing();
+      const winner = harness.engine.result?.winnerIndex ?? 0;
+      const start = harness.karts.lastPoses[winner];
+      if (!start) {
+        throw new Error('Expected a winner pose at the crossing');
+      }
+      const finishTime = harness.engine.result?.finishTimes[winner];
+      for (let i = 0; i < 90; i++) {
+        harness.presentation.update(1 / 60);
+      }
+      const settled = harness.karts.lastPoses[winner];
+      if (!settled) {
+        throw new Error('Expected a settled winner pose');
+      }
+      const rolled = Math.hypot(settled.x - start.x, settled.z - start.z);
+      expect(rolled).toBeGreaterThan(0.2);
+      expect(rolled).toBeLessThanOrEqual(0.75);
+      for (let i = 0; i < 30; i++) {
+        harness.presentation.update(1 / 60);
+      }
+      const held = harness.karts.lastPoses[winner];
+      if (!held) {
+        throw new Error('Expected a held winner pose');
+      }
+      expect(Math.hypot(held.x - settled.x, held.z - settled.z)).toBeLessThan(0.01);
+      // Official finish time stays at the line crossing, not the roll-out.
+      expect(harness.engine.result?.finishTimes[winner]).toBe(finishTime);
+    });
+
+    it('keeps the winner aligned with the track during the roll-out, then spins', () => {
+      raceToWinnerCrossing();
+      const winner = harness.engine.result?.winnerIndex ?? 0;
+      const start = harness.karts.lastPoses[winner];
+      if (!start) {
+        throw new Error('Expected a winner pose at the crossing');
+      }
+      const baseHeading = start.heading;
+      harness.presentation.update(RUNOUT_SECONDS * 0.5);
+      const rolling = harness.karts.lastPoses[winner];
+      if (!rolling) {
+        throw new Error('Expected a rolling pose');
+      }
+      expect(Math.hypot(rolling.x - start.x, rolling.z - start.z)).toBeGreaterThan(0.1);
+      expect(Math.abs(wrap(rolling.heading - baseHeading))).toBeLessThan(0.15);
+      harness.presentation.update(RUNOUT_SECONDS * 0.5 + VICTORY_SPIN_SECONDS / 2);
+      const spinning = harness.karts.lastPoses[winner];
+      if (!spinning) {
+        throw new Error('Expected a spinning pose');
+      }
+      const delta = wrap(spinning.heading - baseHeading);
+      expect(Math.abs(delta)).toBeGreaterThan(1);
+      expect(Math.abs(delta)).toBeLessThanOrEqual(Math.PI + 0.2);
+    });
+
+    it('clears the roll-out when RACE AGAIN restarts the race', () => {
+      raceToWinnerCrossing();
+      const winner = harness.engine.result?.winnerIndex ?? 0;
+      for (let i = 0; i < 30; i++) {
+        harness.presentation.update(1 / 60);
+      }
+      click('button[data-action="again"]', harness.trophy.root);
+      harness.presentation.update(0.01);
+      const kart = harness.engine.karts[winner];
+      if (!kart) {
+        throw new Error('Expected a restarted kart');
+      }
+      const base = kartPose(path, kart.progress, kart.lane);
+      const pose = harness.karts.lastPoses[winner];
+      if (!pose) {
+        throw new Error('Expected a lineup pose after RACE AGAIN');
+      }
+      expect(pose.x).toBeCloseTo(base.x, 10);
+      expect(pose.z).toBeCloseTo(base.z, 10);
+    });
+
+    it('keeps confetti, trophy, and finish times unchanged through the roll-out', () => {
+      harness.raceToAllFinished();
+      const finishTimes = harness.engine.result?.finishTimes.map((time) => time) ?? [];
+      const bursts = harness.confetti.burst.mock.calls.length;
+      const trophyText = harness.trophy.root.textContent;
+      for (let i = 0; i < 90; i++) {
+        harness.presentation.update(1 / 60);
+      }
+      expect(harness.confetti.burst.mock.calls.length).toBe(bursts);
+      expect(harness.trophy.root.textContent).toBe(trophyText);
+      expect(harness.engine.result?.finishTimes).toEqual(finishTimes);
     });
   });
 
