@@ -1,6 +1,6 @@
 import { beforeEach, describe, expect, it } from 'vitest';
-import { DEFAULT_LINEUP, isLineupValid, loadLineup, saveLineup, toggleKart } from './lineup';
 import type { CarLineup } from './lineup';
+import { DEFAULT_LINEUP, isLineupValid, loadLineup, saveLineup, toggleKart } from './lineup';
 
 const STORAGE_KEY = 'race-it:lineup';
 
