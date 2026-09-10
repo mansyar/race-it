@@ -13,12 +13,12 @@
 - [x] Task 1.3: verify coverage for the new module (>80%) and refactor for clarity while tests stay green (4e23994) — verified: 100% stmts / 98.07% branch / 100% lines on quality-controller.ts; full suite 475 tests green; no refactor needed.
 - [x] Task: Phase Verification & Checkpoint (Refer to workflow.md)
 
-## Phase 2 — Scene DPR Lever & Boot Wiring
+## Phase 2 — Scene DPR Lever & Boot Wiring [checkpoint: 8d618f6]
 
 - [x] Task 2.1: scene tests first (Red) (b02db56) — extend `src/render/scene.test.ts`: a new `setPixelRatioCap` surface applies `min(devicePixelRatio, cap)` via `renderer.setPixelRatio` + `setSize` (immediate buffer resize); `high` preserves today's `min(dpr, 2)`; `mid`/`low` map to their caps; container/window resize after a tier change keeps the active cap; default at boot is `high`.
 - [x] Task 2.2: implement the DPR lever (Green) (992fb7b) — `src/render/scene.ts`: track the active cap, apply it in `resize()` and on cap changes; no other visual behavior changes.
 - [x] Task 2.3: wire the controller into the app (Green) (e4570a3) — `src/main.ts`: boot via `resolveStartTier(location.search, localStorage)`; tick from the existing `view.onFrame` (feedback → race presentation → quality tick → render); apply tier changes to the scene cap and (Phase 3) the piece-renderer mode; keep `?perf`, `?race`, `?debug`, shelf, clear, and race flows untouched. Wiring stays thin, per the prior track's precedent — deep coverage lives in the seams (controller, scene, renderer) and the Phase 4 E2E.
-- [ ] Task: Phase Verification & Checkpoint (Refer to workflow.md)
+- [x] Task: Phase Verification & Checkpoint (Refer to workflow.md)
 
 ## Phase 3 — Instanced Tile Render Path
 
