@@ -26,16 +26,16 @@
 - [x] Task: Implement `kart-preview.ts` (green) — per-model material cloning (clone(true) shares materials); `KART_FIT` measured via scripts/measure-glb-world.mjs `[8c03743]`
 - [x] Task: Phase Verification & Checkpoint (Refer to workflow.md) `[8c03743]`
 
-## Phase 3 — Picker UI
+## Phase 3 — Picker UI `[checkpoint: dc28457]`
 
-- [ ] Task: Write failing tests for `src/ui/car-picker.ts` (red)
-  - [ ] Renders 4 swatch cards (color discs + preview slots), wordless, ≥64px
-  - [ ] Tap toggles kart on/off and fires `onLineupChange`
-  - [ ] RACE button disabled when lineup invalid; enabled when 2–4 karts
-  - [ ] Back button fires `onBack` and returns to build without side effects
-  - [ ] Styles/classes match existing UI conventions (big-button, wordless icons)
-- [ ] Task: Implement `car-picker.ts` (green)
-- [ ] Task: Phase Verification & Checkpoint (Refer to workflow.md)
+- [x] Task: Write failing tests for `src/ui/car-picker.ts` (red) `[dc28457]`
+  - [x] Renders 4 swatch cards (color discs + preview slots), wordless, ≥64px `[dc28457]`
+  - [x] Tap toggles kart on/off and fires `onLineupChange` (as `onToggle`) `[dc28457]`
+  - [x] RACE button disabled when lineup invalid; enabled when 2–4 karts `[dc28457]`
+  - [x] Back button fires `onBack` and returns to build without side effects `[dc28457]`
+  - [x] Styles/classes match existing UI conventions (big-button, wordless icons) `[dc28457]`
+- [x] Task: Implement `car-picker.ts` (green) — 100% stmts / 83.33% branch `[dc28457]`
+- [x] Task: Phase Verification & Checkpoint (Refer to workflow.md) `[dc28457]`
 
 ## Phase 4 — Integration & Quality Gates
 
