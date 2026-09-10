@@ -155,6 +155,9 @@ export function createRacePresentation(options: RacePresentationOptions): RacePr
   let trophyShown = false;
   let confettiSeed = 1;
   let hasSmoothedCamera = false;
+  // One-shot: Build Again keeps camera smoothing through the idle reset so the
+  // view eases back to the build placement instead of cutting to it.
+  let sustainCameraSmoothing = false;
   let smoothedPos = { x: 0, y: 0, z: 0 };
   let smoothedTarget = { x: 0, y: 0, z: 0 };
   let lastCountdown = -1;
@@ -173,7 +176,8 @@ export function createRacePresentation(options: RacePresentationOptions): RacePr
     goFlashRemaining = 0;
     trafficLight.reset();
     raceHud.reset();
-    hasSmoothedCamera = false;
+    hasSmoothedCamera = sustainCameraSmoothing;
+    sustainCameraSmoothing = false;
     options.onBuildUiChange?.(true);
   }
 
@@ -205,6 +209,21 @@ export function createRacePresentation(options: RacePresentationOptions): RacePr
     hasSmoothedCamera = false;
     engine.restart();
     engine.start();
+  };
+
+  // Build Again: like RACE AGAIN, the engine reset lives here — the main
+  // callback only supplies the click SFX. Abandoning drives the idle branch
+  // (audio stopAll, trophy/confetti/HUD/light reset, build UI restored) and the
+  // sustained smoothing lets the camera ease back to the build placement.
+  const priorBuildAgain = trophy.callbacks.onBuildAgain;
+  trophy.callbacks.onBuildAgain = () => {
+    priorBuildAgain();
+    // Only the finished trophy can reach this; guard so a repeated tap after
+    // the reset cannot leave the one-shot smoothing flag set without an emit.
+    if (engine.state !== 'idle') {
+      sustainCameraSmoothing = true;
+      engine.abandon();
+    }
   };
 
   engine.on('stateChange', (state) => {

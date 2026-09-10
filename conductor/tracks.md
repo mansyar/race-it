@@ -11,3 +11,4 @@
 - [x] **Track: Race Watchability Polish** *Archived: [racepolish_20260910](./archive/racepolish_20260910/index.md)*
 - [x] **Track: PWA Install Experience** *Archived: [pwainstall_20260910](./archive/pwainstall_20260910/index.md)*
 - [x] **Track: Ship v0.4.0 — Release & Deploy** *Archived: [shipv040_20260910](./archive/shipv040_20260910/index.md)*
+- [x] **Track: Post-Race Navigation** *Archived: [postracenav_20260911](./archive/postracenav_20260911/index.md)*

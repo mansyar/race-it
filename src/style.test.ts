@@ -25,6 +25,24 @@ function hidesWhenHidden(selector: string): boolean {
   });
 }
 
+/** True when the rule for `selector` declares min-size both >= `target` px. */
+function hasMinTargetSize(selector: string, target: number): boolean {
+  return uncommented.split('}').some((block) => {
+    const [header = '', ...bodies] = block.split('{');
+    if (bodies.length === 0) return false;
+    if (!header.split(',').some((part) => part.trim() === selector)) return false;
+    const body = bodies.join('{');
+    const minWidth = /min-width:\s*(\d+)px/.exec(body);
+    const minHeight = /min-height:\s*(\d+)px/.exec(body);
+    return (
+      minWidth !== null &&
+      minHeight !== null &&
+      Number(minWidth[1]) >= target &&
+      Number(minHeight[1]) >= target
+    );
+  });
+}
+
 describe('style.css hidden-attribute contract', () => {
   it('visually hides the race pause overlay when [hidden] is set', () => {
     expect(hidesWhenHidden('.race-overlay')).toBe(true);
@@ -32,5 +50,11 @@ describe('style.css hidden-attribute contract', () => {
 
   it('visually hides the quit confirm when [hidden] is set', () => {
     expect(hidesWhenHidden('.race-confirm')).toBe(true);
+  });
+});
+
+describe('style.css Build Again button contract', () => {
+  it('gives the Build Again button a >=64px touch target', () => {
+    expect(hasMinTargetSize('.build-again-button', 64)).toBe(true);
   });
 });
