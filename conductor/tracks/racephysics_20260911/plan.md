@@ -22,10 +22,10 @@
 
 ## Phase 3 — Kart Motion Visuals (yaw, lean, suspension)
 
-- [~] Task 3.1: visual-motion tests first (Red) — new `src/render/kart-motion.test.ts`: analytic smoothing window yields continuous heading across tile boundaries (no snap; bounded turn rate); roll leans with curvature (sign/bounds; zero on straights); pitch/bob responds to launch/speed state and settles; all pure and deterministic.
-- [ ] Task 3.2: implement `src/render/kart-motion.ts` (Green) — `visualPose(...)` built on `kartPose`, returning the extended pose (heading, roll, pitch, bob); `kartPose` contract untouched.
-- [ ] Task 3.3: pose-sink integration tests first (Red) — `kart-meshes.test.ts` / `race-presentation.test.ts`: extended poses flow through the sink; optional fields default safely for old shape; no lineup mesh intersections; `?perf` budget unchanged.
-- [ ] Task 3.4: wire into `race-presentation.ts` + `kart-meshes.ts` (Green) — presentation computes visual poses from engine progress + speed; renderer applies roll/pitch/bob transforms.
+- [x] Task 3.1: visual-motion tests first (Red) (28157ea) — new `src/render/kart-motion.test.ts`: analytic smoothing window yields continuous heading across tile boundaries (no snap; bounded turn rate); roll leans with curvature (sign/bounds; zero on straights); pitch/bob responds to launch/speed state and settles; all pure and deterministic.
+- [x] Task 3.2: implement `src/render/kart-motion.ts` (Green) (28157ea) — `visualPose(...)` built on `kartPose`, returning the extended pose (heading, roll, pitch, bob); `kartPose` contract untouched.
+- [x] Task 3.3: pose-sink integration tests first (Red) (28157ea) — `kart-meshes.test.ts` / `race-presentation.test.ts`: extended poses flow through the sink; optional fields default safely for old shape; no lineup mesh intersections; `?perf` budget unchanged.
+- [x] Task 3.4: wire into `race-presentation.ts` + `kart-meshes.ts` (Green) (28157ea) — presentation computes visual poses from engine progress + speed; renderer applies roll/pitch/bob transforms.
 - [ ] Task: Phase Verification & Checkpoint (Refer to workflow.md) — browser: no corner snapping; lean reads toy-like; 60 fps.
 
 ## Phase 4 — Finish Run-Out & Celebration Choreography
