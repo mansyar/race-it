@@ -2,7 +2,7 @@
 
 **Track ID:** `carpicker_20260910` · **Spec:** [spec.md](./spec.md)
 
-## Phase 1 — Kart Asset & Lineup Logic
+## Phase 1 — Kart Asset & Lineup Logic `[checkpoint: a1ea5b6]`
 
 - [x] Task: Source the Kenney Car Kit kart GLB (CC0) into `src/assets/models/` with `LICENSE-kenney-car-kit.txt` `[85961a7]`
 - [x] Task: Write failing tests for the manifest `CARS` export (`assets.test.ts` — red) `[85961a7]`
@@ -13,7 +13,7 @@
   - [x] `isLineupValid` rejects length <2 and >4 `[a1ea5b6]`
   - [x] `loadLineup`/`saveLineup` round-trip; corrupt/missing stored data → `DEFAULT_LINEUP` `[a1ea5b6]`
 - [x] Task: Implement `src/race/lineup.ts` (green) with JSDoc on public functions `[a1ea5b6]`
-- [ ] Task: Phase Verification & Checkpoint (Refer to workflow.md)
+- [x] Task: Phase Verification & Checkpoint (Refer to workflow.md) `[a1ea5b6]`
 
 ## Phase 2 — Kart Preview Rendering
 
