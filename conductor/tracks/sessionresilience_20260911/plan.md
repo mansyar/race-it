@@ -18,10 +18,10 @@
 - [ ] Task: Phase Verification & Checkpoint (Refer to workflow.md)
 
 ## Phase 2 — Gesture & Zoom Guards (FR4)
-- [ ] Task 2.1: guard-contract tests first (Red) — new `src/gesture-guards.test.ts` (jsdom): `contextmenu`, `dblclick`, `dragstart`, `gesturestart`, `gesturechange` on the guarded target are `defaultPrevented`; non-passive listener registration where `preventDefault` requires it; plain `pointerdown`/`pointerup` are untouched; disposer removes listeners and is idempotent.
-- [ ] Task 2.2: implement `src/gesture-guards.ts` (Green); wire into `main.ts` scoped to the app root (`#app`) so nothing outside the game surface changes.
-- [ ] Task 2.3: stylesheet/document contract tests first (Red) — extend `src/style.test.ts`: `html, body` declare `overscroll-behavior: none` and `-webkit-touch-callout: none`; root keeps its `touch-action` guard; `index.html` viewport retains `user-scalable=no` as defense in depth.
-- [ ] Task 2.4: apply CSS hardening in `src/style.css` (Green).
+- [x] Task 2.1: guard-contract tests first (Red) — new `src/gesture-guards.test.ts` (jsdom): `contextmenu`, `dblclick`, `dragstart`, `gesturestart`, `gesturechange` on the guarded target are `defaultPrevented`; non-passive listener registration where `preventDefault` requires it; plain `pointerdown`/`pointerup` are untouched; disposer removes listeners and is idempotent. (2299248)
+- [x] Task 2.2: implement `src/gesture-guards.ts` (Green); wire into `main.ts` scoped to the app root (`#app`) so nothing outside the game surface changes. (6f1e9ce)
+- [x] Task 2.3: stylesheet/document contract tests first (Red) — extend `src/style.test.ts`: `html, body` declare `overscroll-behavior: none` and `-webkit-touch-callout: none`; root keeps its `touch-action` guard; `index.html` viewport retains `user-scalable=no` as defense in depth. (fb1d9f2)
+- [x] Task 2.4: apply CSS hardening in `src/style.css` (Green). (e3bc153)
 - [ ] Task: Phase Verification & Checkpoint (Refer to workflow.md) — browser: 2 s long-press → no callout/menu; double-tap/pinch → no zoom; drag → no bounce; place/rotate/remove taps still work.
 
 ## Phase 3 — App Lifecycle Recovery (FR1) & Auto-Hold (FR2)
