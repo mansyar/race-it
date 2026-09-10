@@ -1,7 +1,7 @@
 import * as THREE from 'three';
 import { appReady } from './app';
 import { KARTS, MODELS, SCENERY, SFX } from './assets/manifest';
-import { createSfx } from './audio/sfx';
+import { createAudioDirector } from './audio/audio-director';
 import type { GridModel, PieceType } from './grid/grid-model';
 import { GRID_SIZE } from './grid/grid-model';
 import { TrackEditor } from './grid/track-editor';
@@ -56,8 +56,7 @@ if (root && appReady()) {
   const confetti = new ConfettiBurst();
   const scenery = new SceneryRenderer();
   const feedback = new PieceFeedback();
-  const sfx = createSfx();
-  sfx.setMuted(localStorage.getItem('race-it:muted') === 'true');
+  const audio = createAudioDirector();
 
   const rerender = (): void => {
     pieces.update(model.toSnapshot());
@@ -209,18 +208,18 @@ if (root && appReady()) {
   const trafficLight = createTrafficLight();
   const raceHud = createRaceHud({
     onPause: () => {
-      sfx.play('click');
+      audio.playOneShot('click');
     },
     onResume: () => {
-      sfx.play('click');
+      audio.playOneShot('click');
     },
     onQuit: () => {
-      sfx.play('confirmB');
+      audio.playOneShot('confirmB');
     },
   });
   const trophy = createTrophy({
     onAgain: () => {
-      sfx.play('confirmA');
+      audio.playOneShot('confirmA');
     },
   });
 
@@ -257,7 +256,7 @@ if (root && appReady()) {
         // Leaving remove mode behind would leak build feedback into the race.
         feedback.setRemoveMode(false);
         bar.setRemoveActive(false);
-        sfx.play('confirmA');
+        audio.playOneShot('confirmA');
         presentation.beginRace();
       } catch (error) {
         console.error('[race] cannot start race', error);
@@ -267,7 +266,7 @@ if (root && appReady()) {
 
   const bar = createBuildBar({
     onPieceSelect: (type) => {
-      sfx.play('click');
+      audio.playOneShot('click');
       selectedType = selectedType === type ? null : type;
       tool = selectedType ? { kind: 'piece', type: selectedType } : { kind: 'none' };
       bar.setSelected(selectedType);
@@ -277,12 +276,12 @@ if (root && appReady()) {
       }
     },
     onUndo: () => {
-      sfx.play('click');
+      audio.playOneShot('click');
       editor.undo();
       rerender();
     },
     onRemoveToggle: () => {
-      sfx.play('click');
+      audio.playOneShot('click');
       const active = tool.kind !== 'remove';
       tool = active ? { kind: 'remove' } : { kind: 'none' };
       bar.setRemoveActive(active);
@@ -299,11 +298,10 @@ if (root && appReady()) {
       // Shelf UI is a later track; stub is inert for now.
     },
     onMuteToggle: (muted) => {
-      sfx.setMuted(muted);
-      localStorage.setItem('race-it:muted', String(muted));
+      audio.setMuted(muted);
     },
     onClearConfirmed: () => {
-      sfx.play('confirmB');
+      audio.playOneShot('confirmB');
       for (let y = 0; y < GRID_SIZE; y++) {
         for (let x = 0; x < GRID_SIZE; x++) {
           model.setCell(x, y, null);
