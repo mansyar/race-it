@@ -30,8 +30,8 @@
 
 ## Phase 4 — Finish Run-Out & Celebration Choreography
 
-- [~] Task 4.1: run-out tests first (Red) — `kart-motion.test.ts` + `race-presentation.test.ts`: bounded decelerating roll-out (`runoutOffset(elapsed, pace)` ≤ ~2 world units, settles < ~1.2 s); official finish time unchanged at crossing; winner spin begins once settled; trophy/confetti/jingle timing unchanged; `resetToBuild` / RACE AGAIN clear run-out state.
-- [ ] Task 4.2: implement run-out + choreography (Green) — kart-motion curve + presentation sequencing.
+- [x] Task 4.1: run-out tests first (Red) (d82a43f) — `kart-motion.test.ts` + `race-presentation.test.ts`: bounded decelerating roll-out (`runoutOffset(elapsed, pace)` ≤ ~2 world units, settles < ~1.2 s); official finish time unchanged at crossing; winner spin begins once settled; trophy/confetti/jingle timing unchanged; `resetToBuild` / RACE AGAIN clear run-out state.
+- [x] Task 4.2: implement run-out + choreography (Green) (d82a43f) — kart-motion curve + presentation sequencing.
 - [ ] Task: Phase Verification & Checkpoint (Refer to workflow.md) — browser: finish reads as a natural roll-out; celebration beats intact.
 
 ## Phase 5 — Verification & Quality Gates
