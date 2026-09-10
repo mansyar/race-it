@@ -4,15 +4,15 @@
 
 ## Phase 1 — Kart Asset & Lineup Logic
 
-- [ ] Task: Source the Kenney Car Kit kart GLB (CC0) into `src/assets/models/` with `LICENSE-kenney-car-kit.txt`
-- [ ] Task: Write failing tests for the manifest `CARS` export (`assets.test.ts` — red)
-- [ ] Task: Add `CARS` export to `assets/manifest.ts` (green)
-- [ ] Task: Write failing tests for lineup logic (red)
-  - [ ] `DEFAULT_LINEUP` is all four colors and valid
-  - [ ] `toggleKart` adds a removed kart / removes an active kart, never duplicates
-  - [ ] `isLineupValid` rejects length <2 and >4
-  - [ ] `loadLineup`/`saveLineup` round-trip; corrupt/missing stored data → `DEFAULT_LINEUP`
-- [ ] Task: Implement `src/race/lineup.ts` (green) with JSDoc on public functions
+- [x] Task: Source the Kenney Car Kit kart GLB (CC0) into `src/assets/models/` with `LICENSE-kenney-car-kit.txt` `[85961a7]`
+- [x] Task: Write failing tests for the manifest `CARS` export (`assets.test.ts` — red) `[85961a7]`
+- [x] Task: Add `CARS` export to `assets/manifest.ts` (green) `[85961a7]`
+- [x] Task: Write failing tests for lineup logic (red) `[a1ea5b6]`
+  - [x] `DEFAULT_LINEUP` is all four colors and valid `[a1ea5b6]`
+  - [x] `toggleKart` adds a removed kart / removes an active kart, never duplicates `[a1ea5b6]`
+  - [x] `isLineupValid` rejects length <2 and >4 `[a1ea5b6]`
+  - [x] `loadLineup`/`saveLineup` round-trip; corrupt/missing stored data → `DEFAULT_LINEUP` `[a1ea5b6]`
+- [x] Task: Implement `src/race/lineup.ts` (green) with JSDoc on public functions `[a1ea5b6]`
 - [ ] Task: Phase Verification & Checkpoint (Refer to workflow.md)
 
 ## Phase 2 — Kart Preview Rendering
