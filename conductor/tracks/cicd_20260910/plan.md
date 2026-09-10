@@ -12,7 +12,7 @@
 - [x] Task 1.2: Add `.nvmrc` (24.16.0) + `"packageManager": "pnpm@12.3.4"` in `package.json`; verify `pnpm install` still resolves cleanly `(0d46ada)`
 - [ ] Task: Phase Verification & Checkpoint (Refer to workflow.md)
 
-## Phase 2 — Playwright E2E Smoke Suite (TDD)
+## Phase 2 — Playwright E2E Smoke Suite (TDD) [checkpoint: d14bbb7]
 
 - [x] Task 2.1: Add `@playwright/test` (exact pin) + `playwright.config.ts` (chromium only, `vite preview` webServer). **Red:** write `e2e/smoke.spec.ts` — app boots, build UI renders, demo loop seeds → GO enabled, GO click → race reaches `running` (pause button visible). Confirm failing locally `(ab238d2)`
 - [x] Task 2.2: **Green:** install chromium, run suite locally, confirm passes; commit `test(e2e): add boot-and-race smoke suite` `(d14bbb7)`
