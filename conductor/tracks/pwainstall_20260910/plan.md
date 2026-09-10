@@ -13,14 +13,14 @@
 - [x] Task: Verify coverage ≥80%, tests + lint + typecheck green; commit (753315c)
 - [x] Task: Phase Verification & Checkpoint (Refer to workflow.md)
 
-## Phase 3: Android Rich Install Screenshots (FR3)
+## Phase 3: Android Rich Install Screenshots (FR3) [checkpoint: 25e667e]
 - [x] Task: Write failing test — manifest `screenshots` entries valid (`form_factor`, sizes within Chrome bounds, `platform: 'web'`) [9c82c85]
 - [x] Task: Implement build-time screenshot generation from real in-app scenes; wire into manifest config [25e667e]
 - [x] Task: Verify coverage ≥80%, tests + lint + typecheck green; commit [25e667e]
-- [ ] Task: Phase Verification & Checkpoint (Refer to workflow.md)
+- [x] Task: Phase Verification & Checkpoint (Refer to workflow.md) [25e667e]
 
 ## Phase 4: Install Hint UI (FR4)
-- [ ] Task: Write failing tests — install-context detector (iOS Safari only, not standalone/installed, not dismissed); pill renders on build screen only, hidden in race/countdown/trophy; expand shows wordless step guide; X dismiss persists to `localStorage`; ≥64px targets; zero render on Android/desktop
+- [~] Task: Write failing tests — install-context detector (iOS Safari only, not standalone/installed, not dismissed); pill renders on build screen only, hidden in race/countdown/trophy; expand shows wordless step guide; X dismiss persists to `localStorage`; ≥64px targets; zero render on Android/desktop
 - [ ] Task: Implement `src/ui/install-hint.ts` + `src/ui/install-context.ts`; wire into `main.ts` build screen
 - [ ] Task: Verify coverage ≥80% on new modules, tests + lint + typecheck green; commit
 - [ ] Task: Phase Verification & Checkpoint (Refer to workflow.md)
