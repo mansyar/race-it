@@ -136,7 +136,7 @@ function createHarness(options: { countdownSeconds?: number; kartOrder?: number[
     onResume: priorOnResume,
     onQuit: priorOnQuit,
   });
-  const trophy = createTrophy({ onAgain: priorOnAgain });
+  const trophy = createTrophy({ onAgain: priorOnAgain, onBuildAgain: vi.fn() });
   const confetti = {
     burst: vi.fn(),
     update: vi.fn(),
