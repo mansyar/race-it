@@ -25,6 +25,8 @@ function isEntry(value: unknown): value is ShelfEntry {
   if (typeof value !== 'object' || value === null) {
     return false;
   }
+  // Narrow via the guard checks below; the assertion only relaxes the
+  // property access, every field is validated before use.
   const candidate = value as Partial<ShelfEntry>;
   return (
     typeof candidate.id === 'string' &&
@@ -54,6 +56,18 @@ function readEntries(): ShelfEntry[] {
 }
 
 /**
+ * Generates a unique entry id. `crypto.randomUUID` is unavailable on
+ * non-secure origins (e.g. plain-http LAN testing), so fall back to a
+ * timestamp + random suffix; collisions are acceptable for a toy shelf.
+ */
+function newEntryId(): string {
+  if (typeof crypto !== 'undefined' && typeof crypto.randomUUID === 'function') {
+    return crypto.randomUUID();
+  }
+  return `${Date.now().toString(36)}-${Math.random().toString(36).slice(2)}`;
+}
+
+/**
  * Saves the grid as a new shelf entry (newest first). Best-effort: storage
  * failures (quota, private-mode restrictions) must never crash the game.
  */
@@ -63,7 +77,7 @@ export function saveToShelf(grid: GridModel): SaveShelfResult {
     return 'full';
   }
   const entry: ShelfEntry = {
-    id: crypto.randomUUID(),
+    id: newEntryId(),
     createdAt: Date.now(),
     snapshot: grid.toSnapshot(),
   };

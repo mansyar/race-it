@@ -1,4 +1,4 @@
-import { beforeEach, describe, expect, it, vi } from 'vitest';
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { type Cell, GRID_SIZE, GridModel } from './grid-model';
 import {
   deleteFromShelf,
@@ -31,6 +31,10 @@ function loopGrid(x0 = 1, y0 = 1): GridModel {
 
 beforeEach(() => {
   localStorage.clear();
+});
+
+afterEach(() => {
+  vi.unstubAllGlobals();
 });
 
 describe('saveToShelf / loadShelf', () => {
@@ -149,6 +153,15 @@ describe('storage resilience', () => {
     expect(() => saveToShelf(loopGrid())).not.toThrow();
     expect(saveToShelf(loopGrid())).toBe('saved');
     vi.restoreAllMocks();
+  });
+
+  it('falls back to a generated id when crypto.randomUUID is unavailable', () => {
+    // Plain-http LAN origins lack randomUUID; the save must still succeed.
+    vi.stubGlobal('crypto', {});
+    expect(saveToShelf(loopGrid())).toBe('saved');
+    const entries = loadShelf();
+    expect(entries).toHaveLength(1);
+    expect(entries[0]?.id ?? '').not.toBe('');
   });
 
   it('keeps the working-board auto-save untouched', () => {

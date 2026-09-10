@@ -161,6 +161,19 @@ describe('loading', () => {
     expect(onClose).toHaveBeenCalledTimes(1);
     expect(root.hidden).toBe(true);
   });
+
+  it('does not stack load handlers across refreshes', () => {
+    const { overlay, root, onLoad, onClose } = makeHarness([entry('a')]);
+    overlay.open();
+    overlay.refresh();
+    overlay.refresh();
+
+    cardAt(occupiedCards(root), 0).click();
+
+    expect(onLoad).toHaveBeenCalledTimes(1);
+    expect(onLoad).toHaveBeenCalledWith('a');
+    expect(onClose).toHaveBeenCalledTimes(1);
+  });
 });
 
 describe('long-press delete', () => {

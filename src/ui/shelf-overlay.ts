@@ -60,13 +60,17 @@ function makeButton(
   return button;
 }
 
+/** Backing-store pixels for card canvases; CSS stretches the canvas, so a
+ *  fixed larger size keeps schematics crisp on high-DPR tablet screens. */
+const CARD_CANVAS_SIZE = 192;
+
 /** Draws the track schematic onto a card canvas (best-effort in jsdom). */
 function paintCard(canvas: HTMLCanvasElement, snapshot: GridSnapshot): void {
-  canvas.width = 96;
-  canvas.height = 96;
+  canvas.width = CARD_CANVAS_SIZE;
+  canvas.height = CARD_CANVAS_SIZE;
   const ctx = canvas.getContext('2d');
   if (ctx !== null) {
-    drawSchematic(ctx, snapshot, 96);
+    drawSchematic(ctx, snapshot, CARD_CANVAS_SIZE);
   }
 }
 
@@ -187,17 +191,25 @@ export function createShelfOverlay(callbacks: ShelfOverlayCallbacks): ShelfOverl
     saveButton.classList.toggle('pulsing', isEmpty);
 
     for (const wrapper of slotWrappers) {
-      const { slot, card, confirm } = wrapper;
+      // Rebuild card and confirm per render: handlers bind per render, so
+      // reusing the elements would stack duplicate listeners across refreshes.
+      const card = wrapper.card.cloneNode(false) as HTMLButtonElement;
+      card.className = 'slot-card';
+      card.hidden = true;
+      wrapper.card.replaceWith(card);
+      wrapper.card = card;
+      const confirm = wrapper.confirm.cloneNode(true) as HTMLElement;
+      confirm.hidden = true;
+      wrapper.confirm.replaceWith(confirm);
+      wrapper.confirm = confirm;
+
+      const { slot } = wrapper;
       slot.className = 'shelf-slot';
       if (isEmpty) {
         slot.classList.add('empty', 'inviting');
       } else {
         slot.classList.add('empty');
       }
-      card.classList.remove('armed', 'pop-in');
-      card.hidden = true;
-      card.replaceChildren();
-      confirm.hidden = true;
     }
 
     entries.slice(0, SHELF_CAPACITY).forEach((entry, index) => {
