@@ -3,8 +3,10 @@ import { beforeEach, describe, expect, it, vi } from 'vitest';
 import type { Cell, GridSnapshot, PieceType } from '../grid/grid-model';
 import { GRID_SIZE } from '../grid/grid-model';
 import { gridToWorld } from './layout';
+import { applyPieceFeedback } from './piece-feedback-apply';
 import { buildPiece, PieceRenderer } from './piece-renderer';
 import { checkerTexture } from './piece-visuals';
+import { PieceFeedback, removeWiggleRadians } from './toy-feedback';
 
 function template(): THREE.Object3D {
   const mesh = new THREE.Mesh(
@@ -262,5 +264,132 @@ describe('PieceRenderer instanced mode', () => {
     expect(holders.get(1 * GRID_SIZE + 1)?.children.length).toBe(1);
     expect(holders.get(1 * GRID_SIZE + 2)?.children.length).toBe(2);
     expect(holders.get(1 * GRID_SIZE + 3)?.children.length).toBe(0);
+  });
+});
+
+describe('PieceRenderer instanced feedback', () => {
+  let renderer: PieceRenderer;
+
+  beforeEach(async () => {
+    renderer = new PieceRenderer();
+    await renderer.load(fakeLoaderFactory([]));
+  });
+
+  function emptyGrid(): GridSnapshot {
+    return new Array<GridSnapshot[number]>(144).fill(null);
+  }
+
+  function place(grid: GridSnapshot, x: number, y: number, cell: Cell): void {
+    grid[y * GRID_SIZE + x] = cell;
+  }
+
+  function instancedMeshes(): THREE.InstancedMesh[] {
+    return renderer.group.children.filter(
+      (child): child is THREE.InstancedMesh => child instanceof THREE.InstancedMesh,
+    );
+  }
+
+  function instancedFor(type: PieceType): THREE.InstancedMesh | undefined {
+    return instancedMeshes().find((mesh) => mesh.userData.pieceType === type);
+  }
+
+  function countInstanced(root: THREE.Object3D): number {
+    let count = 0;
+    root.traverse((obj) => {
+      if (obj instanceof THREE.InstancedMesh) {
+        count += 1;
+      }
+    });
+    return count;
+  }
+
+  function instanceMatrix(mesh: THREE.InstancedMesh, index: number): THREE.Matrix4 {
+    const matrix = new THREE.Matrix4();
+    mesh.getMatrixAt(index, matrix);
+    return matrix;
+  }
+
+  it('place pop-in scales batched tiles through the holder contract', () => {
+    const grid = emptyGrid();
+    place(grid, 2, 3, { type: 'straight', orientation: 0 });
+    renderer.setRenderMode('instanced');
+    renderer.update(grid);
+    const mesh = instancedFor('straight');
+    if (!mesh) {
+      throw new Error('no instanced straight mesh');
+    }
+    const restScale = new THREE.Vector3();
+    instanceMatrix(mesh, 0).decompose(new THREE.Vector3(), new THREE.Quaternion(), restScale);
+
+    const feedback = new PieceFeedback();
+    feedback.notePlaced(3 * GRID_SIZE + 2);
+    applyPieceFeedback(renderer.group, feedback, feedback.time);
+    const holder = renderer.group.children.find(
+      (child) => child.userData.cellIndex === 3 * GRID_SIZE + 2,
+    );
+    expect(holder?.scale.x).toBeCloseTo(0.55, 5);
+
+    renderer.syncInstances();
+    const poppedScale = new THREE.Vector3();
+    instanceMatrix(mesh, 0).decompose(new THREE.Vector3(), new THREE.Quaternion(), poppedScale);
+    expect(poppedScale.x).toBeCloseTo(restScale.x * 0.55, 4);
+  });
+
+  it('remove-mode wiggle and red tint reach batched tiles', () => {
+    const grid = emptyGrid();
+    place(grid, 2, 3, { type: 'straight', orientation: 0 });
+    place(grid, 4, 5, { type: 'straight', orientation: 0 });
+    renderer.setRenderMode('instanced');
+    renderer.update(grid);
+    const mesh = instancedFor('straight');
+    if (!mesh) {
+      throw new Error('no instanced straight mesh');
+    }
+
+    const feedback = new PieceFeedback();
+    feedback.setRemoveMode(true);
+    applyPieceFeedback(renderer.group, feedback, 0.1);
+    renderer.syncInstances();
+
+    const expectedYaw = removeWiggleRadians(0.1);
+    for (const index of [0, 1]) {
+      const quaternion = new THREE.Quaternion();
+      instanceMatrix(mesh, index).decompose(new THREE.Vector3(), quaternion, new THREE.Vector3());
+      const euler = new THREE.Euler().setFromQuaternion(quaternion, 'YXZ');
+      expect(euler.y).toBeCloseTo(expectedYaw, 5);
+    }
+
+    const firstMaterial = Array.isArray(mesh.material) ? mesh.material[0] : mesh.material;
+    if (!firstMaterial) {
+      throw new Error('instanced mesh has no material');
+    }
+    const material = firstMaterial as THREE.MeshStandardMaterial;
+    const base = material.userData.baseColor as THREE.Color;
+    const expected = base.clone().lerp(new THREE.Color(0xe63946), 0.7);
+    expect(material.color.r).toBeCloseTo(expected.r, 5);
+    expect(material.color.g).toBeCloseTo(expected.g, 5);
+    expect(material.color.b).toBeCloseTo(expected.b, 5);
+  });
+
+  it('keeps repeated individual→instanced toggles stable with no stale meshes', () => {
+    const grid = emptyGrid();
+    place(grid, 1, 1, { type: 'straight', orientation: 0 });
+    place(grid, 2, 1, { type: 'curve', orientation: 90 });
+    place(grid, 3, 1, { type: 'finish', orientation: 0 });
+    renderer.update(grid);
+    expect(renderer.group.children.length).toBe(3);
+
+    for (let round = 0; round < 3; round++) {
+      renderer.setRenderMode('instanced');
+      expect(countInstanced(renderer.group)).toBe(3);
+      const holders = renderer.group.children.filter(
+        (child) => child.userData.cellIndex !== undefined,
+      );
+      expect(holders.length).toBe(3);
+
+      renderer.setRenderMode('individual');
+      expect(countInstanced(renderer.group)).toBe(0);
+      expect(renderer.group.children.length).toBe(3);
+    }
   });
 });
