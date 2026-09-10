@@ -91,7 +91,8 @@ export interface RaceEngine {
  * Creates the pure-logic race engine for an ordered loop path.
  * The engine owns the full lifecycle (countdown -> running -> finished) so
  * presentation layers stay thin. Kart speeds are rolled per race from the
- * injectable rng, tuned so races stay close and any kart can win.
+ * injectable rng and row-distance-normalized, tuned so races stay close and
+ * any kart can win from any grid slot.
  */
 export function createRaceEngine(path: LoopCell[], options: RaceEngineOptions = {}): RaceEngine {
   const kartCount = options.kartCount ?? MAX_KARTS;
@@ -115,7 +116,7 @@ export function createRaceEngine(path: LoopCell[], options: RaceEngineOptions = 
   let winnerIndex: number | null = null;
   let runnerUpIndex: number | null = null;
   let result: RaceResult | null = null;
-  let karts = rollKarts(kartCount, laneOffset, rowSpacing, baseSpeed, speedBand, rng);
+  let karts = rollKarts(kartCount, lapLength, laneOffset, rowSpacing, baseSpeed, speedBand, rng);
 
   const listeners: Record<RaceEvent, Array<(payload: unknown) => void>> = {
     stateChange: [],
@@ -226,7 +227,7 @@ export function createRaceEngine(path: LoopCell[], options: RaceEngineOptions = 
 
   function restart(): void {
     abandon();
-    karts = rollKarts(kartCount, laneOffset, rowSpacing, baseSpeed, speedBand, rng);
+    karts = rollKarts(kartCount, lapLength, laneOffset, rowSpacing, baseSpeed, speedBand, rng);
   }
 
   return {
@@ -261,6 +262,7 @@ export function createRaceEngine(path: LoopCell[], options: RaceEngineOptions = 
 
 function rollKarts(
   kartCount: number,
+  lapLength: number,
   laneOffset: number,
   rowSpacing: number,
   baseSpeed: number,
@@ -273,11 +275,17 @@ function rollKarts(
     const lane = isLastOfOddCount ? 0 : index % 2 === 0 ? laneOffset : -laneOffset;
     const factor = sampleUniform(speedBand[0], speedBand[1], rng);
     const startProgress = row === 0 ? 0 : -row * rowSpacing;
+    // Distance normalization: a kart behind the line covers
+    // (lapLength - startProgress) world units instead of lapLength, so its
+    // pace is scaled by that same ratio. Same-factor karts then finish
+    // together from any grid slot — the grid cannot bias outcomes
+    // (regression-guarded by fairness.test.ts).
+    const distanceRatio = (lapLength - startProgress) / lapLength;
     return {
       index,
       lane,
       startProgress,
-      speed: baseSpeed * factor,
+      speed: baseSpeed * factor * distanceRatio,
       progress: startProgress,
       finished: false,
       finishTime: null,

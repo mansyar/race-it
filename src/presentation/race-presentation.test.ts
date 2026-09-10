@@ -125,6 +125,8 @@ function createHarness(options: { countdownSeconds?: number; kartOrder?: number[
   const engine = createRaceEngine(path, {
     seed: 42,
     countdownSeconds: options.countdownSeconds ?? 0.05,
+    // The kartOrder mapping is 1:1 with the engine's karts in production.
+    kartCount: options.kartOrder?.length ?? 4,
   });
   const light = createTrafficLight();
   const priorOnPause = vi.fn();

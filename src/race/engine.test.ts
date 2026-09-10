@@ -109,11 +109,24 @@ describe('createRaceEngine', () => {
       expect(a.karts.map((kart) => kart.speed)).not.toEqual(b.karts.map((kart) => kart.speed));
     });
 
-    it('uses the injected rng when provided', () => {
+    it('uses the injected rng and distance-normalizes the back row', () => {
       const engine = createRaceEngine(loopOfLength(48), { rng: () => 0.5 });
       const base = 96 / 37.5;
-      for (const kart of engine.karts) {
-        expect(kart.speed).toBeCloseTo(base * 1.0, 10);
+      const backRowFactor = (96 + ROW_SPACING) / 96;
+      expect(kartAt(engine, 0).speed).toBeCloseTo(base, 10);
+      expect(kartAt(engine, 1).speed).toBeCloseTo(base, 10);
+      expect(kartAt(engine, 2).speed).toBeCloseTo(base * backRowFactor, 10);
+      expect(kartAt(engine, 3).speed).toBeCloseTo(base * backRowFactor, 10);
+    });
+
+    it('finishes same-factor karts together from any grid row', () => {
+      const engine = createRaceEngine(loopOfLength(48), { rng: () => 0.5 });
+      engine.start();
+      tickUntilFinished(engine);
+      const result = requireResult(engine);
+      const times = result.finishTimes.map((time) => requireNumber(time, 'finish time'));
+      for (const time of times) {
+        expect(time).toBeCloseTo(requireNumber(times[0], 'first finish time'), 10);
       }
     });
   });
@@ -201,7 +214,7 @@ describe('createRaceEngine', () => {
     });
 
     it('is false when the winner clears the runner-up by more than the margin', () => {
-      const draws = [0, 1, 1, 1]; // kart 0 slow, karts 1-3 fast
+      const draws = [0, 1, 0.5, 0.5]; // kart 1 fast, karts 2-3 mid, kart 0 slow
       const engine = createRaceEngine(loopOfLength(48), {
         rng: () => draws.shift() ?? 0.5,
       });
