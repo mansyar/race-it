@@ -4,7 +4,7 @@
 - [x] Task: Write failing unit tests for the AudioDirector facade (replaces `createSfx`): one-shot routing for all names, mute honored across layers, gain-staging constants, injectable Audio/WebAudio factories — 9dada5f
 - [x] Task: Implement `src/audio/audio-director.ts` — one-shot player, mute state, master/one-shot/music/hum gain stages (defaults: master 0.9, one-shots 0.8, music 0.35, hum 0.15) — a8e5551
 - [x] Task: Migrate `main.ts` call sites from `createSfx` to AudioDirector — `click`/`confirmA`/`confirmB` files and timbre unchanged, all prior interactions still audible — 0443faa
-- [ ] Task: Verify coverage ≥80% on new module, `pnpm test` + Biome lint + `tsc --noEmit` green
+- [x] Task: Verify coverage ≥80% on new module, `pnpm test` + Biome lint + `tsc --noEmit` green — 0443faa
 - [ ] Task: Phase Verification & Checkpoint (Refer to workflow.md)
 
 ## Phase 2: Countdown, GO & Build Feedback Sounds
