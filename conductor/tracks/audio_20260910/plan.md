@@ -29,7 +29,7 @@
 - [x] Task: Phase Verification & Checkpoint (Refer to workflow.md) — 1d1bb87
 
 ## Phase 5: Release v0.3.0
-- [ ] Task: Merge `feature/race-audio` to `master`
+- [~] Task: Merge `feature/race-audio` to `master`
 - [ ] Task: Bump version to 0.3.0, tag `v0.3.0`, push (release pipeline builds, publishes GHCR, deploys via Coolify webhook)
 - [ ] Task: Verify deployed PWA serves new audio assets over HTTPS
 - [ ] Task: Phase Verification & Checkpoint (Refer to workflow.md)
