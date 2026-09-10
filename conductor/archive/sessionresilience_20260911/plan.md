@@ -40,7 +40,7 @@
 - [ ] Task: Phase Verification & Checkpoint (Refer to workflow.md)
 
 ## Phase 5 — Merge to master (no tag)
-- [ ] Task 5.1: merge `feature/session-resilience` to `master` (merge-only; version tag + Coolify deploy deferred to a future "Ship" track).
+- [~] Task 5.1: merge `feature/session-resilience` to `master` (merge-only; version tag + Coolify deploy deferred to a future "Ship" track). PR [#8](https://github.com/mansyar/race-it/pull/8) open — merges once CI is green.
 - [ ] Task: Phase Verification & Checkpoint (Refer to workflow.md)
 
 > **Note on Phase 5:** releasing remains with a future "Ship" track; this merge only lands the work on master.
