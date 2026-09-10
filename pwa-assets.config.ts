@@ -3,7 +3,7 @@ import {
   defineConfig,
   minimal2023Preset,
 } from '@vite-pwa/assets-generator/config';
-import { APPLE_SPLASH_DEVICES, SPLASH_BACKGROUND } from './src/pwa-splash-screens';
+import { APPLE_SPLASH_DEVICES, SPLASH_BACKGROUND } from './src/pwa-splash-screens.ts';
 
 export default defineConfig({
   preset: {

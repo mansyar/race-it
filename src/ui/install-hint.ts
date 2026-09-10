@@ -56,11 +56,13 @@ export function createInstallHint(env: InstallEnv): InstallHint {
 
   const stepShare = document.createElement('span');
   stepShare.className = 'install-step';
+  stepShare.setAttribute('role', 'img');
   stepShare.setAttribute('aria-label', 'Tap the share button');
   stepShare.innerHTML = SHARE_ICON;
 
   const stepAdd = document.createElement('span');
   stepAdd.className = 'install-step';
+  stepAdd.setAttribute('role', 'img');
   stepAdd.setAttribute('aria-label', 'Choose Add to Home Screen');
   stepAdd.innerHTML = ADD_HOME_ICON;
 

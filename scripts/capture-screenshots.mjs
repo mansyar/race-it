@@ -6,7 +6,8 @@
  *  - narrow portrait (390x844): the build screen with the seeded demo loop.
  *  - wide landscape (1180x820): a live race from the seeded demo loop.
  *
- * Run with the preview server already up (pnpm preview) via:
+ * Starts its own preview server on port 4173 (keep that port free) and stops
+ * it afterwards. Run:
  *   pnpm capture:screenshots
  */
 import { spawn } from 'node:child_process';
