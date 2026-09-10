@@ -14,12 +14,12 @@
 - [x] Task: Phase Verification & Checkpoint (Refer to workflow.md)
 
 ## Phase 2: Card Schematic Renderer (`src/render/shelf-schematic.ts`)
-- [ ] Task: Write failing tests (TDD Red)
+- [x] Task: Write failing tests (TDD Red)
     - Renders piece glyphs (straight/curve/start/finish) at correct grid positions with rotations respected
     - Empty cells blank; snapshot with mixed pieces renders all; no exceptions on odd input
-- [ ] Task: Implement canvas-based top-down schematic renderer (Green)
-- [ ] Task: Refactor & verify coverage
-- [ ] Task: Commit `feat(render): Add shelf card schematic renderer` + attach git note
+- [x] Task: Implement canvas-based top-down schematic renderer (Green)
+- [x] Task: Refactor & verify coverage
+- [x] Task: Commit `feat(render): Add shelf card schematic renderer` + attach git note
 - [ ] Task: Phase Verification & Checkpoint (Refer to workflow.md)
 
 ## Phase 3: Shelf Overlay UI (`src/ui/shelf-overlay.ts`)
