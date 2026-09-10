@@ -1,7 +1,8 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { createRaceEngine, type Kart, type RaceEngine } from '../race/engine';
 import type { LoopCell } from '../race/path';
-import { type KartPose, kartPose } from '../render/kart-rig';
+import { BOB_AMPLITUDE, MAX_PITCH, MAX_ROLL, type VisualPose } from '../render/kart-motion';
+import type { KartPose } from '../render/kart-rig';
 import { computeCameraPlacement } from '../render/layout';
 import { LOOK_AHEAD_DISTANCE, RACE_ZOOM_FLOOR } from '../render/race-camera';
 import { createRaceHud } from '../ui/race-hud';
@@ -102,17 +103,15 @@ interface Harness {
   raceToFirstFinish(): void;
 }
 
-/** Expected raw pack target: pair midpoint nudged along the lead travel direction. */
+/** Expected pack target: pair midpoint nudged along the lead visual travel direction. */
 function packTarget(harness: Harness): { x: number; z: number } {
   const { engine } = harness;
   const { leadIndex, rivalIndex } = leadBattle(engine.karts);
-  const lead = engine.karts[leadIndex];
-  if (!lead) {
-    throw new Error('Expected a lead kart');
+  const leadPose = harness.karts.lastPoses[leadIndex];
+  if (!leadPose) {
+    throw new Error('Expected a lead kart pose');
   }
-  const leadPose = kartPose(path, lead.progress, lead.lane);
-  const rival = rivalIndex === null ? null : engine.karts[rivalIndex];
-  const rivalPose = rival ? kartPose(path, rival.progress, rival.lane) : null;
+  const rivalPose = rivalIndex === null ? undefined : harness.karts.lastPoses[rivalIndex];
   const midX = rivalPose ? (leadPose.x + rivalPose.x) / 2 : leadPose.x;
   const midZ = rivalPose ? (leadPose.z + rivalPose.z) / 2 : leadPose.z;
   return {
@@ -614,6 +613,45 @@ describe('createRacePresentation', () => {
       click('button[data-confirm="yes"]', harness.hud.confirm);
       harness.presentation.update(1 / 60);
       expect(harness.audio.stopAll).toHaveBeenCalled();
+    });
+  });
+
+  describe('kart motion visuals', () => {
+    it('feeds bounded suspension channels through the sink while racing', () => {
+      harness.raceToRunning();
+      harness.presentation.update(0.5);
+      expect(harness.karts.lastPoses).toHaveLength(4);
+      for (const pose of harness.karts.lastPoses as Array<KartPose & Partial<VisualPose>>) {
+        expect(Number.isFinite(pose.roll)).toBe(true);
+        expect(Number.isFinite(pose.pitch)).toBe(true);
+        expect(Number.isFinite(pose.bob)).toBe(true);
+        expect(Math.abs(pose.roll ?? 0)).toBeLessThanOrEqual(MAX_ROLL + 1e-9);
+        expect(Math.abs(pose.pitch ?? 0)).toBeLessThanOrEqual(MAX_PITCH + 1e-9);
+        expect(Math.abs(pose.bob ?? 0)).toBeLessThanOrEqual(BOB_AMPLITUDE + 1e-12);
+      }
+    });
+
+    it('picks up launch nose-up pitch shortly after GO', () => {
+      harness.presentation.beginRace();
+      // Finish the countdown, then ride the launch ramp.
+      harness.presentation.update(0.06);
+      let maxPitch = 0;
+      for (let i = 0; i < 30; i++) {
+        harness.presentation.update(1 / 60);
+        for (const pose of harness.karts.lastPoses as Array<KartPose & Partial<VisualPose>>) {
+          maxPitch = Math.max(maxPitch, pose.pitch ?? 0);
+        }
+      }
+      expect(maxPitch).toBeGreaterThan(0.01);
+    });
+
+    it('settles suspension while parked on the grid', () => {
+      harness.presentation.beginRace();
+      harness.presentation.update(0.01);
+      for (const pose of harness.karts.lastPoses as Array<KartPose & Partial<VisualPose>>) {
+        expect(pose.bob).toBeCloseTo(0, 12);
+        expect(pose.pitch).toBeCloseTo(0, 12);
+      }
     });
   });
 

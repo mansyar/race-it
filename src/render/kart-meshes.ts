@@ -20,6 +20,13 @@ export const KART_Y_OFFSET = 0.05;
 /** Kenney vehicles face -Z natively; +pi/2 yaw points them toward +X (heading 0). */
 export const KART_FORWARD_ROTATION = Math.PI / 2;
 
+/** Kart pose with optional suspension channels (kart-motion VisualPose shape). */
+export interface SuspensionPose extends KartPose {
+  roll?: number;
+  pitch?: number;
+  bob?: number;
+}
+
 interface GltfLike {
   scene: THREE.Object3D;
 }
@@ -60,7 +67,7 @@ export class KartRenderer {
   }
 
   /** Rebuilds the group with one clone per pose (kart index = pose index). */
-  update(poses: KartPose[]): THREE.Group {
+  update(poses: SuspensionPose[]): THREE.Group {
     this.group.clear();
     for (let i = 0; i < poses.length; i++) {
       const modelIndex = this.kartOrder[i] ?? i;
@@ -69,8 +76,14 @@ export class KartRenderer {
       if (!kart || !pose) {
         continue;
       }
-      kart.position.set(pose.x, KART_Y_OFFSET, pose.z);
-      kart.rotation.y = pose.heading + KART_FORWARD_ROTATION;
+      // Yaw-outermost euler: roll/pitch then follow the kart's heading.
+      kart.rotation.set(
+        pose.pitch ?? 0,
+        pose.heading + KART_FORWARD_ROTATION,
+        pose.roll ?? 0,
+        'YXZ',
+      );
+      kart.position.set(pose.x, KART_Y_OFFSET + (pose.bob ?? 0), pose.z);
       this.group.add(kart);
     }
     return this.group;
