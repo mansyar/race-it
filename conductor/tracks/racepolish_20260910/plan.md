@@ -20,11 +20,11 @@
 - [x] Task 2.4: wire into `race-presentation.ts` `updateCamera` (Green) — pass pair + finish point, keep the `CameraLike` seam; finished-state close hold through confetti + victory spin. (a6ae57e)
 - [x] Task: Phase Verification & Checkpoint (Refer to workflow.md) — browser: camera follows the lead battle on a phone viewport.
 
-## Phase 3 — Kart Visibility
+## Phase 3 — Kart Visibility [checkpoint: 4a2081d]
 
 - [x] Task 3.1: scale + clearance tests first (Red) — `src/render/kart-meshes.test.ts`: `KART_SCALE === 0.55`; measure kart native bounds via `scripts/measure-glb-world.mjs`; check start-lineup clearance (lane/row gaps vs scaled footprint) and update `src/race/engine.test.ts` first if `LANE_OFFSET`/`ROW_SPACING` need adjusting. (4a2081d)
 - [x] Task 3.2: apply `KART_SCALE = 0.55` (+ any spacing adjustment) (Green); keep wheels-on-road offset correct at the new scale. No engine spacing change needed (clearances 0.164 lane / 0.415 rows). (4a2081d)
-- [ ] Task: Phase Verification & Checkpoint (Refer to workflow.md) — browser: lineup shows no mesh overlap; karts read noticeably larger.
+- [x] Task: Phase Verification & Checkpoint (Refer to workflow.md) — browser: lineup shows no mesh overlap; karts read noticeably larger.
 
 ## Phase 4 — Verification
 
