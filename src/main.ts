@@ -4,6 +4,7 @@ import { KARTS, MODELS, MUSIC, SCENERY, SFX } from './assets/manifest';
 import { createAudioDirector } from './audio/audio-director';
 import type { GridModel, PieceType } from './grid/grid-model';
 import { GRID_SIZE } from './grid/grid-model';
+import { deleteFromShelf, loadShelf, saveToShelf } from './grid/shelf-store';
 import { TrackEditor } from './grid/track-editor';
 import { loadOrSeedTrack, saveTrack } from './grid/track-store';
 import { validateTrack } from './grid/track-validator';
@@ -27,6 +28,7 @@ import { createCarPicker } from './ui/car-picker';
 import { createCornerCluster } from './ui/corner-cluster';
 import { createGoButton } from './ui/go-button';
 import { createRaceHud } from './ui/race-hud';
+import { createShelfOverlay } from './ui/shelf-overlay';
 import { createTrafficLight } from './ui/traffic-light';
 import { createTrophy } from './ui/trophy';
 
@@ -282,9 +284,40 @@ if (root && appReady()) {
     },
   });
 
+  const shelf = createShelfOverlay({
+    getEntries: () => loadShelf(),
+    onSave: () => {
+      const result = saveToShelf(model);
+      if (result === 'saved') {
+        audio.playOneShot('click');
+      }
+      return result;
+    },
+    onLoad: (id) => {
+      const entry = loadShelf().find((candidate) => candidate.id === id);
+      if (!entry) {
+        return;
+      }
+      for (let y = 0; y < GRID_SIZE; y++) {
+        for (let x = 0; x < GRID_SIZE; x++) {
+          model.setCell(x, y, entry.snapshot[y * GRID_SIZE + x] ?? null);
+        }
+      }
+      editor = new TrackEditor(model);
+      rerender();
+      audio.playOneShot('click');
+    },
+    onDelete: (id) => {
+      deleteFromShelf(id);
+      audio.playOneShot('confirmB');
+    },
+    onClose: () => {},
+  });
+
   const cluster = createCornerCluster({
     onShelf: () => {
-      // Shelf UI is a later track; stub is inert for now.
+      audio.playOneShot('click');
+      shelf.open();
     },
     onMuteToggle: (muted) => {
       audio.setMuted(muted);
@@ -376,7 +409,7 @@ if (root && appReady()) {
 
   const appUi = document.createElement('div');
   appUi.className = 'app-ui';
-  appUi.append(cluster.root, go.root, bar.root, cluster.confirm, picker.root);
+  appUi.append(cluster.root, go.root, bar.root, cluster.confirm, picker.root, shelf.root);
   root.append(appUi);
 
   const raceUi = document.createElement('div');

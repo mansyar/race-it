@@ -7,3 +7,4 @@
 - [x] **Track: Car Picker & Race Setup** *Archived: [carpicker_20260910](./archive/carpicker_20260910/index.md)*
 - [x] **Track: CI/CD Pipeline & Containerized Deployment** *Archived: [cicd_20260910](./archive/cicd_20260910/index.md)*
 - [x] **Track: Race Audio & Music** *Archived: [audio_20260910](./archive/audio_20260910/index.md)*
+- [x] **Track: Track Shelf — Save, Load & Long-Press Delete** *Archived: [shelf_20260910](./archive/shelf_20260910/index.md)*

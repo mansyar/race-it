@@ -38,7 +38,7 @@ export function createDemoLoop(): GridModel {
 /**
  * Checks that parsed JSON has the exact snapshot shape (size, piece types, orientations).
  */
-function isSnapshot(value: unknown): value is GridSnapshot {
+export function isSnapshot(value: unknown): value is GridSnapshot {
   if (!Array.isArray(value) || value.length !== GRID_SIZE * GRID_SIZE) {
     return false;
   }
