@@ -24,7 +24,7 @@
 - [x] Task 2.4: apply CSS hardening in `src/style.css` (Green). (e3bc153)
 - [ ] Task: Phase Verification & Checkpoint (Refer to workflow.md) — browser: 2 s long-press → no callout/menu; double-tap/pinch → no zoom; drag → no bounce; place/rotate/remove taps still work.
 
-## Phase 3 — App Lifecycle Recovery (FR1) & Auto-Hold (FR2)
+## Phase 3 — App Lifecycle Recovery (FR1) & Auto-Hold (FR2) [checkpoint: 68ad811]
 - [x] Task 3.1: lifecycle-controller tests first (Red) — new `src/app-lifecycle.test.ts` with injected document/window + fake wake lock: `hidden` → `onHidden` + wake lock off; `visible` → `onVisible` + wake lock on; `pagehide` → `onHide` (no teardown exists); `pageshow` with `persisted: true` → `onRestore`; `pageshow` non-persisted → no `onRestore`; `dispose()` detaches everything. (76f6774)
 - [x] Task 3.2: implement `src/app-lifecycle.ts` (Green). (9cf452d)
 - [x] Task 3.3: scene viewport re-sync tests first (Red) — `src/render/scene.test.ts`: the returned API exposes `resize()` which re-measures the container and updates renderer size + camera aspect (mocked THREE); then expose `resize` (Green). (07c1776)
