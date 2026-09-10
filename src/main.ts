@@ -94,15 +94,18 @@ if (root && appReady()) {
   });
 
   // Adaptive quality: boot at the stored (or `?tier=`-forced) level and step it
-  // from the frame loop; the scene applies the matching pixel-ratio cap.
+  // from the frame loop; each tier applies its pixel-ratio cap to the scene and
+  // switches the piece renderer to the batched path at `low`.
   const quality = createQualityController({
     search: window.location.search,
     storage: window.localStorage,
     onChange: (tier) => {
       view.setPixelRatioCap(tier);
+      pieces.setRenderMode(tier === 'low' ? 'instanced' : 'individual');
     },
   });
   view.setPixelRatioCap(quality.tier);
+  pieces.setRenderMode(quality.tier === 'low' ? 'instanced' : 'individual');
 
   // Debug mode: `?perf` fills the whole board (worst case, 144 pieces) and
   // exposes renderer stats on the window for manual fps/draw-call measurement.
@@ -486,6 +489,7 @@ if (root && appReady()) {
     feedback.tick(dt);
     if (!raceEngine || raceEngine.state === 'idle') {
       applyPieceFeedback(pieces.group, feedback, feedback.time);
+      pieces.syncInstances();
     }
     presentation?.update(dt);
     quality.tick(dt);
