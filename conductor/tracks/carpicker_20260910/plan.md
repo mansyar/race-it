@@ -46,3 +46,7 @@
   - [x] Existing suites (`grid/*`, `race/*`, `render/*`, `ui/*`) stay green `[14d6859]`
 - [x] Task: Run full quality gates: `pnpm build`, `pnpm test`, `pnpm lint` (+ coverage >80% on new modules) — 220 tests, 96.4% coverage `[14d6859]`
 - [x] Task: Phase Verification & Checkpoint with manual verification plan (Refer to workflow.md) `[14d6859]`
+
+## Phase: Review Fixes
+
+- [x] Task: Apply review suggestions `[6aeca86]`
