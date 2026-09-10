@@ -71,7 +71,15 @@ if (root && appReady()) {
   const view = createBuildScene(root, (x, y) => {
     const result = handleCellTap(editor, tool, x, y);
     if (result === 'placed') {
+      audio.playOneShot('place');
       feedback.notePlaced(y * GRID_SIZE + x);
+    }
+    if (result === 'removed') {
+      audio.playOneShot('remove');
+    }
+    if (result === 'ignored' && tool.kind === 'piece') {
+      // A piece tool on an occupied cell is blocked — gentle nope feedback.
+      audio.playOneShot('nope');
     }
     rerender();
   });
@@ -230,6 +238,9 @@ if (root && appReady()) {
   };
 
   const go = createGoButton({
+    onBlockedTap: () => {
+      audio.playOneShot('nope');
+    },
     onGo: () => {
       try {
         const path = extractLoopPath(model);
@@ -252,6 +263,12 @@ if (root && appReady()) {
           karts,
           camera: view.camera,
           onBuildUiChange: setBuildUiVisible,
+          onCountdownBeep: (step) => {
+            audio.playCountdownBeep(step);
+          },
+          onGo: () => {
+            audio.playOneShot('go');
+          },
         });
         // Leaving remove mode behind would leak build feedback into the race.
         feedback.setRemoveMode(false);

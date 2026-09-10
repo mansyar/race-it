@@ -58,6 +58,10 @@ export interface RacePresentationOptions {
   camera: CameraLike;
   /** Show/hide the builder HUD (palette, GO, shelf/clear). Mute stays. */
   onBuildUiChange?: (visible: boolean) => void;
+  /** Countdown step (3, 2, 1) — beep cue sink, synced to the light steps. */
+  onCountdownBeep?: (step: number) => void;
+  /** The countdown finished and the race started running — GO cue sink. */
+  onGo?: () => void;
 }
 
 export interface RacePresentation {
@@ -91,6 +95,14 @@ function cameraPhase(state: RaceState): RaceCameraPhase {
 }
 
 /**
+ * Quantizes countdown seconds into the traffic-light step (3, 2, 1) using the
+ * same ceil/clamp mapping as the light, so beeps stay synced to the discs.
+ */
+function countdownStep(remaining: number): number {
+  return Math.min(3, Math.max(1, Math.ceil(remaining)));
+}
+
+/**
  * Event-driven race presentation layer. The merged race engine remains the
  * source of truth; this controller maps engine events onto the traffic light,
  * pause HUD, trophy, confetti, kart poses, and the drifting race camera.
@@ -109,6 +121,7 @@ export function createRacePresentation(options: RacePresentationOptions): RacePr
   let hasSmoothedCamera = false;
   let smoothedPos = { x: 0, y: 0, z: 0 };
   let smoothedTarget = { x: 0, y: 0, z: 0 };
+  let lastCountdown = -1;
 
   function resetCelebration(): void {
     spinning = false;
@@ -162,10 +175,13 @@ export function createRacePresentation(options: RacePresentationOptions): RacePr
       goFlashRemaining = 0;
       raceHud.hide();
       trafficLight.setCountdown(engine.countdownRemaining);
+      lastCountdown = countdownStep(engine.countdownRemaining);
+      options.onCountdownBeep?.(lastCountdown);
       hasSmoothedCamera = false;
       return;
     }
     if (state === 'running') {
+      options.onGo?.();
       trafficLight.setGo();
       goFlashRemaining = GO_FLASH_SECONDS;
       raceHud.showPause();
@@ -205,7 +221,15 @@ export function createRacePresentation(options: RacePresentationOptions): RacePr
 
   function updateTrafficLight(): void {
     if (engine.state === 'countdown') {
-      trafficLight.setCountdown(engine.countdownRemaining);
+      const remaining = engine.countdownRemaining;
+      trafficLight.setCountdown(remaining);
+      const step = countdownStep(remaining);
+      if (step !== lastCountdown) {
+        lastCountdown = step;
+        options.onCountdownBeep?.(step);
+      }
+    } else {
+      lastCountdown = -1;
     }
   }
 

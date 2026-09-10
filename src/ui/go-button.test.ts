@@ -10,13 +10,13 @@ function click(root: ParentNode, selector: string): HTMLButtonElement {
 }
 
 describe('createGoButton', () => {
+  const onGo = vi.fn();
+  const onBlockedTap = vi.fn();
   let go: ReturnType<typeof createGoButton>;
-  let onGo: ReturnType<typeof vi.fn>;
-  let onBlockedTap: ReturnType<typeof vi.fn>;
 
   beforeEach(() => {
-    onGo = vi.fn();
-    onBlockedTap = vi.fn();
+    onGo.mockClear();
+    onBlockedTap.mockClear();
     go = createGoButton({ onGo, onBlockedTap });
   });
 
@@ -55,7 +55,7 @@ describe('createGoButton', () => {
     const button = click(go.root, 'button[data-action="go"]');
     expect(button.getAttribute('aria-disabled')).toBe('true');
     button.click();
-    expect(onGo).toHaveBeenCalledTimes(1);
+    expect(onGo).not.toHaveBeenCalled();
     expect(onBlockedTap).toHaveBeenCalledTimes(1);
   });
 

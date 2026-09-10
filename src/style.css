@@ -142,7 +142,7 @@ body {
   touch-action: manipulation;
 }
 
-.go-button button:disabled {
+.go-button button[aria-disabled="true"] {
   opacity: 0.25;
 }
 
