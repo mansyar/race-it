@@ -36,7 +36,8 @@
 
 ## Phase 5 — Verification & Quality Gates
 
-- [~] Task 5.1: quality gates — `pnpm build`; `$env:CI='true'; pnpm test`; coverage >80% on changed modules; `pnpm lint` clean.
-- [ ] Task 5.2: browser full-flow verification — portrait + landscape phone viewports: launch → race motion → pause/Resume/Quit → run-out → trophy → RACE AGAIN; `?race` / `?perf` / `?debug` intact; build/picker/shelf regression-free; screenshots captured.
-- [ ] Task 5.3: fairness & perf validation report — record win shares per slot, photo-finish rate, durations (harness) and `?perf` draw calls/tris; compare against the Phase-1 baseline.
+- [x] Task 5.1: quality gates (c6499d2) — `pnpm build`; `$env:CI='true'; pnpm test`; coverage >80% on changed modules; `pnpm lint` clean.
+- [x] Task 5.2: browser full-flow verification (d0b5fd7) — portrait + landscape phone viewports: launch → race motion → pause/Resume/Quit → run-out → trophy → RACE AGAIN; `?race` / `?perf` / `?debug` intact; build/picker/shelf regression-free; screenshots captured.
+- [x] Task 5.2a (amendment): landscape car-picker fix (Red→Green) (d0b5fd7) — style contract test for the short-viewport compact rules; compact `.car-picker` / `.swatch` under `max-height: 520px` so RACE fits a 390px-tall viewport (≥64px targets); permanent slim e2e landscape regression (RACE in viewport → race starts); Phase 5 browser re-verification.
+- [x] Task 5.3: fairness & perf validation report (d0b5fd7) — record win shares per slot, photo-finish rate, durations (harness) and `?perf` draw calls/tris; compare against the Phase-1 baseline (results in the Phase 5 verification note).
 - [ ] Task: Phase Verification & Checkpoint (Refer to workflow.md)

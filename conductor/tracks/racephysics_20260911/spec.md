@@ -50,6 +50,10 @@ One track, two sides of the same promise — races must be fair, and they must *
 - `race-presentation` / `KartPoseSink` seam extended compatibly; `?race`, `?perf`, `?debug` keep working.
 - Build mode, picker, shelf, audio untouched except finish choreography; the in-flight post-race-nav branch owns trophy navigation — do not touch it.
 
+### FR-9 — Short-viewport resilience (amendment, found in Phase 5 verification)
+- The car picker stays fully operable on landscape phone viewports (down to ~360 px stage height): every control reachable without scrolling, touch targets ≥64px.
+- Regression guards: a stylesheet contract test for the compact rules plus a slim e2e asserting the RACE button is in viewport and starts the race.
+
 ## Non-Functional Requirements
 - Boundaries: `src/race/*` (engine/rng) physics; `src/render/kart-rig.ts` + `kart-meshes.ts` (+ a pure `kart-motion.ts`) visuals; `src/presentation/race-presentation.ts` integration only.
 - TDD per `conductor/workflow.md`; TS strict; Biome-clean; >80% coverage on changed modules; JSDoc on public APIs.
@@ -61,6 +65,7 @@ One track, two sides of the same promise — races must be fair, and they must *
 3. Regression: `?race` / `?perf` / `?debug` intact; build → picker → race → trophy → again flow unchanged apart from motion.
 4. `CI=true pnpm test`, `pnpm lint`, `pnpm build` green; coverage >80% on changed modules.
 5. Manual verification on phone portrait + landscape; fairness numbers reviewed.
+6. Landscape picker (amendment): RACE reachable and race starts in a 390px-tall viewport (e2e).
 
 ## Out of Scope
 Player control; kart-kart collision/passing; laps > 1; camera changes; audio changes; new art/meshes/animation clips; skid marks/particles; weather; camera shake; per-kart personalities; grid-geometry changes; shelf/sharing; UI/text changes.
