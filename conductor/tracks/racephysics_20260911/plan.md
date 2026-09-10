@@ -16,8 +16,8 @@
 
 ## Phase 2 — Natural Pace Dynamics (engine)
 
-- [~] Task 2.1: pace-dynamics tests first (Red) — new `src/race/motion.test.ts` + updated `engine.test.ts`: shared launch curve (0 → pace over ~1 s; below constant-speed distance in the first quarter-second; ≥95% pace by ~1 s); curvature modulation factor from cell geometry (curves slower than straights; shared by all karts); seeded wobble (same seed → identical outcome; bounded amplitude; near-zero mean). Harness + determinism + 30-45 s band must hold with motion ON.
-- [ ] Task 2.2: implement `src/race/motion.ts` (launch/curvature/wobble pure profiles) and wire into the `engine.ts` tick (Green) — pace-multiplicative only; retune `TARGET_RACE_SECONDS`/base speed if the launch shifts the duration band; Phase-1 harness stays green.
+- [x] Task 2.1: pace-dynamics tests first (Red) (e2517f9) — new `src/race/motion.test.ts` + updated `engine.test.ts`: shared launch curve (0 → pace over ~1 s; below constant-speed distance in the first quarter-second; ≥95% pace by ~1 s); curvature modulation factor from cell geometry (curves slower than straights; shared by all karts); seeded wobble (same seed → identical outcome; bounded amplitude; near-zero mean). Harness + determinism + 30-45 s band must hold with motion ON.
+- [x] Task 2.2: implement `src/race/motion.ts` (launch/curvature/wobble pure profiles) and wire into the `engine.ts` tick (Green) (e2517f9) — pace-multiplicative only; retune `TARGET_RACE_SECONDS`/base speed if the launch shifts the duration band; Phase-1 harness stays green.
 - [ ] Task: Phase Verification & Checkpoint (Refer to workflow.md) — `?race` headless output reviewed; duration/closeness numbers compared.
 
 ## Phase 3 — Kart Motion Visuals (yaw, lean, suspension)
