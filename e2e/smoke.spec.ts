@@ -16,7 +16,13 @@ test('boot, seed demo loop, and start a race', async ({ page }) => {
   // passes Playwright's stability check.
   await page.addStyleTag({ content: '.go-button button.pulsing { animation: none; }' });
 
-  // Start the race: after the countdown the pause HUD appears (state 'running').
+  // Start the race: GO opens the wordless car picker; the default lineup
+  // races as-is, so confirm with RACE. After the countdown the pause HUD
+  // appears (state 'running').
   await go.click();
+  const race = page.locator('button[data-action="race"]');
+  await expect(race).toBeVisible({ timeout: 15_000 });
+  await expect(race).toBeEnabled({ timeout: 15_000 });
+  await race.click();
   await expect(page.locator('button[data-action="pause"]')).toBeVisible({ timeout: 15_000 });
 });
