@@ -511,7 +511,9 @@ if (root && appReady()) {
       presentation?.holdForInterruption();
     },
     onVisible() {
-      audio.resumeAll();
+      if (!presentation?.isHolding()) {
+        audio.resumeAll();
+      }
     },
     onHide() {
       audio.suspendAll();
@@ -519,7 +521,7 @@ if (root && appReady()) {
     },
     onRestore() {
       view.resize();
-      if (document.visibilityState === 'visible') {
+      if (document.visibilityState === 'visible' && !presentation?.isHolding()) {
         audio.resumeAll();
       }
     },

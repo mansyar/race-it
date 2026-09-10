@@ -654,6 +654,24 @@ describe('createRacePresentation', () => {
       harness.presentation.holdForInterruption();
       expect(harness.audio.suspendAll).toHaveBeenCalledTimes(2);
     });
+
+    it('reports the hold state through isHolding()', () => {
+      expect(harness.presentation.isHolding()).toBe(false);
+      harness.raceToRunning();
+      expect(harness.presentation.isHolding()).toBe(false);
+      harness.presentation.holdForInterruption();
+      expect(harness.presentation.isHolding()).toBe(true);
+      click('button[data-action="resume"]', harness.hud.overlay);
+      expect(harness.presentation.isHolding()).toBe(false);
+    });
+
+    it('clears the hold state when the race is quit', () => {
+      harness.raceToRunning();
+      harness.presentation.holdForInterruption();
+      click('button[data-action="quit"]', harness.hud.overlay);
+      click('[data-confirm="yes"]', harness.hud.confirm);
+      expect(harness.presentation.isHolding()).toBe(false);
+    });
   });
 
   describe('countdown & GO sounds', () => {

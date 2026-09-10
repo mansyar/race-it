@@ -100,6 +100,8 @@ export interface RacePresentation {
    * overlay for interruptions (app hidden or switched away). No-op otherwise.
    */
   holdForInterruption(): void;
+  /** True while the race is held behind the resume/quit overlay. */
+  isHolding(): boolean;
 }
 
 /**
@@ -409,6 +411,9 @@ export function createRacePresentation(options: RacePresentationOptions): RacePr
       engine.pause();
       options.audio?.suspendAll();
       raceHud.showOverlay();
+    },
+    isHolding() {
+      return held;
     },
     resetToBuild() {
       engine.abandon();
