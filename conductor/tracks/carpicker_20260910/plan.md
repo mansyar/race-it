@@ -15,16 +15,16 @@
 - [x] Task: Implement `src/race/lineup.ts` (green) with JSDoc on public functions `[a1ea5b6]`
 - [x] Task: Phase Verification & Checkpoint (Refer to workflow.md) `[a1ea5b6]`
 
-## Phase 2 — Kart Preview Rendering
+## Phase 2 — Kart Preview Rendering `[checkpoint: 8c03743]`
 
-- [ ] Task: Write failing tests for `src/render/kart-preview.ts` (red)
-  - [ ] Loads the CARS model via injected loader
-  - [ ] Applies per-color `tintBright` to materials
-  - [ ] Fits the kart via a `ModelFit` (reuses `applyModelFit`)
-  - [ ] Renders four scissored viewports into one canvas (mocked renderer records scissor/viewport calls)
-  - [ ] `dispose()` releases renderer/geometry and removes the canvas
-- [ ] Task: Implement `kart-preview.ts` (green)
-- [ ] Task: Phase Verification & Checkpoint (Refer to workflow.md)
+- [x] Task: Write failing tests for `src/render/kart-preview.ts` (red) `[8c03743]`
+  - [x] Loads the CARS model via injected loader `[8c03743]`
+  - [x] Applies per-color `tintBright` to materials `[8c03743]`
+  - [x] Fits the kart via a `ModelFit` (reuses `applyModelFit`) `[8c03743]`
+  - [x] Renders four scissored viewports into one canvas (mocked renderer records scissor/viewport calls) `[8c03743]`
+  - [x] `dispose()` releases renderer/geometry and removes the canvas `[8c03743]`
+- [x] Task: Implement `kart-preview.ts` (green) — per-model material cloning (clone(true) shares materials); `KART_FIT` measured via scripts/measure-glb-world.mjs `[8c03743]`
+- [x] Task: Phase Verification & Checkpoint (Refer to workflow.md) `[8c03743]`
 
 ## Phase 3 — Picker UI
 
