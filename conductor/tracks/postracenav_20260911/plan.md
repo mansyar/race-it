@@ -20,7 +20,7 @@
 - [x] Task 2.3: main wiring tests first (Red) — cover the handler contract (click SFX + reset invocation + build-UI restoration, no double-fire on repeated taps) to the extent `main.ts` is testable; implement in `src/main.ts` (Green); verify GO → picker → RACE still functions after return. (db0a3c5 — deviation: `main.ts` needed no change; the Phase 1 callback is already the final prior handler and the engine reset is owned by the presentation layer, matching the RACE AGAIN wrapper precedent)
 - [ ] Task: Phase Verification & Checkpoint (Refer to workflow.md) — browser: finish → Build Again → builder with track intact and GO valid.
 
-## Phase 3 — E2E & Quality Gates
+## Phase 3 — E2E & Quality Gates [checkpoint: 0bc0855]
 
 - [x] Task 3.1: E2E coverage first (Red) — new `e2e/postrace.spec.ts`: the seeded demo race plays to the trophy (Playwright timer virtualization or extended timeout), Build Again returns to the builder with the build bar visible and GO enabled, track intact; confirm the assertion fails without the wiring. (01eb796 — extended timeout; Red confirmed against the pre-wiring revision 3cb67ef, failing exactly at the Build Again visibility assertion)
 - [x] Task 3.2: quality gates — `pnpm build`, `$env:CI='true'; pnpm test`, coverage >80% on changed modules, `pnpm lint` clean. (all green — 422 tests, coverage src/presentation 97.35% stmts / 97.31% lines, src/ui 98.55% stmts / 98.52% lines)
