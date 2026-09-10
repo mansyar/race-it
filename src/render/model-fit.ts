@@ -54,6 +54,15 @@ export const SCENERY_FIT: Record<SceneryKind, ModelFit> = {
 /** Kenney tile roots sit at y=0 (coplanar with the table top); lift avoids z-fighting. */
 export const MODEL_LIFT_Y = 0.03;
 
+/**
+ * Fit transform for the kart preview. Measured world-space bounds
+ * (scripts/measure-glb-world.mjs) for kart.glb (Kenney Car Kit kart-oopi):
+ * size (0.974, 1.329, 1.428), center (0.000, 0.665, 0.112).
+ * Scaled to ~1.8 units long and offset so the model's center sits at the
+ * preview origin (applyModelFit adds MODEL_LIFT_Y on top).
+ */
+export const KART_FIT: ModelFit = { scale: [1.25, 1.25, 1.25], position: [0, -0.83, -0.14] };
+
 /** Applies a fit (scale + recentering offset) to a model instance. */
 export function applyModelFit(object: THREE.Object3D, fit: ModelFit): void {
   object.scale.set(fit.scale[0], fit.scale[1], fit.scale[2]);
