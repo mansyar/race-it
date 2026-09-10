@@ -1,3 +1,4 @@
+import musicLoopUrl from './audio/musicLoop.ogg?url';
 import barrierUrl from './models/barrierWhite.glb?url';
 import finishFlagUrl from './models/flagCheckers.glb?url';
 import grandstandUrl from './models/grandStand.glb?url';
@@ -13,10 +14,11 @@ import clickUrl from './sfx/click_001.ogg?url';
 import confirmAUrl from './sfx/confirmation_001.ogg?url';
 import confirmBUrl from './sfx/confirmation_002.ogg?url';
 import confirmGoUrl from './sfx/confirmation_003.ogg?url';
-import countdownUrl from './sfx/tick_001.ogg?url';
 import nopeUrl from './sfx/error_001.ogg?url';
+import jingleVictoryUrl from './sfx/jingleVictory.ogg?url';
 import placeUrl from './sfx/pluck_001.ogg?url';
 import removeUrl from './sfx/scratch_002.ogg?url';
+import countdownUrl from './sfx/tick_001.ogg?url';
 
 /** Track piece models from Kenney Racing Kit (CC0). */
 export const MODELS = {
@@ -59,4 +61,11 @@ export const SFX = {
   remove: removeUrl,
   /** Gentle wobble for blocked actions (occupied cell, invalid GO tap). */
   nope: nopeUrl,
+  /** Victory jingle played once at the trophy (with music ducked). */
+  jingle: jingleVictoryUrl,
+} as const;
+
+/** Background music loop from Kenney Music Loops (CC0) — "Polka Train". */
+export const MUSIC = {
+  loop: musicLoopUrl,
 } as const;

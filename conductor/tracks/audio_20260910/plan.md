@@ -15,7 +15,7 @@
 - [x] Task: Phase Verification & Checkpoint (Refer to workflow.md) — ba6fca5
 
 ## Phase 3: Engine Hum, Music Loop & Victory Jingle
-- [ ] Task: Add Kenney Background Music loop asset (OGG, within ~1.5 MB total budget) + license notes; extend manifest (`MUSIC` / `SFX` maps)
+- [~] Task: Add Kenney Background Music loop asset (OGG, within ~1.5 MB total budget) + license notes; extend manifest (`MUSIC` / `SFX` maps)
 - [ ] Task: Write failing tests — hum lifecycle (starts at GO, fades in/out ~300–500ms, only while racing, silent on pause/quit/finish), music lifecycle (starts at race begin, continues through trophy + RACE AGAIN, stops on return to builder), jingle ducking (~40% reduction, swell back), backgrounding (pagehide stop, restore on return)
 - [ ] Task: Implement — procedural engine hum (WebAudio oscillator blend + low-pass, single shared layer), music loop controller (fades, duck, visibility restore), victory jingle trigger with ducking
 - [ ] Task: Wire into `race-presentation.ts` state machine (countdown→racing→finished, pause/resume/quit, race-again continuity) and `main.ts` `pagehide`/visibility handling
