@@ -258,6 +258,11 @@ body {
   pointer-events: auto;
 }
 
+.race-overlay[hidden],
+.race-confirm[hidden] {
+  display: none;
+}
+
 .race-overlay {
   position: fixed;
   inset: 0;

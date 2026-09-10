@@ -15,6 +15,7 @@ Vanilla TypeScript + Three.js, no UI framework, no game engine. A lean static PW
 | PWA | **vite-plugin-pwa** | 1.3.0 | Service worker (offline-first precache), web manifest, auto-update. Supports Vite ^8 ✔ (Workbox 7.4.x underneath). |
 | PWA assets | **@vite-pwa/assets-generator** | 1.0.2 | Generates icons/splash assets for manifest. |
 | Testing | **Vitest** | 5.0.0 | Unit tests for track validation, race logic, storage. Supports Vite ^8 ✔. |
+| Test typings | **@types/node** | 22.20.1 | Dev-only Node API typings (fs/path/url imports) for tests that read project files, e.g. the stylesheet contract test. Module-scoped imports only — `tsconfig` keeps `types: ["vite/client"]`, so app code gains no Node globals. |
 | Lint/Format | **Biome** | 2.5.12 | Single fast tool for linting + formatting; config MUST be aligned with `conductor/code_styleguides/` (Google TS style): single quotes, explicit semicolons, named exports only (no default exports), `===`, no `any`, no `_`-prefixed identifiers. |
 
 ## Storage
