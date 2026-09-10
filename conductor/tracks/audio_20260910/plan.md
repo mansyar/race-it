@@ -30,6 +30,6 @@
 
 ## Phase 5: Release v0.3.0
 - [x] Task: Merge `feature/race-audio` to `master` — 56935a1
-- [~] Task: Bump version to 0.3.0, tag `v0.3.0`, push (release pipeline builds, publishes GHCR, deploys via Coolify webhook)
-- [ ] Task: Verify deployed PWA serves new audio assets over HTTPS
+- [x] Task: Bump version to 0.3.0, tag `v0.3.0`, push (release pipeline builds, publishes GHCR, deploys via Coolify webhook) — b05d357
+- [~] Task: Verify deployed PWA serves new audio assets over HTTPS
 - [ ] Task: Phase Verification & Checkpoint (Refer to workflow.md)
