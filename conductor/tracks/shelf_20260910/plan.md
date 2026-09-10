@@ -1,17 +1,17 @@
 # Plan: Track Shelf — Save, Load & Long-Press Delete
 
 ## Phase 1: Shelf Storage Core (`src/grid/shelf-store.ts`)
-- [ ] Task: Write failing tests for shelf persistence (TDD Red)
+- [x] Task: Write failing tests for shelf persistence (TDD Red)
     - Round-trip: `saveToShelf(grid)` → `loadShelf()` returns snapshot equal to original
     - Append semantics: consecutive saves append; newest-first ordering
     - Capacity: 13th save reports `full`, adds nothing, existing 12 intact
     - Defensive load: corrupt/invalid entries silently dropped; corrupt JSON → empty shelf; never throws
     - Delete: `deleteFromShelf(id)` removes exactly that entry; best-effort on storage failure
     - Isolation: `race-it:track` auto-save key untouched
-- [ ] Task: Implement shelf-store to pass tests (Green)
+- [x] Task: Implement shelf-store to pass tests (Green)
     - Storage key `race-it:shelf`; entry shape `{ id, createdAt, snapshot }` reusing `GridSnapshot` validation
-- [ ] Task: Refactor & verify coverage ≥ 80% for new module
-- [ ] Task: Commit `feat(grid): Add multi-track shelf persistence` + attach git note
+- [x] Task: Refactor & verify coverage ≥ 80% for new module
+- [x] Task: Commit `feat(grid): Add multi-track shelf persistence` + attach git note
 - [ ] Task: Phase Verification & Checkpoint (Refer to workflow.md)
 
 ## Phase 2: Card Schematic Renderer (`src/render/shelf-schematic.ts`)
