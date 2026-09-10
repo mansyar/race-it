@@ -186,6 +186,14 @@ body {
   pointer-events: auto;
 }
 
+/* The display:flex below would defeat the `hidden` attribute (author styles
+   beat the UA [hidden] rule), pinning the pause overlay on screen for the
+   whole race. Same override as .confirm-overlay[hidden] above. */
+.race-overlay[hidden],
+.race-confirm[hidden] {
+  display: none;
+}
+
 /* Wordless traffic-light countdown. */
 .traffic-light {
   position: fixed;
