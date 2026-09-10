@@ -7,11 +7,11 @@
 - [x] Task: Phase Verification & Checkpoint (Refer to workflow.md)
 
 ## Phase 2: iOS Splash Screens (FR2)
-- [ ] Task: Add splash generation (build-time script extending `pwa-assets.config.ts` pipeline) + `apple-touch-startup-image` media-query links for device-floor iPhone/iPad, portrait & landscape, toy-cream background
-- [ ] Task: Write failing tests — `index.html` contains startup-image links for required device classes; sizes/background validated
-- [ ] Task: Implement generation + links; keep added PNG weight ≤ ~1 MB; precache via workbox glob
-- [ ] Task: Verify coverage ≥80%, tests + lint + typecheck green; commit
-- [ ] Task: Phase Verification & Checkpoint (Refer to workflow.md)
+- [x] Task: Add splash generation (build-time script extending `pwa-assets.config.ts` pipeline) + `apple-touch-startup-image` media-query links for device-floor iPhone/iPad, portrait & landscape, toy-cream background (753315c)
+- [x] Task: Write failing tests — `index.html` contains startup-image links for required device classes; sizes/background validated (753315c)
+- [x] Task: Implement generation + links; keep added PNG weight ≤ ~1 MB; precache via workbox glob (753315c)
+- [x] Task: Verify coverage ≥80%, tests + lint + typecheck green; commit (753315c)
+- [~] Task: Phase Verification & Checkpoint (Refer to workflow.md)
 
 ## Phase 3: Android Rich Install Screenshots (FR3)
 - [ ] Task: Write failing test — manifest `screenshots` entries valid (`form_factor`, sizes within Chrome bounds, `platform: 'web'`)
