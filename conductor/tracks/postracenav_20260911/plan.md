@@ -15,9 +15,9 @@
 
 ## Phase 2 — Return-to-Builder Wiring
 
-- [ ] Task 2.1: presentation tests first (Red) — `src/presentation/race-presentation.test.ts`: callback rewiring preserves `onBuildAgain`; invoking it → engine `abandon()` (idle), audio `stopAll()`, HUD hidden, confetti cleared, trophy hidden, `onBuildUiChange(true)`, camera target eases back to build placement (smoothed, no snap).
-- [ ] Task 2.2: implement the reset path (Green) — `race-presentation.ts`: route Build Again through the existing `resetToBuild()` / idle reset visuals, preserving the main-provided callback; `src/race/*` untouched.
-- [ ] Task 2.3: main wiring tests first (Red) — cover the handler contract (click SFX + reset invocation + build-UI restoration, no double-fire on repeated taps) to the extent `main.ts` is testable; implement in `src/main.ts` (Green); verify GO → picker → RACE still functions after return.
+- [x] Task 2.1: presentation tests first (Red) — `src/presentation/race-presentation.test.ts`: callback rewiring preserves `onBuildAgain`; invoking it → engine `abandon()` (idle), audio `stopAll()`, HUD hidden, confetti cleared, trophy hidden, `onBuildUiChange(true)`, camera target eases back to build placement (smoothed, no snap). (db0a3c5)
+- [x] Task 2.2: implement the reset path (Green) — `race-presentation.ts`: route Build Again through the existing `resetToBuild()` / idle reset visuals, preserving the main-provided callback; `src/race/*` untouched. (db0a3c5)
+- [x] Task 2.3: main wiring tests first (Red) — cover the handler contract (click SFX + reset invocation + build-UI restoration, no double-fire on repeated taps) to the extent `main.ts` is testable; implement in `src/main.ts` (Green); verify GO → picker → RACE still functions after return. (db0a3c5 — deviation: `main.ts` needed no change; the Phase 1 callback is already the final prior handler and the engine reset is owned by the presentation layer, matching the RACE AGAIN wrapper precedent)
 - [ ] Task: Phase Verification & Checkpoint (Refer to workflow.md) — browser: finish → Build Again → builder with track intact and GO valid.
 
 ## Phase 3 — E2E & Quality Gates
