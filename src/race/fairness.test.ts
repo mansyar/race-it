@@ -41,6 +41,24 @@ function loopOfLength(n: number): LoopCell[] {
   }));
 }
 
+/** Loop shapes exercised by the sweep: pure straights vs corner-modulated. */
+type LoopShape = 'straight' | 'cornered';
+
+/** Alternating straight/curve cells so the motion profile modulates the pack. */
+function corneredLoopOfLength(n: number): LoopCell[] {
+  return Array.from({ length: n }, (_, i) => ({
+    x: i,
+    y: 0,
+    type: (i % 2 === 0 ? 'straight' : 'curve') as LoopCell['type'],
+    orientation: 0 as const,
+  }));
+}
+
+/** Builds the sweep loop for a shape. */
+function pathFor(cells: number, shape: LoopShape): LoopCell[] {
+  return shape === 'cornered' ? corneredLoopOfLength(cells) : loopOfLength(cells);
+}
+
 function tickUntilFinished(engine: RaceEngine): void {
   let t = 0;
   while (!engine.karts.every((kart) => kart.finished) && t < MAX_TICK_SECONDS) {
@@ -63,8 +81,13 @@ function requireNumber(value: number | null | undefined, label: string): number 
   return value;
 }
 
-function runRace(cells: number, kartCount: number, seed: number): RaceOutcome {
-  const engine = createRaceEngine(loopOfLength(cells), { kartCount, seed });
+function runRace(
+  cells: number,
+  kartCount: number,
+  seed: number,
+  shape: LoopShape = 'straight',
+): RaceOutcome {
+  const engine = createRaceEngine(pathFor(cells, shape), { kartCount, seed });
   engine.start();
   tickUntilFinished(engine);
   if (!engine.karts.every((kart) => kart.finished)) {
@@ -85,8 +108,8 @@ function runRace(cells: number, kartCount: number, seed: number): RaceOutcome {
 
 const sweeps = new Map<string, SweepSummary>();
 
-function sweep(cells: number, kartCount: number): SweepSummary {
-  const key = `${cells}x${kartCount}`;
+function sweep(cells: number, kartCount: number, shape: LoopShape = 'straight'): SweepSummary {
+  const key = `${shape}:${cells}x${kartCount}`;
   const cached = sweeps.get(key);
   if (cached) {
     return cached;
@@ -96,7 +119,7 @@ function sweep(cells: number, kartCount: number): SweepSummary {
   let firstFinishMin = Number.POSITIVE_INFINITY;
   let firstFinishMax = 0;
   for (let seed = 1; seed <= SEEDS; seed++) {
-    const outcome = runRace(cells, kartCount, seed);
+    const outcome = runRace(cells, kartCount, seed, shape);
     wins[outcome.winnerIndex] = (wins[outcome.winnerIndex] ?? 0) + 1;
     if (outcome.photoFinish) {
       photoFinishes += 1;
@@ -152,6 +175,35 @@ describe('start-grid fairness (fixed-seed simulation sweep)', () => {
           ).toBeLessThanOrEqual(high);
         }
       }
+    }
+  });
+
+  it('keeps every grid slot within [0.5/n, 2/n] on a cornered demo loop (motion on)', {
+    timeout: 30_000,
+  }, () => {
+    for (const kartCount of KART_COUNTS) {
+      const summary = sweep(DEMO_LOOP_CELLS, kartCount, 'cornered');
+      const low = 0.5 / kartCount;
+      const high = 2 / kartCount;
+      for (let slot = 0; slot < kartCount; slot++) {
+        const share = requireNumber(summary.wins[slot], `slot ${slot} wins`) / summary.races;
+        expect(
+          share,
+          `cornered ${DEMO_LOOP_CELLS}-cell loop, ${kartCount} karts: slot ${slot} share ${(share * 100).toFixed(1)}% below ${(low * 100).toFixed(1)}% (wins=${summary.wins.join('/')})`,
+        ).toBeGreaterThanOrEqual(low);
+        expect(
+          share,
+          `cornered ${DEMO_LOOP_CELLS}-cell loop, ${kartCount} karts: slot ${slot} share ${(share * 100).toFixed(1)}% above ${(high * 100).toFixed(1)}% (wins=${summary.wins.join('/')})`,
+        ).toBeLessThanOrEqual(high);
+      }
+      expect(
+        summary.firstFinishMin,
+        `cornered ${DEMO_LOOP_CELLS}-cell loop, ${kartCount} karts: fastest first finish ${summary.firstFinishMin.toFixed(1)}s below 30s`,
+      ).toBeGreaterThanOrEqual(30);
+      expect(
+        summary.firstFinishMax,
+        `cornered ${DEMO_LOOP_CELLS}-cell loop, ${kartCount} karts: slowest first finish ${summary.firstFinishMax.toFixed(1)}s above 45s`,
+      ).toBeLessThanOrEqual(45);
     }
   });
 

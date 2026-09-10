@@ -1,3 +1,4 @@
+import { createMotionProfile } from './motion';
 import type { LoopCell } from './path';
 import { mulberry32, sampleUniform } from './rng';
 
@@ -92,7 +93,10 @@ export interface RaceEngine {
  * The engine owns the full lifecycle (countdown -> running -> finished) so
  * presentation layers stay thin. Kart speeds are rolled per race from the
  * injectable rng and row-distance-normalized, tuned so races stay close and
- * any kart can win from any grid slot.
+ * any kart can win from any grid slot. During the race the pace is modulated
+ * by the shared launch ramp, the shared cornering slowdown, and a per-kart
+ * seeded wobble (see motion.ts) — pace-multiplicative only, so the fairness
+ * invariants hold.
  */
 export function createRaceEngine(path: LoopCell[], options: RaceEngineOptions = {}): RaceEngine {
   const kartCount = options.kartCount ?? MAX_KARTS;
@@ -108,6 +112,16 @@ export function createRaceEngine(path: LoopCell[], options: RaceEngineOptions = 
 
   const lapLength = path.length * SEGMENT_LENGTH;
   const baseSpeed = lapLength / TARGET_RACE_SECONDS;
+  // Seeded runs (debug hooks, fairness harness) wobble deterministically;
+  // injected rng streams keep the wobble off so tests stay exact; real races
+  // get a fresh random salt so every race feels a little different.
+  const wobbleSeed =
+    options.seed ??
+    (options.rng === undefined ? Math.floor(Math.random() * 0xffffffff) : undefined);
+  const motion =
+    wobbleSeed === undefined
+      ? createMotionProfile({ path, lapLength, kartCount })
+      : createMotionProfile({ path, lapLength, kartCount, seed: wobbleSeed });
 
   let state: RaceState = 'idle';
   let paused = false;
@@ -156,7 +170,8 @@ export function createRaceEngine(path: LoopCell[], options: RaceEngineOptions = 
       if (kart.finished) {
         continue;
       }
-      kart.progress += kart.speed * remaining;
+      kart.progress +=
+        kart.speed * motion.paceFactor(kart.index, kart.progress, elapsed) * remaining;
       if (kart.progress >= lapLength) {
         kart.finished = true;
         kart.finishTime = elapsed;

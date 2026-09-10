@@ -8,6 +8,7 @@ import {
   type RaceResult,
   type RaceState,
   ROW_SPACING,
+  TARGET_RACE_SECONDS,
 } from './engine';
 import type { LoopCell } from './path';
 
@@ -403,5 +404,73 @@ describe('createRaceEngine', () => {
       expect(engine.state).toBe('running');
       expect(engine.countdownRemaining).toBe(0);
     });
+  });
+});
+
+describe('natural pace dynamics', () => {
+  function corneredPath(n: number): LoopCell[] {
+    return Array.from({ length: n }, (_, i) => ({
+      x: i,
+      y: 0,
+      type: (i % 2 === 0 ? 'straight' : 'curve') as LoopCell['type'],
+      orientation: 0 as const,
+    }));
+  }
+
+  it('launches from standstill and settles into race pace', () => {
+    const engine = createRaceEngine(loopOfLength(8), { rng: () => 0.5, countdownSeconds: 0 });
+    const kart = kartAt(engine, 0);
+    const base = engine.lapLength / TARGET_RACE_SECONDS;
+    engine.start();
+    const dt = 1 / 60;
+    let launchDistance = 0;
+    for (let step = 0; step < 15; step += 1) {
+      const before = kart.progress;
+      engine.tick(dt);
+      launchDistance += kart.progress - before;
+    }
+    // The first quarter-second covers far less than half of the constant-pace distance.
+    expect(launchDistance).toBeLessThan(base * 0.25 * 0.5);
+    for (let step = 15; step < 60; step += 1) {
+      engine.tick(dt);
+    }
+    const oneSecondMark = kart.progress;
+    for (let step = 0; step < 60; step += 1) {
+      engine.tick(dt);
+    }
+    // Once launched, one second of running covers exactly one second of pace.
+    expect(kart.progress - oneSecondMark).toBeCloseTo(base, 4);
+  });
+
+  it('slows the pack through corners compared with a straight-only loop', () => {
+    const straight = createRaceEngine(loopOfLength(8), { rng: () => 0.5, countdownSeconds: 0 });
+    const cornered = createRaceEngine(corneredPath(8), { rng: () => 0.5, countdownSeconds: 0 });
+    straight.start();
+    cornered.start();
+    tickUntilFinished(straight, 1 / 60);
+    tickUntilFinished(cornered, 1 / 60);
+    const straightTime = requireNumber(requireResult(straight).finishTimes[0], 'straight finish');
+    const corneredTime = requireNumber(requireResult(cornered).finishTimes[0], 'cornered finish');
+    expect(corneredTime).toBeGreaterThan(straightTime);
+  });
+
+  it('keeps same-pace karts tied through corners without a grid bias', () => {
+    const engine = createRaceEngine(corneredPath(8), { rng: () => 0.5, countdownSeconds: 0 });
+    engine.start();
+    tickUntilFinished(engine, 1 / 60);
+    const times = requireResult(engine).finishTimes;
+    const first = requireNumber(times[0], 'front-row finish');
+    const frontRowMate = requireNumber(times[1], 'front-row mate finish');
+    const backRow = requireNumber(times[2], 'back-row finish');
+    const backRowMate = requireNumber(times[3], 'back-row mate finish');
+    // Side-by-side karts are identical by construction.
+    expect(frontRowMate).toBe(first);
+    expect(backRowMate).toBe(backRow);
+    // The grid offset folds into pace, so the back row finishes within a hair
+    // of the front row even through corner slowdowns. The measured 0.05 s is
+    // ~3 render ticks (1/60 s) of integrator quantization, still ~5x tighter
+    // than the 250 ms photo-finish margin; slot fairness on cornered loops is
+    // band-guarded by the cornered sweep in fairness.test.ts.
+    expect(Math.abs(backRow - first)).toBeLessThan(0.075);
   });
 });
