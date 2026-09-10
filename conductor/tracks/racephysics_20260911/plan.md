@@ -20,17 +20,17 @@
 - [x] Task 2.2: implement `src/race/motion.ts` (launch/curvature/wobble pure profiles) and wire into the `engine.ts` tick (Green) (e2517f9) — pace-multiplicative only; retune `TARGET_RACE_SECONDS`/base speed if the launch shifts the duration band; Phase-1 harness stays green.
 - [x] Task: Phase Verification & Checkpoint (Refer to workflow.md) — `?race` headless output reviewed; duration/closeness numbers compared.
 
-## Phase 3 — Kart Motion Visuals (yaw, lean, suspension)
+## Phase 3 — Kart Motion Visuals (yaw, lean, suspension) [checkpoint: 28157ea]
 
 - [x] Task 3.1: visual-motion tests first (Red) (28157ea) — new `src/render/kart-motion.test.ts`: analytic smoothing window yields continuous heading across tile boundaries (no snap; bounded turn rate); roll leans with curvature (sign/bounds; zero on straights); pitch/bob responds to launch/speed state and settles; all pure and deterministic.
 - [x] Task 3.2: implement `src/render/kart-motion.ts` (Green) (28157ea) — `visualPose(...)` built on `kartPose`, returning the extended pose (heading, roll, pitch, bob); `kartPose` contract untouched.
 - [x] Task 3.3: pose-sink integration tests first (Red) (28157ea) — `kart-meshes.test.ts` / `race-presentation.test.ts`: extended poses flow through the sink; optional fields default safely for old shape; no lineup mesh intersections; `?perf` budget unchanged.
 - [x] Task 3.4: wire into `race-presentation.ts` + `kart-meshes.ts` (Green) (28157ea) — presentation computes visual poses from engine progress + speed; renderer applies roll/pitch/bob transforms.
-- [ ] Task: Phase Verification & Checkpoint (Refer to workflow.md) — browser: no corner snapping; lean reads toy-like; 60 fps.
+- [x] Task: Phase Verification & Checkpoint (Refer to workflow.md) — browser: no corner snapping; lean reads toy-like; 60 fps.
 
 ## Phase 4 — Finish Run-Out & Celebration Choreography
 
-- [ ] Task 4.1: run-out tests first (Red) — `kart-motion.test.ts` + `race-presentation.test.ts`: bounded decelerating roll-out (`runoutOffset(elapsed, pace)` ≤ ~2 world units, settles < ~1.2 s); official finish time unchanged at crossing; winner spin begins once settled; trophy/confetti/jingle timing unchanged; `resetToBuild` / RACE AGAIN clear run-out state.
+- [~] Task 4.1: run-out tests first (Red) — `kart-motion.test.ts` + `race-presentation.test.ts`: bounded decelerating roll-out (`runoutOffset(elapsed, pace)` ≤ ~2 world units, settles < ~1.2 s); official finish time unchanged at crossing; winner spin begins once settled; trophy/confetti/jingle timing unchanged; `resetToBuild` / RACE AGAIN clear run-out state.
 - [ ] Task 4.2: implement run-out + choreography (Green) — kart-motion curve + presentation sequencing.
 - [ ] Task: Phase Verification & Checkpoint (Refer to workflow.md) — browser: finish reads as a natural roll-out; celebration beats intact.
 
