@@ -36,12 +36,12 @@
 - [x] Task: Phase Verification & Checkpoint (Refer to workflow.md)
 
 ## Phase 4: Integration & Wiring (`main.ts`, `corner-cluster.ts`)
-- [ ] Task: Write failing tests (TDD Red)
+- [x] Task: Write failing tests (TDD Red)
     - `onShelf` opens overlay (remove stub behavior + update corner-cluster test note)
     - Load closes overlay and swaps working board; auto-save key still updated by existing flow
     - Save/delete trigger audio-director one-shots (existing assets only)
     - Overlay hidden during countdown/race/trophy (cluster already hidden — verify assertions)
-- [ ] Task: Implement wiring (Green); end-to-end manual smoke of full loop
-- [ ] Task: Refactor, run full gates: `pnpm check` (Biome), `tsc --noEmit`, Vitest coverage, build
-- [ ] Task: Commit `feat(app): Wire track shelf into build mode` + attach git note
+- [x] Task: Implement wiring (Green); end-to-end manual smoke of full loop
+- [x] Task: Refactor, run full gates: `pnpm check` (Biome), `tsc --noEmit`, Vitest coverage, build
+- [x] Task: Commit `feat(app): Wire track shelf into build mode` + attach git note
 - [ ] Task: Phase Verification & Checkpoint (Refer to workflow.md) — final checkpoint before review
