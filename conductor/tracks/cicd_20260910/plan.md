@@ -35,6 +35,6 @@
 
 ## Phase 5 — End-to-End Pipeline Verification
 
-- [ ] Task 5.1: Merge branch to `master`; bump `package.json` to 0.2.0; tag `v0.2.0` and push → release workflow runs: GHCR image published (both tags), GitHub Release published with type-grouped notes, Coolify deploy triggered via authenticated webhook
+- [~] Task 5.1: Merge branch to `master`; bump `package.json` to 0.2.0; tag `v0.2.0` and push → release workflow runs: GHCR image published (both tags), GitHub Release published with type-grouped notes, Coolify deploy triggered via authenticated webhook
 - [ ] Task 5.2: Verify deployed PWA at Coolify URL (SW registered, offline boots, race runs); confirm efficiency — second pipeline run hits caches (no full reinstall)
 - [ ] Task: Phase Verification & Checkpoint (Refer to workflow.md)
