@@ -6,7 +6,7 @@
 
 **Dev commands:** `pnpm install` · `$env:CI='true'; pnpm test` · `$env:CI='true'; pnpm test -- --coverage` (target >80%) · `pnpm lint` (Biome) · `pnpm build` · `pnpm exec playwright test`
 
-## Phase 1 — Toolchain Pins & Stack Documentation
+## Phase 1 — Toolchain Pins & Stack Documentation [checkpoint: 0d46ada]
 
 - [x] Task 1.1: Document CI/CD stack in `conductor/tech-stack.md` — GitHub Actions, Docker multi-stage (node:24-alpine → nginx:alpine), GHCR public registry, Playwright E2E, pins Node 24.16.0 / pnpm 12.3.4 (per workflow: tech-stack changes documented *before* implementation) `(f82228e)`
 - [x] Task 1.2: Add `.nvmrc` (24.16.0) + `"packageManager": "pnpm@12.3.4"` in `package.json`; verify `pnpm install` still resolves cleanly `(0d46ada)`
