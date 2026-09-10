@@ -9,4 +9,4 @@
 - [x] **Track: Race Audio & Music** *Archived: [audio_20260910](./archive/audio_20260910/index.md)*
 - [x] **Track: Track Shelf — Save, Load & Long-Press Delete** *Archived: [shelf_20260910](./archive/shelf_20260910/index.md)*
 - [x] **Track: Race Watchability Polish** *Archived: [racepolish_20260910](./archive/racepolish_20260910/index.md)*
-- [~] **Track: PWA Install Experience** *Link: [pwainstall_20260910](./tracks/pwainstall_20260910/index.md)*
+- [x] **Track: PWA Install Experience** *Archived: [pwainstall_20260910](./archive/pwainstall_20260910/index.md)*
