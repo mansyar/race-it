@@ -1,6 +1,7 @@
 import * as THREE from 'three';
 import { describe, expect, it } from 'vitest';
 import { KARTS } from '../assets/manifest';
+import { LANE_OFFSET, ROW_SPACING } from '../race/engine';
 import {
   KART_COLORS,
   KART_FORWARD_ROTATION,
@@ -113,5 +114,26 @@ describe('KartRenderer', () => {
     renderer.update([pose(0), pose(1)]);
     expect(renderer.group.children).toHaveLength(2);
     expect(renderer.group.children[1]?.position.x).toBeCloseTo(pose(1).x);
+  });
+});
+
+// Native kart bounds measured with `node scripts/measure-glb-world.mjs`:
+// size [width 0.974, height 1.329, length 1.428], identical for all four karts.
+const NATIVE_KART_WIDTH = 0.974;
+const NATIVE_KART_LENGTH = 1.428;
+
+describe('start-lineup clearance', () => {
+  it('scales karts to the 0.55 watchability bump', () => {
+    expect(KART_SCALE).toBe(0.55);
+  });
+
+  it('keeps side-by-side karts clear at the lane gap', () => {
+    const width = NATIVE_KART_WIDTH * KART_SCALE;
+    expect(2 * LANE_OFFSET - width).toBeGreaterThan(0.1);
+  });
+
+  it('keeps nose-to-tail karts clear at the row gap', () => {
+    const length = NATIVE_KART_LENGTH * KART_SCALE;
+    expect(ROW_SPACING - length).toBeGreaterThan(0.1);
   });
 });
