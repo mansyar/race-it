@@ -10,7 +10,7 @@ import {
 } from '../render/kart-motion';
 import { kartPose } from '../render/kart-rig';
 import { computeCameraPlacement } from '../render/layout';
-import { LOOK_AHEAD_DISTANCE, RACE_ZOOM_FLOOR } from '../render/race-camera';
+import { LOOK_AHEAD_DISTANCE, PHOTO_FINISH_PUSH, RACE_ZOOM_FLOOR } from '../render/race-camera';
 import { createRaceHud } from '../ui/race-hud';
 import { createTrafficLight } from '../ui/traffic-light';
 import { createTrophy } from '../ui/trophy';
@@ -1088,6 +1088,66 @@ describe('createRacePresentation', () => {
       const lastCall = tracker.tick.mock.calls.at(-1)?.[0] as PhotoFinishTickInput | undefined;
       expect(typeof lastCall?.photoFinish).toBe('boolean');
       expect(lastCall?.photoFinish).toBe(harness.engine.result?.photoFinish);
+    });
+  });
+
+  describe('photo-finish camera push', () => {
+    function pushStub(): PhotoFinishTracker & {
+      tick: ReturnType<typeof vi.fn>;
+      reset: ReturnType<typeof vi.fn>;
+    } {
+      const tick = vi.fn(() => ({ timeScale: 1, accent: false }));
+      const reset = vi.fn();
+      return {
+        tick,
+        reset,
+        get armed() {
+          return true;
+        },
+      };
+    }
+
+    /** Distance from the last recorded camera pose (position.set -> lookAt). */
+    function cameraDistance(target: Harness): number {
+      const set = target.camera.position.set.mock.calls.at(-1);
+      const look = target.camera.lookAt.mock.calls.at(-1);
+      if (!set || !look) {
+        throw new Error('Expected a camera pose');
+      }
+      return Math.hypot(set[0] - look[0], set[1] - look[1], set[2] - look[2]);
+    }
+
+    it('pushes the finished hold in on confirmation and eases back to standard', () => {
+      const tracker = pushStub();
+      const harness = createHarness({ photoFinish: tracker });
+      harness.raceToAllFinished();
+      harness.presentation.update(1 / 60);
+      const standard = cameraDistance(harness);
+      // The flag confirms: the next tracker tick reports the one-shot accent.
+      tracker.tick.mockReturnValueOnce({ timeScale: 1, accent: true });
+      harness.presentation.update(1 / 60);
+      for (let i = 0; i < 12; i++) {
+        harness.presentation.update(1 / 60);
+      }
+      const pushed = cameraDistance(harness);
+      expect(pushed).toBeLessThan(standard);
+      expect(pushed).toBeGreaterThanOrEqual(standard * (1 - PHOTO_FINISH_PUSH) - 1e-6);
+      for (let i = 0; i < 160; i++) {
+        harness.presentation.update(1 / 60);
+      }
+      expect(cameraDistance(harness)).toBeCloseTo(standard, 1);
+    });
+
+    it('never pushes on a finish that is not a photo finish', () => {
+      const tracker = pushStub();
+      const harness = createHarness({ photoFinish: tracker });
+      harness.raceToAllFinished();
+      harness.presentation.update(1 / 60);
+      const standard = cameraDistance(harness);
+      for (let i = 0; i < 160; i++) {
+        harness.presentation.update(1 / 60);
+      }
+      expect(cameraDistance(harness)).toBeCloseTo(standard, 1);
     });
   });
 });
