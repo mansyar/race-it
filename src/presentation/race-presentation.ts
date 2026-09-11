@@ -1,4 +1,4 @@
-import { type Kart, type RaceEngine, type RaceState, TARGET_RACE_SECONDS } from '../race/engine';
+import { baseSpeedFor, type Kart, type RaceEngine, type RaceState } from '../race/engine';
 import type { LoopCell } from '../race/path';
 import { RUNOUT_SECONDS, runoutOffset, visualPose } from '../render/kart-motion';
 import { type KartPose, kartPose } from '../render/kart-rig';
@@ -162,7 +162,7 @@ export function createRacePresentation(options: RacePresentationOptions): RacePr
   let lastCountdown = -1;
   let prevProgress: number[] = engine.karts.map((kart) => kart.progress);
   let prevPace: number[] = engine.karts.map(() => 0);
-  const baseSpeed = engine.lapLength / TARGET_RACE_SECONDS;
+  const baseSpeed = baseSpeedFor(engine.lapLength);
 
   function resetCelebration(): void {
     spinning = false;

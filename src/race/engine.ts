@@ -111,7 +111,7 @@ export function createRaceEngine(path: LoopCell[], options: RaceEngineOptions = 
   const rng = options.rng ?? (options.seed !== undefined ? mulberry32(options.seed) : Math.random);
 
   const lapLength = path.length * SEGMENT_LENGTH;
-  const baseSpeed = lapLength / TARGET_RACE_SECONDS;
+  const baseSpeed = baseSpeedFor(lapLength);
   // Seeded runs (debug hooks, fairness harness) wobble deterministically;
   // injected rng streams keep the wobble off so tests stay exact; real races
   // get a fresh random salt so every race feels a little different.
@@ -273,6 +273,11 @@ export function createRaceEngine(path: LoopCell[], options: RaceEngineOptions = 
     abandon,
     restart,
   };
+}
+
+/** Steady lap pace in world units per second, before motion modulation. */
+export function baseSpeedFor(lapLength: number): number {
+  return lapLength / TARGET_RACE_SECONDS;
 }
 
 function rollKarts(

@@ -8,7 +8,7 @@ import {
   RUNOUT_SECONDS,
   type VisualPose,
 } from '../render/kart-motion';
-import { type KartPose, kartPose } from '../render/kart-rig';
+import { kartPose } from '../render/kart-rig';
 import { computeCameraPlacement } from '../render/layout';
 import { LOOK_AHEAD_DISTANCE, RACE_ZOOM_FLOOR } from '../render/race-camera';
 import { createRaceHud } from '../ui/race-hud';
@@ -78,7 +78,7 @@ interface Harness {
     update: ReturnType<typeof vi.fn>;
     clear: ReturnType<typeof vi.fn>;
   };
-  karts: { update: ReturnType<typeof vi.fn>; lastPoses: KartPose[] };
+  karts: { update: ReturnType<typeof vi.fn>; lastPoses: VisualPose[] };
   camera: {
     position: { x: number; y: number; z: number; set: ReturnType<typeof vi.fn> };
     lookAt: ReturnType<typeof vi.fn>;
@@ -149,9 +149,9 @@ function createHarness(options: { countdownSeconds?: number; kartOrder?: number[
     update: vi.fn(),
     clear: vi.fn(),
   };
-  const lastPoses: KartPose[] = [];
+  const lastPoses: VisualPose[] = [];
   const karts = {
-    update: vi.fn((poses: KartPose[]) => {
+    update: vi.fn((poses: VisualPose[]) => {
       lastPoses.splice(0, lastPoses.length, ...poses);
       return null;
     }),
@@ -741,13 +741,13 @@ describe('createRacePresentation', () => {
       harness.raceToRunning();
       harness.presentation.update(0.5);
       expect(harness.karts.lastPoses).toHaveLength(4);
-      for (const pose of harness.karts.lastPoses as Array<KartPose & Partial<VisualPose>>) {
+      for (const pose of harness.karts.lastPoses) {
         expect(Number.isFinite(pose.roll)).toBe(true);
         expect(Number.isFinite(pose.pitch)).toBe(true);
         expect(Number.isFinite(pose.bob)).toBe(true);
-        expect(Math.abs(pose.roll ?? 0)).toBeLessThanOrEqual(MAX_ROLL + 1e-9);
-        expect(Math.abs(pose.pitch ?? 0)).toBeLessThanOrEqual(MAX_PITCH + 1e-9);
-        expect(Math.abs(pose.bob ?? 0)).toBeLessThanOrEqual(BOB_AMPLITUDE + 1e-12);
+        expect(Math.abs(pose.roll)).toBeLessThanOrEqual(MAX_ROLL + 1e-9);
+        expect(Math.abs(pose.pitch)).toBeLessThanOrEqual(MAX_PITCH + 1e-9);
+        expect(Math.abs(pose.bob)).toBeLessThanOrEqual(BOB_AMPLITUDE + 1e-12);
       }
     });
 
@@ -758,8 +758,8 @@ describe('createRacePresentation', () => {
       let maxPitch = 0;
       for (let i = 0; i < 30; i++) {
         harness.presentation.update(1 / 60);
-        for (const pose of harness.karts.lastPoses as Array<KartPose & Partial<VisualPose>>) {
-          maxPitch = Math.max(maxPitch, pose.pitch ?? 0);
+        for (const pose of harness.karts.lastPoses) {
+          maxPitch = Math.max(maxPitch, pose.pitch);
         }
       }
       expect(maxPitch).toBeGreaterThan(0.01);
@@ -768,7 +768,7 @@ describe('createRacePresentation', () => {
     it('settles suspension while parked on the grid', () => {
       harness.presentation.beginRace();
       harness.presentation.update(0.01);
-      for (const pose of harness.karts.lastPoses as Array<KartPose & Partial<VisualPose>>) {
+      for (const pose of harness.karts.lastPoses) {
         expect(pose.bob).toBeCloseTo(0, 12);
         expect(pose.pitch).toBeCloseTo(0, 12);
       }

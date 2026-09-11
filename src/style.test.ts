@@ -42,13 +42,18 @@ describe('style.css hidden-attribute contract', () => {
 function maxHeightBlock(limitPx: number): string | null {
   const marker = new RegExp(`@media\\s*\\(max-height:\\s*${limitPx}px\\)`);
   const match = marker.exec(uncommented);
-  if (!match) return null;
+  if (!match) {
+    return null;
+  }
   let depth = 0;
   for (let i = match.index; i < uncommented.length; i += 1) {
-    if (uncommented[i] === '{') depth += 1;
-    else if (uncommented[i] === '}') {
+    if (uncommented[i] === '{') {
+      depth += 1;
+    } else if (uncommented[i] === '}') {
       depth -= 1;
-      if (depth === 0) return uncommented.slice(match.index, i + 1);
+      if (depth === 0) {
+        return uncommented.slice(match.index, i + 1);
+      }
     }
   }
   return null;
@@ -58,9 +63,13 @@ function maxHeightBlock(limitPx: number): string | null {
 function ruleBody(selector: string, scope: string = uncommented): string | null {
   for (const chunk of scope.split('}')) {
     const [header = '', ...bodies] = chunk.split('{');
-    if (bodies.length === 0) continue;
+    if (bodies.length === 0) {
+      continue;
+    }
     const head = header.split('\n').at(-1)?.trim();
-    if (head === selector) return bodies.join('{');
+    if (head === selector) {
+      return bodies.join('{');
+    }
   }
   return null;
 }
