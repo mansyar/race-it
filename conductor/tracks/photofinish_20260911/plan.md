@@ -19,8 +19,8 @@
 
 - [x] Task 2.1: dilation integration tests first (Red) (b2a7f9a) — `race-presentation.test.ts` (fakes): engine receives scaled dt while armed; karts/confetti/spin/camera dilate coherently; ordinary races unchanged (scale 1.0); pause + `holdForInterruption` freeze/resume the ramp; `resetToBuild`/RACE AGAIN/Build Again/quit restore 1.0; results untouched.
 - [x] Task 2.2: implement dilation wiring (Green) (3fc5220) — `race-presentation.ts` owns the scale, feeds `engine.tick(dt · scale)` + scaled dt to race visuals; tracker tick added to the update order.
-- [~] Task 2.3: camera push tests first (Red) — `race-camera.test.ts`: finished framing tightens ~10–15% during the sequence and eases back to the standard hold; bounded (no clipping/zoom-floor violations); build/countdown untouched.
-- [ ] Task 2.4: implement camera push (Green) — small bounded addition to `race-camera.ts` pose input, driven by the tracker flag.
+- [x] Task 2.3: camera push tests first (Red) (877ec4e) — `race-camera.test.ts`: finished framing tightens ~10–15% during the sequence and eases back to the standard hold; bounded (no clipping/zoom-floor violations); build/countdown untouched. Plus presentation-side spec in `race-presentation.test.ts`: the push starts on the tracker's confirm accent, never on a non-photo finish, and eases back to the standard hold.
+- [~] Task 2.4: implement camera push (Green) — small bounded addition to `race-camera.ts` pose input (`push` amount + `PHOTO_FINISH_PUSH`), driven by the tracker's confirm accent; presentation envelope (`PHOTO_PUSH_RELEASE_SECONDS`) passes the amount through.
 - [ ] Task: Phase Verification & Checkpoint (Refer to workflow.md) — browser feel check: slow-mo + push read well; normal race unchanged.
 
 ## Phase 3 — Crowd Cheer & Audio Choreography
