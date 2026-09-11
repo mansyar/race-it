@@ -16,3 +16,4 @@
 - [x] **Track: Fair Start & Natural Motion** *Archived: [racephysics_20260911](./archive/racephysics_20260911/index.md)*
 - [x] **Track: Adaptive Performance Guardrails** *Archived: [perfguardrails_20260911](./archive/perfguardrails_20260911/index.md)*
 - [x] **Track: Ship v0.5.0 — Release & Deploy** *Archived: [shipv050_20260911](./archive/shipv050_20260911/index.md)*
+- [ ] **Track: Safe PWA Update Flow** *Link: [pwaupdate_20260912](./tracks/pwaupdate_20260912/index.md)*
