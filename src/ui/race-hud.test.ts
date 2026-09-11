@@ -40,6 +40,26 @@ describe('createRaceHud', () => {
     expect(hud.overlay.hidden).toBe(true);
   });
 
+  it('showOverlay reveals the HUD root and hides the pause button', () => {
+    hud.showPause();
+    hud.showOverlay();
+    expect(hud.root.classList.contains('hidden')).toBe(false);
+    expect(hud.root.querySelector('[data-action="pause"]')?.classList.contains('hidden')).toBe(
+      true,
+    );
+    expect(hud.overlay.hidden).toBe(false);
+    expect(hud.confirm.hidden).toBe(true);
+  });
+
+  it('showOverlay works from the countdown state when the pause button never appeared', () => {
+    hud.showOverlay();
+    expect(hud.root.classList.contains('hidden')).toBe(false);
+    expect(hud.root.querySelector('[data-action="pause"]')?.classList.contains('hidden')).toBe(
+      true,
+    );
+    expect(hud.overlay.hidden).toBe(false);
+  });
+
   it('tapping pause opens the resume/quit overlay', () => {
     hud.showPause();
     click(hud.root, 'button[data-action="pause"]').click();
@@ -58,6 +78,15 @@ describe('createRaceHud', () => {
     click(hud.overlay, 'button[data-action="resume"]').click();
     expect(hud.callbacks.onResume).toHaveBeenCalledTimes(1);
     expect(hud.overlay.hidden).toBe(true);
+  });
+
+  it('resume brings the pause button back for another pause', () => {
+    hud.showPause();
+    click(hud.root, 'button[data-action="pause"]').click();
+    click(hud.overlay, 'button[data-action="resume"]').click();
+    expect(hud.root.querySelector('[data-action="pause"]')?.classList.contains('hidden')).toBe(
+      false,
+    );
   });
 
   it('hides the confirm dialog until quit is tapped', () => {

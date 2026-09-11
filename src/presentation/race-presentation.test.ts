@@ -1,7 +1,14 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { createRaceEngine, type Kart, type RaceEngine } from '../race/engine';
 import type { LoopCell } from '../race/path';
-import { type KartPose, kartPose } from '../render/kart-rig';
+import {
+  BOB_AMPLITUDE,
+  MAX_PITCH,
+  MAX_ROLL,
+  RUNOUT_SECONDS,
+  type VisualPose,
+} from '../render/kart-motion';
+import { kartPose } from '../render/kart-rig';
 import { computeCameraPlacement } from '../render/layout';
 import { LOOK_AHEAD_DISTANCE, RACE_ZOOM_FLOOR } from '../render/race-camera';
 import { createRaceHud } from '../ui/race-hud';
@@ -71,7 +78,7 @@ interface Harness {
     update: ReturnType<typeof vi.fn>;
     clear: ReturnType<typeof vi.fn>;
   };
-  karts: { update: ReturnType<typeof vi.fn>; lastPoses: KartPose[] };
+  karts: { update: ReturnType<typeof vi.fn>; lastPoses: VisualPose[] };
   camera: {
     position: { x: number; y: number; z: number; set: ReturnType<typeof vi.fn> };
     lookAt: ReturnType<typeof vi.fn>;
@@ -103,17 +110,15 @@ interface Harness {
   raceToFirstFinish(): void;
 }
 
-/** Expected raw pack target: pair midpoint nudged along the lead travel direction. */
+/** Expected pack target: pair midpoint nudged along the lead visual travel direction. */
 function packTarget(harness: Harness): { x: number; z: number } {
   const { engine } = harness;
   const { leadIndex, rivalIndex } = leadBattle(engine.karts);
-  const lead = engine.karts[leadIndex];
-  if (!lead) {
-    throw new Error('Expected a lead kart');
+  const leadPose = harness.karts.lastPoses[leadIndex];
+  if (!leadPose) {
+    throw new Error('Expected a lead kart pose');
   }
-  const leadPose = kartPose(path, lead.progress, lead.lane);
-  const rival = rivalIndex === null ? null : engine.karts[rivalIndex];
-  const rivalPose = rival ? kartPose(path, rival.progress, rival.lane) : null;
+  const rivalPose = rivalIndex === null ? undefined : harness.karts.lastPoses[rivalIndex];
   const midX = rivalPose ? (leadPose.x + rivalPose.x) / 2 : leadPose.x;
   const midZ = rivalPose ? (leadPose.z + rivalPose.z) / 2 : leadPose.z;
   return {
@@ -126,6 +131,8 @@ function createHarness(options: { countdownSeconds?: number; kartOrder?: number[
   const engine = createRaceEngine(path, {
     seed: 42,
     countdownSeconds: options.countdownSeconds ?? 0.05,
+    // The kartOrder mapping is 1:1 with the engine's karts in production.
+    kartCount: options.kartOrder?.length ?? 4,
   });
   const light = createTrafficLight();
   const priorOnPause = vi.fn();
@@ -144,9 +151,9 @@ function createHarness(options: { countdownSeconds?: number; kartOrder?: number[
     update: vi.fn(),
     clear: vi.fn(),
   };
-  const lastPoses: KartPose[] = [];
+  const lastPoses: VisualPose[] = [];
   const karts = {
-    update: vi.fn((poses: KartPose[]) => {
+    update: vi.fn((poses: VisualPose[]) => {
       lastPoses.splice(0, lastPoses.length, ...poses);
       return null;
     }),
@@ -419,7 +426,14 @@ describe('createRacePresentation', () => {
     });
 
     it('spins the winner kart yaw over the victory window', () => {
-      harness.raceToFirstFinish();
+      // Roll to the winner's crossing so the spin clock starts at one frame.
+      harness.presentation.beginRace();
+      for (let i = 0; i < 60 * 60; i++) {
+        harness.presentation.update(1 / 60);
+        if (harness.engine.result) {
+          break;
+        }
+      }
       const winner = harness.engine.result?.winnerIndex;
       expect(winner).toBeGreaterThanOrEqual(0);
       const winnerIndex = winner ?? 0;
@@ -429,13 +443,14 @@ describe('createRacePresentation', () => {
         throw new Error('Expected a winner pose at finish');
       }
       const beforeHeading = before.heading;
-      harness.presentation.update(VICTORY_SPIN_SECONDS / 2);
+      // Skip the roll-out, then half of the spin window.
+      harness.presentation.update(RUNOUT_SECONDS - 1 / 60 + VICTORY_SPIN_SECONDS / 2);
       const after = harness.karts.lastPoses[winnerIndex];
       if (!after) {
         throw new Error('Expected a winner pose mid-spin');
       }
       const delta = after.heading - beforeHeading;
-      // Half a turn of extra yaw after halfway through the spin.
+      // Half a turn of extra yaw halfway through the spin.
       expect(Math.abs(delta)).toBeGreaterThan(1);
       expect(Math.abs(delta)).toBeLessThanOrEqual(Math.PI + 0.2);
     });
@@ -459,6 +474,112 @@ describe('createRacePresentation', () => {
       const call = harness.camera.position.set.mock.calls.at(-1);
       const distance = Math.hypot((call?.[0] ?? 0) + 1, call?.[1] ?? 0, (call?.[2] ?? 0) + 1);
       expect(distance).toBeCloseTo(buildDistanceOf(harness.camera.aspect) * RACE_ZOOM_FLOOR, 1);
+    });
+  });
+
+  describe('finish run-out', () => {
+    function wrap(a: number): number {
+      return Math.atan2(Math.sin(a), Math.cos(a));
+    }
+
+    /** Ticks until the winner crosses the line (first finish event). */
+    function raceToWinnerCrossing(): void {
+      harness.presentation.beginRace();
+      for (let i = 0; i < 60 * 60; i++) {
+        harness.presentation.update(1 / 60);
+        if (harness.engine.result) {
+          break;
+        }
+      }
+    }
+
+    it('rolls the winner forward past the line and settles within about a unit', () => {
+      raceToWinnerCrossing();
+      const winner = harness.engine.result?.winnerIndex ?? 0;
+      const start = harness.karts.lastPoses[winner];
+      if (!start) {
+        throw new Error('Expected a winner pose at the crossing');
+      }
+      const finishTime = harness.engine.result?.finishTimes[winner];
+      for (let i = 0; i < 90; i++) {
+        harness.presentation.update(1 / 60);
+      }
+      const settled = harness.karts.lastPoses[winner];
+      if (!settled) {
+        throw new Error('Expected a settled winner pose');
+      }
+      const rolled = Math.hypot(settled.x - start.x, settled.z - start.z);
+      expect(rolled).toBeGreaterThan(0.2);
+      expect(rolled).toBeLessThanOrEqual(0.75);
+      for (let i = 0; i < 30; i++) {
+        harness.presentation.update(1 / 60);
+      }
+      const held = harness.karts.lastPoses[winner];
+      if (!held) {
+        throw new Error('Expected a held winner pose');
+      }
+      expect(Math.hypot(held.x - settled.x, held.z - settled.z)).toBeLessThan(0.01);
+      // Official finish time stays at the line crossing, not the roll-out.
+      expect(harness.engine.result?.finishTimes[winner]).toBe(finishTime);
+    });
+
+    it('keeps the winner aligned with the track during the roll-out, then spins', () => {
+      raceToWinnerCrossing();
+      const winner = harness.engine.result?.winnerIndex ?? 0;
+      const start = harness.karts.lastPoses[winner];
+      if (!start) {
+        throw new Error('Expected a winner pose at the crossing');
+      }
+      const baseHeading = start.heading;
+      harness.presentation.update(RUNOUT_SECONDS * 0.5);
+      const rolling = harness.karts.lastPoses[winner];
+      if (!rolling) {
+        throw new Error('Expected a rolling pose');
+      }
+      expect(Math.hypot(rolling.x - start.x, rolling.z - start.z)).toBeGreaterThan(0.1);
+      expect(Math.abs(wrap(rolling.heading - baseHeading))).toBeLessThan(0.15);
+      harness.presentation.update(RUNOUT_SECONDS * 0.5 + VICTORY_SPIN_SECONDS / 2);
+      const spinning = harness.karts.lastPoses[winner];
+      if (!spinning) {
+        throw new Error('Expected a spinning pose');
+      }
+      const delta = wrap(spinning.heading - baseHeading);
+      expect(Math.abs(delta)).toBeGreaterThan(1);
+      expect(Math.abs(delta)).toBeLessThanOrEqual(Math.PI + 0.2);
+    });
+
+    it('clears the roll-out when RACE AGAIN restarts the race', () => {
+      raceToWinnerCrossing();
+      const winner = harness.engine.result?.winnerIndex ?? 0;
+      for (let i = 0; i < 30; i++) {
+        harness.presentation.update(1 / 60);
+      }
+      click('button[data-action="again"]', harness.trophy.root);
+      harness.presentation.update(0.01);
+      const kart = harness.engine.karts[winner];
+      if (!kart) {
+        throw new Error('Expected a restarted kart');
+      }
+      const base = kartPose(path, kart.progress, kart.lane);
+      const pose = harness.karts.lastPoses[winner];
+      if (!pose) {
+        throw new Error('Expected a lineup pose after RACE AGAIN');
+      }
+      expect(pose.x).toBeCloseTo(base.x, 10);
+      expect(pose.z).toBeCloseTo(base.z, 10);
+    });
+
+    it('keeps confetti, trophy, and finish times unchanged through the roll-out', () => {
+      harness.raceToAllFinished();
+      const finishTimes = harness.engine.result?.finishTimes.map((time) => time) ?? [];
+      const bursts = harness.confetti.burst.mock.calls.length;
+      const trophyText = harness.trophy.root.textContent;
+      for (let i = 0; i < 90; i++) {
+        harness.presentation.update(1 / 60);
+      }
+      expect(harness.confetti.burst.mock.calls.length).toBe(bursts);
+      expect(harness.trophy.root.textContent).toBe(trophyText);
+      expect(harness.engine.result?.finishTimes).toEqual(finishTimes);
     });
   });
 
@@ -589,6 +710,91 @@ describe('createRacePresentation', () => {
     });
   });
 
+  describe('holdForInterruption', () => {
+    it('holds a running race behind the resume/quit overlay and suspends audio', () => {
+      harness.raceToRunning();
+      const progressBefore = harness.engine.karts[0]?.progress ?? 0;
+      harness.presentation.holdForInterruption();
+      expect(harness.hud.overlay.hidden).toBe(false);
+      expect(harness.hud.root.classList.contains('hidden')).toBe(false);
+      expect(
+        harness.hud.root.querySelector('[data-action="pause"]')?.classList.contains('hidden'),
+      ).toBe(true);
+      expect(harness.audio.suspendAll).toHaveBeenCalledTimes(1);
+      harness.presentation.update(0.5);
+      expect(harness.engine.karts[0]?.progress).toBeCloseTo(progressBefore);
+    });
+
+    it('holds a countdown even though the HUD root was never revealed', () => {
+      harness.presentation.beginRace();
+      harness.presentation.update(0.01);
+      expect(harness.engine.state).toBe('countdown');
+      harness.presentation.holdForInterruption();
+      expect(harness.hud.root.classList.contains('hidden')).toBe(false);
+      expect(harness.hud.overlay.hidden).toBe(false);
+      expect(harness.audio.suspendAll).toHaveBeenCalledTimes(1);
+    });
+
+    it('is a no-op in the builder (idle)', () => {
+      harness.presentation.holdForInterruption();
+      expect(harness.audio.suspendAll).not.toHaveBeenCalled();
+      expect(harness.hud.overlay.hidden).toBe(true);
+      expect(harness.hud.root.classList.contains('hidden')).toBe(true);
+    });
+
+    it('is a no-op once the trophy is showing', () => {
+      harness.raceToAllFinished();
+      expect(harness.trophy.root.classList.contains('hidden')).toBe(false);
+      harness.presentation.holdForInterruption();
+      expect(harness.hud.overlay.hidden).toBe(true);
+      expect(harness.audio.suspendAll).not.toHaveBeenCalled();
+    });
+
+    it('a second hold changes nothing', () => {
+      harness.raceToRunning();
+      harness.presentation.holdForInterruption();
+      harness.presentation.holdForInterruption();
+      expect(harness.audio.suspendAll).toHaveBeenCalledTimes(1);
+    });
+
+    it('resumes the race from the hold overlay', () => {
+      harness.raceToRunning();
+      const progressBefore = harness.engine.karts[0]?.progress ?? 0;
+      harness.presentation.holdForInterruption();
+      click('button[data-action="resume"]', harness.hud.overlay);
+      harness.presentation.update(0.3);
+      expect(harness.engine.karts[0]?.progress).toBeGreaterThan(progressBefore);
+      expect(harness.audio.resumeAll).toHaveBeenCalledTimes(1);
+      expect(harness.hud.overlay.hidden).toBe(true);
+    });
+
+    it('can hold again after a resume', () => {
+      harness.raceToRunning();
+      harness.presentation.holdForInterruption();
+      click('button[data-action="resume"]', harness.hud.overlay);
+      harness.presentation.holdForInterruption();
+      expect(harness.audio.suspendAll).toHaveBeenCalledTimes(2);
+    });
+
+    it('reports the hold state through isHolding()', () => {
+      expect(harness.presentation.isHolding()).toBe(false);
+      harness.raceToRunning();
+      expect(harness.presentation.isHolding()).toBe(false);
+      harness.presentation.holdForInterruption();
+      expect(harness.presentation.isHolding()).toBe(true);
+      click('button[data-action="resume"]', harness.hud.overlay);
+      expect(harness.presentation.isHolding()).toBe(false);
+    });
+
+    it('clears the hold state when the race is quit', () => {
+      harness.raceToRunning();
+      harness.presentation.holdForInterruption();
+      click('button[data-action="quit"]', harness.hud.overlay);
+      click('[data-confirm="yes"]', harness.hud.confirm);
+      expect(harness.presentation.isHolding()).toBe(false);
+    });
+  });
+
   describe('countdown & GO sounds', () => {
     it('beeps once per countdown step, descending 3-2-1, then GO once', () => {
       const stepped = createHarness({ countdownSeconds: 3 });
@@ -672,6 +878,45 @@ describe('createRacePresentation', () => {
       click('button[data-confirm="yes"]', harness.hud.confirm);
       harness.presentation.update(1 / 60);
       expect(harness.audio.stopAll).toHaveBeenCalled();
+    });
+  });
+
+  describe('kart motion visuals', () => {
+    it('feeds bounded suspension channels through the sink while racing', () => {
+      harness.raceToRunning();
+      harness.presentation.update(0.5);
+      expect(harness.karts.lastPoses).toHaveLength(4);
+      for (const pose of harness.karts.lastPoses) {
+        expect(Number.isFinite(pose.roll)).toBe(true);
+        expect(Number.isFinite(pose.pitch)).toBe(true);
+        expect(Number.isFinite(pose.bob)).toBe(true);
+        expect(Math.abs(pose.roll)).toBeLessThanOrEqual(MAX_ROLL + 1e-9);
+        expect(Math.abs(pose.pitch)).toBeLessThanOrEqual(MAX_PITCH + 1e-9);
+        expect(Math.abs(pose.bob)).toBeLessThanOrEqual(BOB_AMPLITUDE + 1e-12);
+      }
+    });
+
+    it('picks up launch nose-up pitch shortly after GO', () => {
+      harness.presentation.beginRace();
+      // Finish the countdown, then ride the launch ramp.
+      harness.presentation.update(0.06);
+      let maxPitch = 0;
+      for (let i = 0; i < 30; i++) {
+        harness.presentation.update(1 / 60);
+        for (const pose of harness.karts.lastPoses) {
+          maxPitch = Math.max(maxPitch, pose.pitch);
+        }
+      }
+      expect(maxPitch).toBeGreaterThan(0.01);
+    });
+
+    it('settles suspension while parked on the grid', () => {
+      harness.presentation.beginRace();
+      harness.presentation.update(0.01);
+      for (const pose of harness.karts.lastPoses) {
+        expect(pose.bob).toBeCloseTo(0, 12);
+        expect(pose.pitch).toBeCloseTo(0, 12);
+      }
     });
   });
 

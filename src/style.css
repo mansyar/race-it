@@ -10,11 +10,14 @@ body {
   margin: 0;
   padding: 0;
   overflow: hidden;
+  overscroll-behavior: none;
+  touch-action: manipulation;
   background: var(--toy-cream);
   font-family: "Trebuchet MS", "Comic Sans MS", sans-serif;
   -webkit-tap-highlight-color: transparent;
   user-select: none;
   -webkit-user-select: none;
+  -webkit-touch-callout: none;
 }
 
 #app {
@@ -352,6 +355,9 @@ body {
 
 .car-picker__stage {
   position: relative;
+}
+
+.car-picker__grid {
   display: grid;
   grid-template-columns: repeat(2, minmax(140px, 200px));
   gap: 20px;
@@ -750,5 +756,37 @@ body {
   }
   100% {
     transform: scale(1);
+  }
+}
+
+/* Short viewports (landscape phones): the fixed, centered picker must fit on
+   screen so the RACE button stays fully reachable — no scrolling, and touch
+   targets stay ≥64px. Height budget at 390px: 2×100 swatch rows + 12 gap +
+   64 race + 12 gap + 24 padding = 312px. */
+@media (max-height: 520px) {
+  .car-picker {
+    gap: 12px;
+    padding: 12px max(16px, env(safe-area-inset-right, 0px)) 12px
+      max(16px, env(safe-area-inset-left, 0px));
+  }
+
+  .car-picker__grid {
+    grid-template-columns: repeat(2, minmax(100px, 150px));
+    gap: 12px;
+  }
+
+  .swatch {
+    min-width: 100px;
+    min-height: 100px;
+  }
+
+  .swatch__disc {
+    width: 44px;
+    height: 44px;
+  }
+
+  .car-picker__race {
+    min-height: 64px;
+    font-size: 30px;
   }
 }

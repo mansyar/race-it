@@ -229,3 +229,45 @@ describe('createBuildScene pixel-ratio caps', () => {
     expect(rendererMocks(view).setPixelRatio).toHaveBeenLastCalledWith(1);
   });
 });
+
+describe('createBuildScene viewport re-sync', () => {
+  let container: HTMLDivElement;
+
+  beforeEach(() => {
+    vi.stubGlobal('requestAnimationFrame', () => 1);
+    vi.stubGlobal('cancelAnimationFrame', () => {});
+    class StubResizeObserver {
+      observe = vi.fn();
+      disconnect = vi.fn();
+    }
+    vi.stubGlobal('ResizeObserver', StubResizeObserver);
+    container = document.createElement('div');
+    document.body.append(container);
+  });
+
+  function sizeContainer(width: number, height: number): void {
+    Object.defineProperty(container, 'clientWidth', { configurable: true, value: width });
+    Object.defineProperty(container, 'clientHeight', { configurable: true, value: height });
+  }
+
+  it('exposes resize() which re-measures the container and updates renderer and camera', () => {
+    const view = createBuildScene(container);
+    sizeContainer(900, 600);
+    view.resize();
+    expect(view.renderer.setSize).toHaveBeenCalledWith(900, 600);
+    expect(view.camera.aspect).toBeCloseTo(1.5);
+    expect(view.camera.updateProjectionMatrix).toHaveBeenCalled();
+    expect(view.camera.position.set).toHaveBeenCalled();
+    expect(view.camera.lookAt).toHaveBeenCalled();
+  });
+
+  it('skips re-measurement when the container is collapsed', () => {
+    const view = createBuildScene(container);
+    sizeContainer(900, 600);
+    view.resize();
+    vi.mocked(view.renderer.setSize).mockClear();
+    sizeContainer(0, 0);
+    view.resize();
+    expect(view.renderer.setSize).not.toHaveBeenCalled();
+  });
+});

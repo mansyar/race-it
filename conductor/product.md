@@ -23,7 +23,8 @@ Preschoolers ages 3–5 (with a parent installing/curating). No reading ability 
 ### The Race
 - Kid taps 2–4 cars to enter and picks each car's color from big swatches (defaults work with one tap).
 - Traffic-light countdown (3… 2… 1… GO!) with sound; racing is fully automatic — kid is a pure spectator.
-- Race outcomes: randomized per-race speeds, tuned so races are always close with frequent photo-finishes; any color can win.
+- Race outcomes: randomized per-race speeds, tuned so races are always close with frequent photo-finishes; any color can win from any start slot (grid distances are normalized).
+- Toy-like motion: cars launch from a standstill at GO, lean and slow through corners, bob on their suspension, and roll out past the line before the victory spin — pure spectacle, never affecting fairness.
 - Camera: fixed diorama angle while building → pack-fitting follow of the lead battle that holds close through the finish.
 - One lap: first car to cross the start/finish line (F1-style — the start line doubles as the finish line; the finish piece is a decorative banner) wins; race length ~30–45 seconds.
 - Mid-race pause button → Resume / Quit-to-builder (with a confirm step).

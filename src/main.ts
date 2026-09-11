@@ -1,7 +1,9 @@
 import * as THREE from 'three';
 import { appReady } from './app';
+import { createAppLifecycle } from './app-lifecycle';
 import { KARTS, MODELS, MUSIC, SCENERY, SFX } from './assets/manifest';
 import { createAudioDirector } from './audio/audio-director';
+import { installGestureGuards } from './gesture-guards';
 import type { GridModel, PieceType } from './grid/grid-model';
 import { GRID_SIZE } from './grid/grid-model';
 import { deleteFromShelf, loadShelf, saveToShelf } from './grid/shelf-store';
@@ -34,6 +36,7 @@ import { createRaceHud } from './ui/race-hud';
 import { createShelfOverlay } from './ui/shelf-overlay';
 import { createTrafficLight } from './ui/traffic-light';
 import { createTrophy } from './ui/trophy';
+import { createScreenWakeLock } from './wake-lock';
 
 // Referenced so the production build emits every GLB/OGG for service-worker
 // precaching; the race presentation and audio consume them at runtime.
@@ -92,6 +95,10 @@ if (root && appReady()) {
     }
     rerender();
   });
+
+  // Toddler-proof the play surface: no long-press context menus or callouts,
+  // no double-tap/pinch zoom, and no native drag ghosts on the toy table.
+  installGestureGuards(root);
 
   // Adaptive quality: boot at the stored (or `?tier=`-forced) level and step it
   // from the frame loop; each tier applies its pixel-ratio cap to the scene and
@@ -504,16 +511,36 @@ if (root && appReady()) {
     },
     { once: true, capture: true },
   );
-  // Backgrounding: silence everything when the page hides, restore on return.
-  window.addEventListener('pagehide', () => {
-    window.removeEventListener('resize', renderKartPreviews);
-    kartPreview.dispose();
-    audio.suspendAll();
-    view.dispose();
-  });
-  document.addEventListener('visibilitychange', () => {
-    if (document.visibilityState === 'visible') {
-      audio.resumeAll();
-    }
+  // Session resilience: keep the scene alive across hide/show and bfcache
+  // restores. Hiding suspends audio and holds any in-flight race behind the
+  // resume overlay; returning re-syncs the viewport and audio without any
+  // teardown (a restored page must remain fully interactive).
+  const wakeLock = createScreenWakeLock();
+  if (document.visibilityState === 'visible') {
+    wakeLock.setVisible(true);
+  }
+  createAppLifecycle({
+    doc: document,
+    win: window,
+    wakeLock,
+    onHidden() {
+      audio.suspendAll();
+      presentation?.holdForInterruption();
+    },
+    onVisible() {
+      if (!presentation?.isHolding()) {
+        audio.resumeAll();
+      }
+    },
+    onHide() {
+      audio.suspendAll();
+      presentation?.holdForInterruption();
+    },
+    onRestore() {
+      view.resize();
+      if (document.visibilityState === 'visible' && !presentation?.isHolding()) {
+        audio.resumeAll();
+      }
+    },
   });
 }
