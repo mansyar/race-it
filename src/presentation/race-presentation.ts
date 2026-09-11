@@ -17,6 +17,9 @@ export const VICTORY_SPIN_SECONDS = 2.0;
 /** How long the green GO light stays lit after the race starts. */
 export const GO_FLASH_SECONDS = 0.8;
 
+/** How long the photo-finish camera push eases back to the standard hold (seconds). */
+export const PHOTO_PUSH_RELEASE_SECONDS = 0.9;
+
 /** Exponential camera smoothing rate (higher = snappier follow). */
 export const CAMERA_SMOOTH_RATE = 8;
 
@@ -185,6 +188,9 @@ export function createRacePresentation(options: RacePresentationOptions): RacePr
   let pausedHold = false;
   // Current photo-finish time scale applied to the frame delta.
   let timeScale = 1;
+  // Photo-finish push envelope clock; starts expired, re-armed to 0 by the
+  // tracker's one-shot confirm accent.
+  let pushElapsed = PHOTO_PUSH_RELEASE_SECONDS;
 
   function resetCelebration(): void {
     spinning = false;
@@ -289,6 +295,7 @@ export function createRacePresentation(options: RacePresentationOptions): RacePr
       options.audio?.stopAll();
       tracker.reset();
       timeScale = 1;
+      pushElapsed = PHOTO_PUSH_RELEASE_SECONDS;
       resetToBuildVisuals();
     }
   });
@@ -407,7 +414,7 @@ export function createRacePresentation(options: RacePresentationOptions): RacePr
     }
   }
 
-  function updateCamera(dt: number, poses: KartPose[]): void {
+  function updateCamera(dt: number, poses: KartPose[], push: number): void {
     if (path.length === 0 || engine.karts.length === 0) {
       return;
     }
@@ -428,6 +435,7 @@ export function createRacePresentation(options: RacePresentationOptions): RacePr
       finishPoint: finishOrigin,
       buildPlacement: build,
       aspect: camera.aspect,
+      push,
     });
 
     if (!hasSmoothedCamera) {
@@ -460,7 +468,7 @@ export function createRacePresentation(options: RacePresentationOptions): RacePr
     }
     const finishedCount = engine.karts.filter((kart) => kart.finished).length;
     const resolved = finishedCount >= 2 ? (engine.result?.photoFinish ?? null) : null;
-    const { timeScale: next } = tracker.tick({
+    const { timeScale: next, accent } = tracker.tick({
       dt,
       lapLength: engine.lapLength,
       samples: engine.karts.map((kart) => ({
@@ -471,7 +479,30 @@ export function createRacePresentation(options: RacePresentationOptions): RacePr
       photoFinish: resolved,
     });
     timeScale = next;
+    if (accent) {
+      pushElapsed = 0;
+    }
     return timeScale;
+  }
+
+  /** Current photo-finish push amount (1 = fully pushed in, 0 = standard hold). */
+  function photoPushAmount(): number {
+    if (pushElapsed >= PHOTO_PUSH_RELEASE_SECONDS) {
+      return 0;
+    }
+    const t = pushElapsed / PHOTO_PUSH_RELEASE_SECONDS;
+    return 1 - t * t * (3 - 2 * t);
+  }
+
+  /**
+   * Advances the push envelope by the scaled step. Frozen while paused or held
+   * for an interruption, mirroring the ramp freeze; the idle branch resets it.
+   */
+  function advancePhotoPush(dt: number): number {
+    if (!held && !pausedHold) {
+      pushElapsed += dt;
+    }
+    return photoPushAmount();
   }
 
   return {
@@ -484,6 +515,7 @@ export function createRacePresentation(options: RacePresentationOptions): RacePr
     },
     update(dt: number) {
       const scaledDt = dt * tickPhotoFinish(dt);
+      const push = advancePhotoPush(scaledDt);
       engine.tick(scaledDt);
       updateGoFlash(scaledDt);
       updateTrafficLight();
@@ -493,7 +525,7 @@ export function createRacePresentation(options: RacePresentationOptions): RacePr
       const poses = currentPoses(paces, accels);
       karts.update(poses);
       confetti.update(scaledDt);
-      updateCamera(scaledDt, poses);
+      updateCamera(scaledDt, poses, push);
     },
     holdForInterruption() {
       if (held || (engine.state !== 'countdown' && engine.state !== 'running')) {
