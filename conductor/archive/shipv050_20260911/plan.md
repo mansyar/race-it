@@ -27,7 +27,7 @@
 - [x] Task: Verify `release.yml` green; GHCR `:v0.5.0` + `:latest`; GitHub Release `v0.5.0` published with grouped notes; Coolify webhook step success (run 34603451513 success 1m43s; release published; GHCR/Coolify pipeline-level per spec)
 - [x] Task: Phase Verification & Checkpoint (Refer to workflow.md)
 
-## Phase 6: Closeout
+## Phase 6: Closeout [checkpoint: fe8eaca]
 - [x] Task: Archive this track (`conductor/archive/shipv050_20260911/`) and update the Tracks Registry (archived; registry entry now `Archived:` format)
 - [x] Task: Commit the closeout (this commit)
-- [ ] Task: Phase Verification & Checkpoint (Refer to workflow.md)
+- [x] Task: Phase Verification & Checkpoint (Refer to workflow.md)
