@@ -9,7 +9,10 @@ test('finish a race, tap Build Again, and return to the builder', async ({ page 
   // Countdown + one lap + every kart finishing takes ~45s of wall time.
   test.setTimeout(150_000);
 
-  await page.goto('/?debug');
+  // Pin the top quality tier: on slow/headless machines the adaptive quality
+  // controller may legitimately switch to instanced tiles mid-test, which
+  // reshapes the debug helper's group children (not the board itself).
+  await page.goto('/?debug&tier=high');
 
   const go = page.locator('button[data-action="go"]');
   await expect(go).toBeEnabled({ timeout: 15_000 });
