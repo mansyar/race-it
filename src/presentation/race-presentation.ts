@@ -47,6 +47,12 @@ export interface RaceAudioDirector {
   stopHum: () => void;
   /** Plays the victory jingle once (music ducks underneath). */
   playVictoryJingle: () => void;
+  /** Eases music tempo + dips the hum while the photo-finish slow motion runs. */
+  beginPhotoFinish?: () => void;
+  /** Restores the standard mix when the photo-finish sequence releases. */
+  endPhotoFinish?: () => void;
+  /** Plays the crowd cheer on the confirmed photo finish. */
+  playCrowdCheer?: () => void;
   /** Silences everything (mid-race pause). */
   suspendAll: () => void;
   /** Restores everything (mid-race resume). */
@@ -191,6 +197,10 @@ export function createRacePresentation(options: RacePresentationOptions): RacePr
   // Photo-finish push envelope clock; starts expired, re-armed to 0 by the
   // tracker's one-shot confirm accent.
   let pushElapsed = PHOTO_PUSH_RELEASE_SECONDS;
+  // Photo-finish audio treatment: active from the arming edge to scale restore.
+  let slowMotionAudio = false;
+  // Previous arm state, so the treatment starts on the arming edge only.
+  let armedPrev = false;
 
   function resetCelebration(): void {
     spinning = false;
@@ -293,6 +303,11 @@ export function createRacePresentation(options: RacePresentationOptions): RacePr
     }
     if (state === 'idle') {
       options.audio?.stopAll();
+      if (slowMotionAudio) {
+        slowMotionAudio = false;
+        options.audio?.endPhotoFinish?.();
+      }
+      armedPrev = false;
       tracker.reset();
       timeScale = 1;
       pushElapsed = PHOTO_PUSH_RELEASE_SECONDS;
@@ -460,7 +475,9 @@ export function createRacePresentation(options: RacePresentationOptions): RacePr
    * Advances the photo-finish tracker for one frame and returns the time scale
    * to apply to it. Frozen while paused or held for an interruption so the
    * ramp's wall-clock windows do not run behind an overlay; the idle branch
-   * resets the tracker (and the scale) when the race is abandoned.
+   * resets the tracker (and the scale) when the race is abandoned. Starts the
+   * slow-motion audio treatment on the arming edge and ends it when the scale
+   * restores (or on reset).
    */
   function tickPhotoFinish(dt: number): number {
     if (held || pausedHold || engine.state === 'idle') {
@@ -481,7 +498,17 @@ export function createRacePresentation(options: RacePresentationOptions): RacePr
     timeScale = next;
     if (accent) {
       pushElapsed = 0;
+      options.audio?.playCrowdCheer?.();
     }
+    const armedNow = tracker.armed;
+    if (armedNow && !armedPrev && !slowMotionAudio) {
+      slowMotionAudio = true;
+      options.audio?.beginPhotoFinish?.();
+    } else if (slowMotionAudio && next >= 1) {
+      slowMotionAudio = false;
+      options.audio?.endPhotoFinish?.();
+    }
+    armedPrev = armedNow;
     return timeScale;
   }
 

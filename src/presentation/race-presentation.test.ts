@@ -1166,9 +1166,11 @@ describe('createRacePresentation', () => {
     } {
       let armed = false;
       let scale = 1;
+      const tick = vi.fn(() => ({ timeScale: scale, accent: false }));
+      const reset = vi.fn();
       return {
-        tick: vi.fn(() => ({ timeScale: scale, accent: false })),
-        reset: vi.fn(),
+        tick,
+        reset,
         setArmed(value) {
           armed = value;
         },
