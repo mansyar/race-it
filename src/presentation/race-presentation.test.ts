@@ -1308,4 +1308,54 @@ describe('createRacePresentation', () => {
       expect(harness.flash.hide).toHaveBeenCalledTimes(1);
     });
   });
+
+  describe('photo-finish reset matrix', () => {
+    /** Runs a confirmed close finish: armed slow motion plus one accent. */
+    function runCloseFinish(harness: Harness, tracker: ReturnType<typeof sequencedTracker>): void {
+      harness.raceToRunning();
+      tracker.setArmed(true);
+      tracker.setScale(0.7);
+      tracker.tick.mockReturnValueOnce({ timeScale: 0.7, accent: true });
+      harness.presentation.update(1 / 60);
+      expect(harness.audio.playCrowdCheer).toHaveBeenCalledTimes(1);
+      expect(harness.flash.flash).toHaveBeenCalledTimes(1);
+    }
+
+    it('pause and resume do not double the cheer or the flash', () => {
+      const tracker = sequencedTracker();
+      const harness = createHarness({ photoFinish: tracker });
+      runCloseFinish(harness, tracker);
+      click('button[data-action="pause"]', harness.hud.root);
+      harness.presentation.update(0.5);
+      click('button[data-action="resume"]', harness.hud.overlay);
+      for (let i = 0; i < 10; i++) {
+        harness.presentation.update(1 / 60);
+      }
+      expect(harness.audio.playCrowdCheer).toHaveBeenCalledTimes(1);
+      expect(harness.flash.flash).toHaveBeenCalledTimes(1);
+    });
+
+    it('Build Again mid-sequence releases the dilation, audio, and flash', () => {
+      const tracker = sequencedTracker();
+      const harness = createHarness({ photoFinish: tracker });
+      runCloseFinish(harness, tracker);
+      harness.raceToAllFinished();
+      click('button[data-action="build-again"]', harness.trophy.root);
+      expect(tracker.reset).toHaveBeenCalledTimes(1);
+      expect(harness.audio.endPhotoFinish).toHaveBeenCalledTimes(1);
+      expect(harness.flash.hide).toHaveBeenCalledTimes(1);
+    });
+
+    it('quit mid-sequence releases the dilation, audio, and flash', () => {
+      const tracker = sequencedTracker();
+      const harness = createHarness({ photoFinish: tracker });
+      runCloseFinish(harness, tracker);
+      click('button[data-action="pause"]', harness.hud.root);
+      click('button[data-action="quit"]', harness.hud.overlay);
+      click('button[data-confirm="yes"]', harness.hud.confirm);
+      expect(tracker.reset).toHaveBeenCalledTimes(1);
+      expect(harness.audio.endPhotoFinish).toHaveBeenCalledTimes(1);
+      expect(harness.flash.hide).toHaveBeenCalledTimes(1);
+    });
+  });
 });
