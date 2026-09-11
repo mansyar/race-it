@@ -97,6 +97,10 @@ describe('estimateGapSeconds', () => {
   it('reports an unbounded gap when a racing kart has no pace', () => {
     expect(estimateGapSeconds([sample(45, 0), sample(44, 1)], LAP)).toBe(Number.POSITIVE_INFINITY);
   });
+
+  it('reports an unbounded gap when no kart has pace at all', () => {
+    expect(estimateGapSeconds([sample(45, 0), sample(44, 0)], LAP)).toBe(Number.POSITIVE_INFINITY);
+  });
 });
 
 describe('createPhotoFinishTracker arming', () => {

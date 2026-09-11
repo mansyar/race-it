@@ -89,6 +89,9 @@ export function estimateGapSeconds(
   if (samples.length < 2 || samples.some((sample) => sample.finished)) {
     return Number.POSITIVE_INFINITY;
   }
+  if (samples.every((sample) => sample.pace <= 0)) {
+    return Number.POSITIVE_INFINITY;
+  }
   let leader = Number.POSITIVE_INFINITY;
   let rival = Number.POSITIVE_INFINITY;
   for (const sample of samples) {
