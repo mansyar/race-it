@@ -23,12 +23,12 @@
 - [x] Task 2.4: implement camera push (Green) (242bce7) — small bounded addition to `race-camera.ts` pose input (`push` amount + `PHOTO_FINISH_PUSH`), driven by the tracker's confirm accent; presentation envelope (`PHOTO_PUSH_RELEASE_SECONDS`) passes the amount through.
 - [x] Task: Phase Verification & Checkpoint (Refer to workflow.md) — browser feel check: slow-mo + push read well; normal race unchanged.
 
-## Phase 3 — Crowd Cheer & Audio Choreography
+## Phase 3 — Crowd Cheer & Audio Choreography [checkpoint: ab6faca]
 
 - [x] Task 3.1: source the cheer (CC0) (fcfa5e0) — Freesound #365132 "Crowd Cheering" (SoundsExciting, verified CC0) preferred; trim ~2–4 s, mono ogg ≤ ~100 KB → `src/assets/sfx/` + `LICENSE-…txt`; wire `SFX.crowdCheer`; precache verified via existing PWA/build checks. Fallback: equivalent verified-CC0 with direct download; if none lands, drop the cheer and record the decision (spec FR-3 optional).
 - [x] Task 3.2: audio tests first (Red) (9b5509e) — `audio-director.test.ts`: music tempo ease down/up (~0.85) with restore; hum dip envelope (~40%) and restore; cheer one-shot honors mute + suspend/resume, never double-fires; presentation seam triggers cheer exactly once on flag confirm.
 - [x] Task 3.3: implement audio additions (Green) (ab6faca) — additive `AudioDirector` methods + adapter wiring in `main.ts`; missing-asset behavior best-effort (consistent with existing audio).
-- [ ] Task: Phase Verification & Checkpoint (Refer to workflow.md) — user listening check: cheer + music hold balance (agent cannot hear).
+- [x] Task: Phase Verification & Checkpoint (Refer to workflow.md) — user listening check: cheer + music hold balance (agent cannot hear).
 
 ## Phase 4 — Flash Overlay & Lifecycle Integration
 
