@@ -98,6 +98,9 @@ export class PieceRenderer {
 
   /** Loads and bright-tints one template per piece type plus the flag. */
   async load(loader: LoaderLike = new GLTFLoader()): Promise<void> {
+    // Instanced parts derive from the templates below; drop them so a re-load
+    // can never leave batches bound to stale geometry/materials.
+    this.prepared.clear();
     const sources: [TemplateKey, string][] = [
       ...(Object.entries(MODEL_FOR_PIECE) as [PieceType, string][]),
       ['flag', FLAG_URL],

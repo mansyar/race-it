@@ -393,3 +393,64 @@ describe('PieceRenderer instanced feedback', () => {
     }
   });
 });
+
+describe('PieceRenderer template reload', () => {
+  let renderer: PieceRenderer;
+
+  beforeEach(() => {
+    renderer = new PieceRenderer();
+  });
+
+  function emptyGrid(): GridSnapshot {
+    return new Array<Cell | null>(GRID_SIZE * GRID_SIZE).fill(null);
+  }
+
+  function place(grid: GridSnapshot, x: number, y: number, cell: Cell): void {
+    grid[y * GRID_SIZE + x] = cell;
+  }
+
+  function instancedFor(type: PieceType): THREE.InstancedMesh | undefined {
+    return renderer.group.children.find(
+      (child) => child instanceof THREE.InstancedMesh && child.userData.pieceType === type,
+    ) as THREE.InstancedMesh | undefined;
+  }
+
+  function templateGeometry(root: THREE.Object3D | undefined): THREE.BufferGeometry {
+    let geometry: THREE.BufferGeometry | undefined;
+    root?.traverse((obj) => {
+      if (obj instanceof THREE.Mesh) {
+        geometry = obj.geometry;
+      }
+    });
+    if (!geometry) {
+      throw new Error('template fixture has no mesh geometry');
+    }
+    return geometry;
+  }
+
+  it('drops cached instanced parts when templates re-load', async () => {
+    const grid = emptyGrid();
+    place(grid, 2, 3, { type: 'straight', orientation: 0 });
+
+    await renderer.load(fakeLoaderFactory([]));
+    renderer.setRenderMode('instanced');
+    renderer.update(grid);
+    const stale = instancedFor('straight');
+    if (!stale) {
+      throw new Error('no instanced straight mesh after first load');
+    }
+    const firstGeometry = templateGeometry(renderer.templates.get('straight'));
+    expect(stale.geometry).toBe(firstGeometry);
+
+    await renderer.load(fakeLoaderFactory([]));
+    renderer.update(grid);
+
+    const fresh = instancedFor('straight');
+    if (!fresh) {
+      throw new Error('no instanced straight mesh after reload');
+    }
+    const secondGeometry = templateGeometry(renderer.templates.get('straight'));
+    expect(secondGeometry).not.toBe(firstGeometry);
+    expect(fresh.geometry).toBe(secondGeometry);
+  });
+});
