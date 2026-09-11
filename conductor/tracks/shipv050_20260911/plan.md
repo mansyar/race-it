@@ -5,14 +5,14 @@
 - [x] Task: Verify `master` contains the four completed tracks (Post-Race Navigation, Session Resilience, Fair Start & Natural Motion, Adaptive Performance Guardrails) and that CI is green on current `master` (`1dead56`) (CI run 34598028037: success)
 - [x] Task: Phase Verification & Checkpoint (Refer to workflow.md)
 
-## Phase 2: Public README
+## Phase 2: Public README [checkpoint: e4d9a3d]
 - [x] Task: Write root `README.md` per spec FR1–FR2 (game description, core loop, how to play, dev commands, offline/PWA notes, release/deploy summary, Kenney CC0 credits, both committed screenshots via relative paths) (commit: e4d9a3d)
 - [x] Task: Verify README commands match `package.json` scripts and screenshot paths resolve to committed files (verified: all 9 documented commands match scripts; both screenshots and all 5 license paths exist)
 - [x] Task: Commit `docs(readme): Add project README` (commit: e4d9a3d)
-- [ ] Task: Phase Verification & Checkpoint (Refer to workflow.md)
+- [x] Task: Phase Verification & Checkpoint (Refer to workflow.md)
 
 ## Phase 3: Version Bump & Full Gates
-- [ ] Task: Bump `package.json` version 0.4.0 → 0.5.0
+- [~] Task: Bump `package.json` version 0.4.0 → 0.5.0
 - [ ] Task: Run full gates — `pnpm lint`, `CI=true pnpm test -- --coverage`, `pnpm build`; Playwright via PR CI
 - [ ] Task: Commit `chore(release): Bump version to 0.5.0`
 - [ ] Task: Phase Verification & Checkpoint (Refer to workflow.md)
