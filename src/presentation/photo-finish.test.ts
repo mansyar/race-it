@@ -75,12 +75,16 @@ describe('estimateGapSeconds', () => {
     expect(estimateGapSeconds([sample(45, 2), sample(44, 2)], LAP)).toBeCloseTo(0.5, 10);
   });
 
-  it('counts a finished kart as arrived at zero remaining time', () => {
-    expect(estimateGapSeconds([sample(LAP, 2, true), sample(48, 2)], LAP)).toBeCloseTo(1, 10);
+  it('returns Infinity once a kart has finished, so no projection is made', () => {
+    expect(estimateGapSeconds([sample(LAP, 2, true), sample(48, 2)], LAP)).toBe(
+      Number.POSITIVE_INFINITY,
+    );
   });
 
-  it('is zero once every kart has finished', () => {
-    expect(estimateGapSeconds([sample(LAP, 2, true), sample(LAP, 2, true)], LAP)).toBe(0);
+  it('returns Infinity once every kart has finished', () => {
+    expect(estimateGapSeconds([sample(LAP, 2, true), sample(LAP, 2, true)], LAP)).toBe(
+      Number.POSITIVE_INFINITY,
+    );
   });
 
   it('is invariant to sample order, so list order cannot bias it', () => {
@@ -106,10 +110,7 @@ describe('createPhotoFinishTracker arming', () => {
 
   it('arms at the window and margin boundaries, just inside', () => {
     const tracker = createPhotoFinishTracker();
-    tick(
-      tracker,
-      pairAt(LAP * PREDICTION_WINDOW * 0.999, PREDICTION_MARGIN_SECONDS * 0.999),
-    );
+    tick(tracker, pairAt(LAP * PREDICTION_WINDOW * 0.999, PREDICTION_MARGIN_SECONDS * 0.999));
     expect(tracker.armed).toBe(true);
   });
 
@@ -194,6 +195,24 @@ describe('createPhotoFinishTracker slow-motion ramp', () => {
     const crossed = crossedPair();
     const confirmed = tick(tracker, crossed, true);
     expect(confirmed.accent).toBe(true);
+    const steps = Math.ceil(SLOWMO_RELEASE_SECONDS / FRAME) + 2;
+    for (let i = 0; i < steps; i++) {
+      const { timeScale, accent } = tick(tracker, crossed, true);
+      expect(accent).toBe(false);
+      expect(timeScale).toBeGreaterThanOrEqual(SLOWMO_FLOOR);
+      expect(timeScale).toBeLessThanOrEqual(1);
+    }
+    expect(tick(tracker, crossed, true).timeScale).toBe(1);
+  });
+
+  it('releases early when the flag resolves before the ease reaches the floor', () => {
+    const tracker = createPhotoFinishTracker();
+    tick(tracker, closeSamples());
+    const crossed = crossedPair();
+    const confirmed = tick(tracker, crossed, true);
+    expect(confirmed.accent).toBe(true);
+    expect(confirmed.timeScale).toBeGreaterThan(SLOWMO_FLOOR);
+    expect(confirmed.timeScale).toBeLessThan(1);
     const steps = Math.ceil(SLOWMO_RELEASE_SECONDS / FRAME) + 2;
     for (let i = 0; i < steps; i++) {
       const { timeScale, accent } = tick(tracker, crossed, true);
@@ -358,50 +377,48 @@ describe('engine-backed prediction sweep', () => {
     };
   }
 
-  it(
-    'arms every true photo finish before the winner crosses and bounds false arms',
-    { timeout: 30_000 },
-    () => {
-      let races = 0;
-      let trueRaces = 0;
-      let trueArmed = 0;
-      let falseArms = 0;
-      let missingAccents = 0;
-      let leakedAccents = 0;
-      for (const kartCount of KART_COUNTS) {
-        for (let seed = 1; seed <= SEEDS; seed++) {
-          const outcome = runRace(seed, kartCount);
-          races += 1;
-          if (outcome.photoFinish) {
-            trueRaces += 1;
-            if (outcome.armedBeforeCrossing) {
-              trueArmed += 1;
-            }
-            if (outcome.accents !== 1) {
-              missingAccents += 1;
-            }
-          } else {
-            if (outcome.armedAtAll) {
-              falseArms += 1;
-            }
-            if (outcome.accents !== 0) {
-              leakedAccents += 1;
-            }
+  it('arms every true photo finish before the winner crosses and bounds false arms', {
+    timeout: 30_000,
+  }, () => {
+    let races = 0;
+    let trueRaces = 0;
+    let trueArmed = 0;
+    let falseArms = 0;
+    let missingAccents = 0;
+    let leakedAccents = 0;
+    for (const kartCount of KART_COUNTS) {
+      for (let seed = 1; seed <= SEEDS; seed++) {
+        const outcome = runRace(seed, kartCount);
+        races += 1;
+        if (outcome.photoFinish) {
+          trueRaces += 1;
+          if (outcome.armedBeforeCrossing) {
+            trueArmed += 1;
+          }
+          if (outcome.accents !== 1) {
+            missingAccents += 1;
+          }
+        } else {
+          if (outcome.armedAtAll) {
+            falseArms += 1;
+          }
+          if (outcome.accents !== 0) {
+            leakedAccents += 1;
           }
         }
       }
-      expect(trueRaces).toBeGreaterThan(0);
-      expect(
-        trueArmed,
-        `armed ${trueArmed}/${trueRaces} true photo finishes before the crossing`,
-      ).toBe(trueRaces);
-      expect(missingAccents, `${missingAccents} true photo finishes missed their accent`).toBe(0);
-      expect(leakedAccents, `${leakedAccents} non-photo finishes leaked an accent`).toBe(0);
-      const falseArmRate = falseArms / races;
-      expect(
-        falseArmRate,
-        `false-arm rate ${(falseArmRate * 100).toFixed(1)}% (${falseArms}/${races}) above the bound`,
-      ).toBeLessThanOrEqual(FALSE_ARM_BOUND);
-    },
-  );
+    }
+    expect(trueRaces).toBeGreaterThan(0);
+    expect(
+      trueArmed,
+      `armed ${trueArmed}/${trueRaces} true photo finishes before the crossing`,
+    ).toBe(trueRaces);
+    expect(missingAccents, `${missingAccents} true photo finishes missed their accent`).toBe(0);
+    expect(leakedAccents, `${leakedAccents} non-photo finishes leaked an accent`).toBe(0);
+    const falseArmRate = falseArms / races;
+    expect(
+      falseArmRate,
+      `false-arm rate ${(falseArmRate * 100).toFixed(1)}% (${falseArms}/${races}) above the bound`,
+    ).toBeLessThanOrEqual(FALSE_ARM_BOUND);
+  });
 });
