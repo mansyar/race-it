@@ -8,12 +8,12 @@
 
 **Coordination note:** `src/main.ts` and `src/presentation/race-presentation.ts` are also touched by the completed-but-unmerged `feature/perf-guardrails` branch — keep edits additive and localized so the eventual integration merge stays clean.
 
-## Phase 1 — Photo-Finish Detection & Choreography Math (pure)
+## Phase 1 — Photo-Finish Detection & Choreography Math (pure) [checkpoint: 50731a6]
 
 - [x] Task 1.1: tech-stack addendum (doc-only) — document in `tech-stack.md`: first non-Kenney CC0 audio asset (crowd cheer, license-file convention) and the additive audio/presentation seams; commit before implementation per workflow. (b245c80)
 - [x] Task 1.2: detection & ramp tests first (Red) (e2f3f30) — new `src/presentation/photo-finish.test.ts`: gap estimation from progress/pace (synthetic karts; slot-independent); arming rules (final-approach window + gap ≤ threshold; no arm on runaways); armed-hold through crossing; ramp shape (1.0 → 0.35 ease-in ~0.3–0.4 s, hold, ease-back, clamped); accent flags exactly once on flag confirm; reset clears state. Engine-backed sweep (fixed seeds, coarse dt): every race with `photoFinish === true` armed pre-crossing; false-arm rate measured and bounded.
 - [x] Task 1.3: implement `src/presentation/photo-finish.ts` (Green) (50731a6) — pure tracker exposing time scale + accent flags; centralized tunables (`PREDICTION_WINDOW`, `PREDICTION_MARGIN_SECONDS`, `SLOWMO_FLOOR`, ease durations); tune against the sweep; record measured numbers (sweep: 100% of true photo finishes armed pre-crossing; false arms 11% @ margin 0.35).
-- [ ] Task: Phase Verification & Checkpoint (Refer to workflow.md) — review sweep numbers with the user.
+- [x] Task: Phase Verification & Checkpoint (Refer to workflow.md) — review sweep numbers with the user.
 
 ## Phase 2 — Time Dilation & Camera Push (presentation)
 
