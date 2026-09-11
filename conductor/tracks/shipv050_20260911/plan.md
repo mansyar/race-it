@@ -1,8 +1,8 @@
 # Plan: Ship v0.5.0 — Release & Deploy
 
 ## Phase 1: Track Setup & Release Prep
-- [ ] Task: Create track artifacts (`spec.md`, `plan.md`, `metadata.json`, `index.md`) and register this track in the Tracks Registry
-- [ ] Task: Verify `master` contains the four completed tracks (Post-Race Navigation, Session Resilience, Fair Start & Natural Motion, Adaptive Performance Guardrails) and that CI is green on current `master` (`1dead56`)
+- [x] Task: Create track artifacts (`spec.md`, `plan.md`, `metadata.json`, `index.md`) and register this track in the Tracks Registry (commit: ea5d1c5)
+- [x] Task: Verify `master` contains the four completed tracks (Post-Race Navigation, Session Resilience, Fair Start & Natural Motion, Adaptive Performance Guardrails) and that CI is green on current `master` (`1dead56`) (CI run 34598028037: success)
 - [ ] Task: Phase Verification & Checkpoint (Refer to workflow.md)
 
 ## Phase 2: Public README
