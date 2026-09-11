@@ -33,8 +33,8 @@
 ## Phase 4 — Flash Overlay & Lifecycle Integration
 
 - [x] Task 4.1: flash sink tests first (Red) (21e6d6a) — new `src/ui/flash-overlay.ts` (+jsdom test): single pulse lifecycle (~0.25 s fade), `pointer-events: none`, hidden in build mode, teardown removes DOM/listeners; presentation triggers exactly once on confirm, never on non-photo finishes.
-- [~] Task 4.2: implement flash + wire `main.ts` (Green) — overlay above canvas, below trophy/HUD; presentation options gain an additive `flash` sink (defaulted/no-op).
-- [ ] Task 4.3: reset-matrix tests (Red→Green) — `race-presentation.test.ts`: pause/resume, interruption hold, RACE AGAIN, Build Again, quit leave no stale dilation/flash/cheer/camera state; `?race`/`?perf`/`?debug` intact.
+- [x] Task 4.2: implement flash + wire (3ef3f28) `main.ts` (Green) — overlay above canvas, below trophy/HUD; presentation options gain an additive `flash` sink (defaulted/no-op).
+- [~] Task 4.3: reset-matrix tests (Red→Green) — `race-presentation.test.ts`: pause/resume, interruption hold, RACE AGAIN, Build Again, quit leave no stale dilation/flash/cheer/camera state; `?race`/`?perf`/`?debug` intact.
 - [ ] Task: Phase Verification & Checkpoint (Refer to workflow.md) — phone portrait/landscape full flow; flash gentle; no regressions.
 
 ## Phase 5 — Verification & Quality Gates
