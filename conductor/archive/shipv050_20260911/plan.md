@@ -17,17 +17,17 @@
 - [x] Task: Commit `chore(release): Bump version to 0.5.0` (commit: e89d5b0)
 - [x] Task: Phase Verification & Checkpoint (Refer to workflow.md)
 
-## Phase 4: Land on master
-- [ ] Task: Push `shipv050_20260911` and open a PR to `master`
-- [ ] Task: Merge the PR; confirm `master` reads `0.5.0` and the CI run is green
-- [ ] Task: Phase Verification & Checkpoint (Refer to workflow.md)
+## Phase 4: Land on master [checkpoint: e0c8c8d]
+- [x] Task: Push `shipv050_20260911` and open a PR to `master` (PR #11: https://github.com/mansyar/race-it/pull/11)
+- [x] Task: Merge the PR; confirm `master` reads `0.5.0` and the CI run is green (merged as e0c8c8d; master CI run 34603084033 success, all 4 jobs)
+- [x] Task: Phase Verification & Checkpoint (Refer to workflow.md)
 
-## Phase 5: Tag & Verify Release
-- [ ] Task: Tag `master` as `v0.5.0` and push the tag
-- [ ] Task: Verify `release.yml` green; GHCR `:v0.5.0` + `:latest`; GitHub Release `v0.5.0` published with grouped notes; Coolify webhook step success
-- [ ] Task: Phase Verification & Checkpoint (Refer to workflow.md)
+## Phase 5: Tag & Verify Release [checkpoint: e0c8c8d]
+- [x] Task: Tag `master` as `v0.5.0` and push the tag (tag `v0.5.0` pushed, points at e0c8c8d)
+- [x] Task: Verify `release.yml` green; GHCR `:v0.5.0` + `:latest`; GitHub Release `v0.5.0` published with grouped notes; Coolify webhook step success (run 34603451513 success 1m43s; release published; GHCR/Coolify pipeline-level per spec)
+- [x] Task: Phase Verification & Checkpoint (Refer to workflow.md)
 
-## Phase 6: Closeout
-- [ ] Task: Archive this track (`conductor/archive/shipv050_20260911/`) and update the Tracks Registry
-- [ ] Task: Commit the closeout
-- [ ] Task: Phase Verification & Checkpoint (Refer to workflow.md)
+## Phase 6: Closeout [checkpoint: fe8eaca]
+- [x] Task: Archive this track (`conductor/archive/shipv050_20260911/`) and update the Tracks Registry (archived; registry entry now `Archived:` format)
+- [x] Task: Commit the closeout (this commit)
+- [x] Task: Phase Verification & Checkpoint (Refer to workflow.md)
