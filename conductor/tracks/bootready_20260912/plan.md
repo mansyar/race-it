@@ -14,7 +14,7 @@
 - Audio is lazy (`new Audio(url)` per play, `audio-director.ts`) — no audio gating. `appReady()` stays the scaffold probe (main.ts boots synchronously inside it).
 - Vitest coverage excludes `main.ts` (wiring covered by E2E, per house precedent); `src/style.test.ts` exists for CSS contracts.
 
-## Phase 1 — Asset Readiness Core (FR-1)
+## Phase 1 — Asset Readiness Core (FR-1) [checkpoint: bd0faea]
 - [x] Task 1.1: readiness contract tests first (Red) (448d34e) — new `src/asset-readiness.test.ts` with injected loaders + fake timers: group lifecycle `idle→loading→ready` vs `failed`; groups load independently (a pieces failure never blocks scenery); `raceReady` truth table (pieces × karts, scenery ignored); backoff schedule (0.5s base, ×2, cap 10s, indefinite); one in-flight attempt per group (forced taps coalesce); stall detection (~3 consecutive failures or ~8s) flips to the retry-cue state; recovery clears attempts; snapshot/subscribe API; no real network or real timers.
 - [x] Task 1.2: implement `src/asset-readiness.ts` (Green) (3c8f337) — `createAssetReadiness({ groups, onStateChange? })` factory (house factory style), injectable scheduling; JSDoc on the public surface.
 - [x] Task 1.3: coverage ≥80% on the module + refactor under green (7f65a1b); `$env:CI='true'; pnpm test` and `pnpm lint` clean; commit.
