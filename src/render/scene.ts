@@ -47,6 +47,8 @@ export function createBuildScene(
   scene: THREE.Scene;
   camera: THREE.PerspectiveCamera;
   renderer: THREE.WebGLRenderer;
+  /** Re-measures the container and re-syncs renderer size + camera projection. */
+  resize: () => void;
   /** Registers (or clears with null) the per-frame update hook; runs before render. */
   onFrame: (callback: ((dt: number) => void) | null) => void;
   dispose: () => void;
@@ -207,6 +209,7 @@ export function createBuildScene(
     scene,
     camera,
     renderer,
+    resize,
     onFrame(callback: ((dt: number) => void) | null) {
       frameCallback = callback;
     },

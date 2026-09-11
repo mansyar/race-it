@@ -101,6 +101,7 @@ interface Harness {
   priorOnResume: ReturnType<typeof vi.fn>;
   priorOnQuit: ReturnType<typeof vi.fn>;
   priorOnAgain: ReturnType<typeof vi.fn>;
+  priorOnBuildAgain: ReturnType<typeof vi.fn>;
   /** Advances presentation through a full countdown into running. */
   raceToRunning(seconds?: number): void;
   /** Ticks engine + presentation until the race is finished (all karts). */
@@ -138,12 +139,13 @@ function createHarness(options: { countdownSeconds?: number; kartOrder?: number[
   const priorOnResume = vi.fn();
   const priorOnQuit = vi.fn();
   const priorOnAgain = vi.fn();
+  const priorOnBuildAgain = vi.fn();
   const hud = createRaceHud({
     onPause: priorOnPause,
     onResume: priorOnResume,
     onQuit: priorOnQuit,
   });
-  const trophy = createTrophy({ onAgain: priorOnAgain });
+  const trophy = createTrophy({ onAgain: priorOnAgain, onBuildAgain: priorOnBuildAgain });
   const confetti = {
     burst: vi.fn(),
     update: vi.fn(),
@@ -209,6 +211,7 @@ function createHarness(options: { countdownSeconds?: number; kartOrder?: number[
     priorOnResume,
     priorOnQuit,
     priorOnAgain,
+    priorOnBuildAgain,
     raceToRunning(seconds = 0.06) {
       presentation.beginRace();
       presentation.update(seconds);
@@ -602,6 +605,63 @@ describe('createRacePresentation', () => {
     });
   });
 
+  describe('Build Again', () => {
+    it('composes the prior Build Again callback instead of replacing it', () => {
+      harness.raceToAllFinished();
+      click('button[data-action="build-again"]', harness.trophy.root);
+      expect(harness.priorOnBuildAgain).toHaveBeenCalledTimes(1);
+      expect(harness.engine.state).toBe('idle');
+    });
+
+    it('returns to the builder with the race visuals cleared and build UI restored', () => {
+      harness.raceToAllFinished();
+      click('button[data-action="build-again"]', harness.trophy.root);
+
+      expect(harness.engine.state).toBe('idle');
+      expect(harness.onBuildUiChange).toHaveBeenLastCalledWith(true);
+      expect(harness.trophy.root.classList.contains('hidden')).toBe(true);
+      expect(harness.confetti.clear).toHaveBeenCalled();
+      expect(harness.light.root.classList.contains('hidden')).toBe(true);
+      expect(harness.hud.root.classList.contains('hidden')).toBe(true);
+      expect(harness.audio.stopAll).toHaveBeenCalled();
+    });
+
+    it('eases the camera back to the build placement instead of snapping', () => {
+      harness.raceToAllFinished();
+      // Let the celebration camera settle onto the finish hold first.
+      for (let i = 0; i < 120; i++) {
+        harness.presentation.update(1 / 60);
+      }
+      const before = harness.camera.lookAt.mock.calls.at(-1);
+      if (!before) {
+        throw new Error('Expected a settled celebration camera');
+      }
+
+      click('button[data-action="build-again"]', harness.trophy.root);
+      harness.presentation.update(1 / 60);
+      const after = harness.camera.lookAt.mock.calls.at(-1);
+      if (!after) {
+        throw new Error('Expected a camera target after Build Again');
+      }
+
+      const build = computeCameraPlacement(harness.camera.aspect);
+      const distanceBefore = Math.hypot(before[0] - build.target.x, before[2] - build.target.z);
+      const distanceAfter = Math.hypot(after[0] - build.target.x, after[2] - build.target.z);
+      // One frame must move toward the build placement, never cut straight to it.
+      expect(distanceAfter).toBeGreaterThan(0.5);
+      expect(distanceAfter).toBeLessThan(distanceBefore);
+
+      // Continued updates settle onto the build placement.
+      for (let i = 0; i < 300; i++) {
+        harness.presentation.update(1 / 60);
+      }
+      const settled = harness.camera.lookAt.mock.calls.at(-1);
+      expect(settled?.[0]).toBeCloseTo(build.target.x, 2);
+      expect(settled?.[1]).toBeCloseTo(build.target.y, 2);
+      expect(settled?.[2]).toBeCloseTo(build.target.z, 2);
+    });
+  });
+
   describe('pause / resume / quit', () => {
     it('composes prior HUD callbacks instead of replacing them', () => {
       harness.raceToRunning();
@@ -647,6 +707,91 @@ describe('createRacePresentation', () => {
       expect(harness.light.root.classList.contains('hidden')).toBe(true);
       expect(harness.hud.root.classList.contains('hidden')).toBe(true);
       expect(harness.confetti.clear).toHaveBeenCalled();
+    });
+  });
+
+  describe('holdForInterruption', () => {
+    it('holds a running race behind the resume/quit overlay and suspends audio', () => {
+      harness.raceToRunning();
+      const progressBefore = harness.engine.karts[0]?.progress ?? 0;
+      harness.presentation.holdForInterruption();
+      expect(harness.hud.overlay.hidden).toBe(false);
+      expect(harness.hud.root.classList.contains('hidden')).toBe(false);
+      expect(
+        harness.hud.root.querySelector('[data-action="pause"]')?.classList.contains('hidden'),
+      ).toBe(true);
+      expect(harness.audio.suspendAll).toHaveBeenCalledTimes(1);
+      harness.presentation.update(0.5);
+      expect(harness.engine.karts[0]?.progress).toBeCloseTo(progressBefore);
+    });
+
+    it('holds a countdown even though the HUD root was never revealed', () => {
+      harness.presentation.beginRace();
+      harness.presentation.update(0.01);
+      expect(harness.engine.state).toBe('countdown');
+      harness.presentation.holdForInterruption();
+      expect(harness.hud.root.classList.contains('hidden')).toBe(false);
+      expect(harness.hud.overlay.hidden).toBe(false);
+      expect(harness.audio.suspendAll).toHaveBeenCalledTimes(1);
+    });
+
+    it('is a no-op in the builder (idle)', () => {
+      harness.presentation.holdForInterruption();
+      expect(harness.audio.suspendAll).not.toHaveBeenCalled();
+      expect(harness.hud.overlay.hidden).toBe(true);
+      expect(harness.hud.root.classList.contains('hidden')).toBe(true);
+    });
+
+    it('is a no-op once the trophy is showing', () => {
+      harness.raceToAllFinished();
+      expect(harness.trophy.root.classList.contains('hidden')).toBe(false);
+      harness.presentation.holdForInterruption();
+      expect(harness.hud.overlay.hidden).toBe(true);
+      expect(harness.audio.suspendAll).not.toHaveBeenCalled();
+    });
+
+    it('a second hold changes nothing', () => {
+      harness.raceToRunning();
+      harness.presentation.holdForInterruption();
+      harness.presentation.holdForInterruption();
+      expect(harness.audio.suspendAll).toHaveBeenCalledTimes(1);
+    });
+
+    it('resumes the race from the hold overlay', () => {
+      harness.raceToRunning();
+      const progressBefore = harness.engine.karts[0]?.progress ?? 0;
+      harness.presentation.holdForInterruption();
+      click('button[data-action="resume"]', harness.hud.overlay);
+      harness.presentation.update(0.3);
+      expect(harness.engine.karts[0]?.progress).toBeGreaterThan(progressBefore);
+      expect(harness.audio.resumeAll).toHaveBeenCalledTimes(1);
+      expect(harness.hud.overlay.hidden).toBe(true);
+    });
+
+    it('can hold again after a resume', () => {
+      harness.raceToRunning();
+      harness.presentation.holdForInterruption();
+      click('button[data-action="resume"]', harness.hud.overlay);
+      harness.presentation.holdForInterruption();
+      expect(harness.audio.suspendAll).toHaveBeenCalledTimes(2);
+    });
+
+    it('reports the hold state through isHolding()', () => {
+      expect(harness.presentation.isHolding()).toBe(false);
+      harness.raceToRunning();
+      expect(harness.presentation.isHolding()).toBe(false);
+      harness.presentation.holdForInterruption();
+      expect(harness.presentation.isHolding()).toBe(true);
+      click('button[data-action="resume"]', harness.hud.overlay);
+      expect(harness.presentation.isHolding()).toBe(false);
+    });
+
+    it('clears the hold state when the race is quit', () => {
+      harness.raceToRunning();
+      harness.presentation.holdForInterruption();
+      click('button[data-action="quit"]', harness.hud.overlay);
+      click('[data-confirm="yes"]', harness.hud.confirm);
+      expect(harness.presentation.isHolding()).toBe(false);
     });
   });
 

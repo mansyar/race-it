@@ -12,7 +12,7 @@ describe('createTrophy', () => {
   let trophy: ReturnType<typeof createTrophy>;
 
   beforeEach(() => {
-    trophy = createTrophy({ onAgain: vi.fn() });
+    trophy = createTrophy({ onAgain: vi.fn(), onBuildAgain: vi.fn() });
   });
 
   it('starts hidden', () => {
@@ -32,10 +32,39 @@ describe('createTrophy', () => {
     expect(trophy.root.textContent).toContain('Yellow');
   });
 
-  it('renders a single RACE AGAIN button', () => {
-    const buttons = [...trophy.root.querySelectorAll('button')];
-    expect(buttons).toHaveLength(1);
-    expect(buttons[0]?.dataset.action).toBe('again');
+  it('renders RACE AGAIN followed by the Build Again action', () => {
+    const actions = [...trophy.root.querySelectorAll('button')].map(
+      (button) => button.dataset.action,
+    );
+    expect(actions).toEqual(['again', 'build-again']);
+  });
+
+  it('gives Build Again a wordless track-tile icon and aria-label', () => {
+    const button = trophy.root.querySelector<HTMLButtonElement>(
+      'button[data-action="build-again"]',
+    );
+    if (!button) {
+      throw new Error('Missing Build Again button');
+    }
+    expect(button.classList.contains('build-again-button')).toBe(true);
+    expect(button.querySelector('svg')).not.toBeNull();
+    expect(button.getAttribute('aria-label')).toBeTruthy();
+    expect((button.textContent ?? '').trim()).toBe('');
+  });
+
+  it('Build Again fires onBuildAgain once per tap without a confirm dialog', () => {
+    trophy.show(resultFor(0), COLORS);
+    const button = trophy.root.querySelector<HTMLButtonElement>(
+      'button[data-action="build-again"]',
+    );
+    if (!button) {
+      throw new Error('Missing Build Again button');
+    }
+    button.click();
+    button.click();
+    expect(trophy.callbacks.onBuildAgain).toHaveBeenCalledTimes(2);
+    expect(trophy.root.querySelector('[data-confirm]')).toBeNull();
+    expect(trophy.root.classList.contains('hidden')).toBe(false);
   });
 
   it('RACE AGAIN fires onAgain once per tap', () => {
