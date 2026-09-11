@@ -75,6 +75,14 @@ export interface CameraLike {
   aspect: number;
 }
 
+/** DOM flash sink fired once when a photo finish is confirmed. */
+export interface FlashSink {
+  /** Starts the single soft pulse. */
+  flash(): void;
+  /** Clears any in-flight pulse when the race resets. */
+  hide(): void;
+}
+
 export interface RacePresentationOptions {
   engine: RaceEngine;
   path: LoopCell[];
@@ -102,6 +110,8 @@ export interface RacePresentationOptions {
    * owned by this presentation.
    */
   photoFinish?: PhotoFinishTracker;
+  /** Photo-finish flash layer; omitted = no flash (headless/debug runs). */
+  flash?: FlashSink;
 }
 
 export interface RacePresentation {
@@ -308,6 +318,7 @@ export function createRacePresentation(options: RacePresentationOptions): RacePr
         options.audio?.endPhotoFinish?.();
       }
       armedPrev = false;
+      options.flash?.hide();
       tracker.reset();
       timeScale = 1;
       pushElapsed = PHOTO_PUSH_RELEASE_SECONDS;
@@ -499,6 +510,7 @@ export function createRacePresentation(options: RacePresentationOptions): RacePr
     if (accent) {
       pushElapsed = 0;
       options.audio?.playCrowdCheer?.();
+      options.flash?.flash();
     }
     const armedNow = tracker.armed;
     if (armedNow && !armedPrev && !slowMotionAudio) {

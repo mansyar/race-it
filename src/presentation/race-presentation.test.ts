@@ -1277,12 +1277,23 @@ describe('createRacePresentation', () => {
     });
 
     it('never flashes on a finish that is not a photo finish', () => {
-      const harness = createHarness();
+      const tracker = sequencedTracker();
+      const harness = createHarness({ photoFinish: tracker });
       harness.raceToAllFinished();
       for (let i = 0; i < 120; i++) {
         harness.presentation.update(1 / 60);
       }
       expect(harness.flash.flash).not.toHaveBeenCalled();
+    });
+
+    it('flashes exactly once on a real confirmed photo finish', () => {
+      const harness = createHarness();
+      harness.raceToAllFinished();
+      for (let i = 0; i < 120; i++) {
+        harness.presentation.update(1 / 60);
+      }
+      expect(harness.engine.result?.photoFinish).toBe(true);
+      expect(harness.flash.flash).toHaveBeenCalledTimes(1);
     });
 
     it('clears any in-flight pulse when the race resets (RACE AGAIN)', () => {

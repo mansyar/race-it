@@ -28,6 +28,7 @@ import './style.css';
 import { createBuildBar } from './ui/build-bar';
 import { createCarPicker } from './ui/car-picker';
 import { createCornerCluster } from './ui/corner-cluster';
+import { createFlashOverlay } from './ui/flash-overlay';
 import { createGoButton } from './ui/go-button';
 import { readInstallEnv } from './ui/install-context';
 import { createInstallHint } from './ui/install-hint';
@@ -248,6 +249,7 @@ if (root && appReady()) {
       audio.playOneShot('click');
     },
   });
+  const flash = createFlashOverlay();
 
   const setBuildUiVisible = (visible: boolean): void => {
     go.root.classList.toggle('hidden', !visible);
@@ -394,6 +396,7 @@ if (root && appReady()) {
             audio.playOneShot('go');
           },
           audio,
+          flash,
         });
         // Leaving remove mode behind would leak build feedback into the race.
         feedback.setRemoveMode(false);
@@ -448,7 +451,7 @@ if (root && appReady()) {
 
   const raceUi = document.createElement('div');
   raceUi.className = 'race-ui';
-  raceUi.append(trafficLight.root, raceHud.root, trophy.root);
+  raceUi.append(flash.root, trafficLight.root, raceHud.root, trophy.root);
   root.append(raceUi);
 
   go.setValid(validateTrack(model).valid);
