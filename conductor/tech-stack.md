@@ -34,6 +34,11 @@ Vanilla TypeScript + Three.js, no UI framework, no game engine. A lean static PW
 - **Procedural engine hum** — oscillator blend (80/160 Hz sawtooth) through a 400 Hz low-pass on the graph; 400 ms linear fades; audible only while the race runs.
 - **Lifecycle** — music starts at the countdown and continues through RACE AGAIN; hum at GO; victory jingle ducks music ~40% then swells back; pause suspends, resume restores, quit stops for good; `pagehide` silences and `visibilitychange` restores; iOS unlock via `resume()` on the first pointerdown gesture.
 
+## Rendering & Performance (added 2026-09-11)
+- **Adaptive quality tiers** — `src/render/quality-controller.ts`: rolling-FPS sampler (≈2 s window below 55 fps steps a tier down; ≈10 s above 58 fps steps back up) across `high → mid → low`, with hysteresis to avoid oscillation. The tier persists to `race-it:quality`; a `?tier=` URL parameter forces a tier for deterministic tests (and disables sampling).
+- **Tier levers** — every tier caps the renderer pixel ratio (2 / 1.5 / 1); the `low` tier additionally batches road tiles per piece type through `InstancedMesh` (`src/render/piece-renderer.ts` — `setRenderMode('individual' | 'instanced')`, visuals and toy feedback identical via `syncInstances`). Applied once per frame from the single `view.onFrame` loop in `src/main.ts`.
+- **Measured (headless, full 144-piece board):** high/mid 652 draw calls; low 232 draw calls (64% fewer); 21,986 triangles constant across tiers.
+
 ## Runtime & Hosting
 - **Runtime:** modern evergreen mobile browsers — iOS Safari 16+, Android Chrome 110+.
 - **Hosting:** containerized static PWA served by **nginx:alpine** over **HTTPS** on the customer's **Coolify** instance (required for service worker/PWA install). No backend, no database.
