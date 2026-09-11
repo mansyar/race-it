@@ -15,8 +15,8 @@
 - Vitest coverage excludes `main.ts` (wiring covered by E2E, per house precedent); `src/style.test.ts` exists for CSS contracts.
 
 ## Phase 1 — Asset Readiness Core (FR-1)
-- [ ] Task 1.1: readiness contract tests first (Red) — new `src/asset-readiness.test.ts` with injected loaders + fake timers: group lifecycle `idle→loading→ready` vs `failed`; groups load independently (a pieces failure never blocks scenery); `raceReady` truth table (pieces × karts, scenery ignored); backoff schedule (0.5s base, ×2, cap 10s, indefinite); one in-flight attempt per group (forced taps coalesce); stall detection (~3 consecutive failures or ~8s) flips to the retry-cue state; recovery clears attempts; snapshot/subscribe API; no real network or real timers.
-- [ ] Task 1.2: implement `src/asset-readiness.ts` (Green) — `createAssetReadiness({ groups, onStateChange? })` factory (house factory style), injectable scheduling; JSDoc on the public surface.
+- [x] Task 1.1: readiness contract tests first (Red) (448d34e) — new `src/asset-readiness.test.ts` with injected loaders + fake timers: group lifecycle `idle→loading→ready` vs `failed`; groups load independently (a pieces failure never blocks scenery); `raceReady` truth table (pieces × karts, scenery ignored); backoff schedule (0.5s base, ×2, cap 10s, indefinite); one in-flight attempt per group (forced taps coalesce); stall detection (~3 consecutive failures or ~8s) flips to the retry-cue state; recovery clears attempts; snapshot/subscribe API; no real network or real timers.
+- [~] Task 1.2: implement `src/asset-readiness.ts` (Green) — `createAssetReadiness({ groups, onStateChange? })` factory (house factory style), injectable scheduling; JSDoc on the public surface.
 - [ ] Task 1.3: coverage ≥80% on the module + refactor under green; `$env:CI='true'; pnpm test` and `pnpm lint` clean; commit.
 - [ ] Task: Phase Verification & Checkpoint (Refer to workflow.md)
 
