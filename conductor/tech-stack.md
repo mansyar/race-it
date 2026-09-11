@@ -27,12 +27,17 @@ Vanilla TypeScript + Three.js, no UI framework, no game engine. A lean static PW
 - **Kenney Racing Kit** — track tiles, scenery (glTF/GLB, CC0).
 - **Kenney Car Kit** — kart racers (glTF/GLB, CC0).
 - **Kenney audio packs (CC0)** — Interface Sounds (UI clicks, confirmations, countdown tick, GO tone, place/remove/nope), Music Jingles (victory jingle), Music Loops ("Polka Train" background loop); OGGs imported at build time, license files kept alongside.
+- **CC0 crowd cheer (first non-Kenney asset, v0.5.0)** — a trimmed crowd-cheer one-shot for photo finishes; verified-CC0 source (candidate: Freesound #365132 "Crowd Cheering" by SoundsExciting), stored under `src/assets/sfx/` with a `LICENSE-<source>-<pack>.txt` file alongside, imported at build time so the service worker precaches it unchanged.
 - GLB assets imported at build time; optimized (Draco/meshopt only if device-floor perf demands it).
 
 ## Audio
 - **`src/audio/audio-director.ts`** — single audio hub on WebAudio: shared master gain (0.9), one-shots (0.8), music loop (0.35), engine hum (0.15); mute persisted at `race-it:muted` and silences the master graph.
 - **Procedural engine hum** — oscillator blend (80/160 Hz sawtooth) through a 400 Hz low-pass on the graph; 400 ms linear fades; audible only while the race runs.
 - **Lifecycle** — music starts at the countdown and continues through RACE AGAIN; hum at GO; victory jingle ducks music ~40% then swells back; pause suspends, resume restores, quit stops for good; `pagehide` silences and `visibilitychange` restores; iOS unlock via `resume()` on the first pointerdown gesture.
+- **Photo-finish seams (additive, v0.5.0)** — the director exposes additive methods used only during close finishes: music playback-rate ease (~0.85) with smooth restore, engine-hum gain dip (~40%) and swell-back, and a crowd-cheer one-shot that honors mute and suspend/resume like existing SFX.
+
+## Race Presentation
+- **Photo-finish drama (additive, v0.5.0)** — a pure tracker (`src/presentation/photo-finish.ts`) estimates the leader→rival arrival gap on the final approach and drives a presentation-level time scale (1.0 → 0.35, eased) plus one-shot accents on the confirmed flag: a DOM flash overlay (`src/ui/flash-overlay.ts`, outside the 3D scene, `pointer-events: none`) and a bounded camera push (`src/render/race-camera.ts`). Scaled dt drives the existing simulation and race visuals together; engine API, fairness, and draw calls unchanged.
 
 ## Runtime & Hosting
 - **Runtime:** modern evergreen mobile browsers — iOS Safari 16+, Android Chrome 110+.
