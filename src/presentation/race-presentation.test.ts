@@ -101,6 +101,7 @@ interface Harness {
     endPhotoFinish: ReturnType<typeof vi.fn>;
     playCrowdCheer: ReturnType<typeof vi.fn>;
   };
+  flash: { flash: ReturnType<typeof vi.fn>; hide: ReturnType<typeof vi.fn> };
   priorOnPause: ReturnType<typeof vi.fn>;
   priorOnResume: ReturnType<typeof vi.fn>;
   priorOnQuit: ReturnType<typeof vi.fn>;
@@ -190,6 +191,10 @@ function createHarness(
     endPhotoFinish: vi.fn(),
     playCrowdCheer: vi.fn(),
   };
+  const flash = {
+    flash: vi.fn(),
+    hide: vi.fn(),
+  };
 
   const presentation = createRacePresentation({
     engine,
@@ -206,6 +211,7 @@ function createHarness(
     onCountdownBeep,
     onGo,
     audio,
+    flash,
   });
 
   return {
@@ -221,6 +227,7 @@ function createHarness(
     onCountdownBeep,
     onGo,
     audio,
+    flash,
     priorOnPause,
     priorOnResume,
     priorOnQuit,
@@ -1097,6 +1104,31 @@ describe('createRacePresentation', () => {
     });
   });
 
+  function sequencedTracker(): PhotoFinishTracker & {
+    tick: ReturnType<typeof vi.fn>;
+    reset: ReturnType<typeof vi.fn>;
+    setArmed: (value: boolean) => void;
+    setScale: (value: number) => void;
+  } {
+    let armed = false;
+    let scale = 1;
+    const tick = vi.fn(() => ({ timeScale: scale, accent: false }));
+    const reset = vi.fn();
+    return {
+      tick,
+      reset,
+      setArmed(value) {
+        armed = value;
+      },
+      setScale(value) {
+        scale = value;
+      },
+      get armed() {
+        return armed;
+      },
+    };
+  }
+
   describe('photo-finish camera push', () => {
     function pushStub(): PhotoFinishTracker & {
       tick: ReturnType<typeof vi.fn>;
@@ -1158,31 +1190,6 @@ describe('createRacePresentation', () => {
   });
 
   describe('photo-finish audio choreography', () => {
-    function sequencedTracker(): PhotoFinishTracker & {
-      tick: ReturnType<typeof vi.fn>;
-      reset: ReturnType<typeof vi.fn>;
-      setArmed: (value: boolean) => void;
-      setScale: (value: number) => void;
-    } {
-      let armed = false;
-      let scale = 1;
-      const tick = vi.fn(() => ({ timeScale: scale, accent: false }));
-      const reset = vi.fn();
-      return {
-        tick,
-        reset,
-        setArmed(value) {
-          armed = value;
-        },
-        setScale(value) {
-          scale = value;
-        },
-        get armed() {
-          return armed;
-        },
-      };
-    }
-
     it('begins the slow-motion treatment once when armed and ends it when the scale restores', () => {
       const tracker = sequencedTracker();
       const harness = createHarness({ photoFinish: tracker });
@@ -1254,6 +1261,40 @@ describe('createRacePresentation', () => {
       click('button[data-action="resume"]', harness.hud.overlay);
       harness.presentation.update(1 / 60);
       expect(harness.audio.endPhotoFinish).toHaveBeenCalledTimes(1);
+    });
+  });
+
+  describe('photo-finish flash overlay', () => {
+    it('flashes exactly once on the confirmed accent', () => {
+      const tracker = sequencedTracker();
+      const harness = createHarness({ photoFinish: tracker });
+      harness.raceToRunning();
+      tracker.tick.mockReturnValueOnce({ timeScale: 1, accent: true });
+      harness.presentation.update(1 / 60);
+      harness.presentation.update(1 / 60);
+      harness.presentation.update(1 / 60);
+      expect(harness.flash.flash).toHaveBeenCalledTimes(1);
+    });
+
+    it('never flashes on a finish that is not a photo finish', () => {
+      const harness = createHarness();
+      harness.raceToAllFinished();
+      for (let i = 0; i < 120; i++) {
+        harness.presentation.update(1 / 60);
+      }
+      expect(harness.flash.flash).not.toHaveBeenCalled();
+    });
+
+    it('clears any in-flight pulse when the race resets (RACE AGAIN)', () => {
+      const tracker = sequencedTracker();
+      const harness = createHarness({ photoFinish: tracker });
+      harness.raceToRunning();
+      tracker.tick.mockReturnValueOnce({ timeScale: 1, accent: true });
+      harness.presentation.update(1 / 60);
+      expect(harness.flash.flash).toHaveBeenCalledTimes(1);
+      harness.raceToAllFinished();
+      click('button[data-action="again"]', harness.trophy.root);
+      expect(harness.flash.hide).toHaveBeenCalledTimes(1);
     });
   });
 });
