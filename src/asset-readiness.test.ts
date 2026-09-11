@@ -33,11 +33,7 @@ function attemptAt<T>(attempts: Deferred<T>[], index: number): Deferred<T> {
   return attempt;
 }
 
-function group(
-  name: string,
-  load: () => Promise<unknown>,
-  critical = false,
-): AssetGroupDefinition {
+function group(name: string, load: () => Promise<unknown>, critical = false): AssetGroupDefinition {
   return { name, critical, load };
 }
 
@@ -273,13 +269,45 @@ describe('createAssetReadiness', () => {
     expect(load).toHaveBeenCalledTimes(2);
   });
 
+  it('coalesces forced retries while a stalled group is still loading', async () => {
+    const attempts: Deferred<void>[] = [];
+    const load = vi.fn(() => {
+      const attempt = deferred<void>();
+      attempts.push(attempt);
+      return attempt.promise;
+    });
+    const readiness = createAssetReadiness({ groups: [group('pieces', load, true)] });
+
+    readiness.start();
+    attemptAt(attempts, 0).reject(new Error('offline'));
+    await flush();
+    await vi.advanceTimersByTimeAsync(RETRY_BASE_DELAY_MS);
+    attemptAt(attempts, 1).reject(new Error('offline'));
+    await flush();
+    await vi.advanceTimersByTimeAsync(RETRY_BASE_DELAY_MS * 2);
+    attemptAt(attempts, 2).reject(new Error('offline'));
+    await flush();
+    expect(stateOf(readiness.snapshot(), 'pieces').attempts).toBe(STALL_ATTEMPTS);
+    expect(readiness.snapshot().cue).toBe(true);
+
+    readiness.retryFailed();
+    expect(load).toHaveBeenCalledTimes(STALL_ATTEMPTS + 1);
+
+    // Stalled is still true, but the group is already loading: stays single-flight.
+    readiness.retryFailed();
+    expect(load).toHaveBeenCalledTimes(STALL_ATTEMPTS + 1);
+
+    attemptAt(attempts, STALL_ATTEMPTS).resolve();
+    await flush();
+    expect(stateOf(readiness.snapshot(), 'pieces').status).toBe('ready');
+    expect(readiness.snapshot().cue).toBe(false);
+  });
+
   it('clears the stall and attempts once a retry succeeds', async () => {
     let attempt = 0;
     const load = vi.fn(() => {
       attempt += 1;
-      return attempt <= STALL_ATTEMPTS
-        ? Promise.reject(new Error('offline'))
-        : Promise.resolve();
+      return attempt <= STALL_ATTEMPTS ? Promise.reject(new Error('offline')) : Promise.resolve();
     });
     const readiness = createAssetReadiness({ groups: [group('pieces', load, true)] });
 
