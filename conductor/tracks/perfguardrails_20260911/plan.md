@@ -34,3 +34,7 @@
 - [x] Task 4.2: measure & record worst-case numbers — measured headless (deviceScaleFactor 2, `?perf&debug` full board, settled): high 652 calls / 21,986 tris (DPR cap 2); mid 652 calls / 21,986 tris (cap 1.5 — mid keeps the individual path, only DPR changes); low 232 calls / 21,986 tris (cap 1 — instanced batching, 64% fewer draw calls vs high). Triangles constant across tiers (same geometry). Note: the current high-tier reading (652) is higher than the historical ~542-draw-call baseline (older measurement context); low is materially below both.
 - [x] Task 4.3: quality gates — done: build green; `CI=true pnpm test` 46 files / 487 tests pass; coverage on changed modules: quality-controller.ts 100% stmts / 98.07% branch / 100% lines, piece-renderer.ts 95.8% / 84.74% / 100% / 95.62% (scene.ts + main.ts excluded per vitest config); `pnpm lint` exit 0 (2 pre-existing warnings in audio-director.test.ts, untouched); chromium E2E 6/6 (postrace stabilized via `?tier=high` pin — f5963e6). Browser verification: perf-verify screenshots (portrait 390x844 + landscape 1180x820; high vs low boards visually identical); headed recovery probe: low→mid→high at ~10s per step; slow-environment degrade: mid→low within ~3s (~37fps headless); `?perf`/`?race`/`?debug` hooks unchanged.
 - [x] Task: Phase Verification & Checkpoint (Refer to workflow.md)
+
+## Phase: Review Fixes
+
+- [x] Task: Apply review suggestions (4506e5b)
