@@ -28,9 +28,9 @@
 - [x] Task 3.4: implement feedback sync + disposal (Green) (2de6c2e) — bridge the existing feedback transforms into instance matrices; ensure renderer disposal frees instance buffers.
 - [x] Task: Phase Verification & Checkpoint (Refer to workflow.md)
 
-## Phase 4 — E2E, Perf Measurement & Quality Gates
+## Phase 4 — E2E, Perf Measurement & Quality Gates [checkpoint: 7b86c4e]
 
 - [x] Task 4.1: E2E coverage first (Red) (3c7eb30) — new `e2e/perf.spec.ts`: with `?tier=low&perf`, the effective canvas buffer ratio (buffer size ÷ CSS size) matches the low cap and `window.__raceItPerf()` draw calls are materially below the `?tier=high&perf` baseline; forced tier does not overwrite the persisted value; a pre-seeded `race-it:quality` is honored on reload; confirm the spec fails without the wiring (Red against the pre-change revision, like the prior track).
 - [x] Task 4.2: measure & record worst-case numbers — measured headless (deviceScaleFactor 2, `?perf&debug` full board, settled): high 652 calls / 21,986 tris (DPR cap 2); mid 652 calls / 21,986 tris (cap 1.5 — mid keeps the individual path, only DPR changes); low 232 calls / 21,986 tris (cap 1 — instanced batching, 64% fewer draw calls vs high). Triangles constant across tiers (same geometry). Note: the current high-tier reading (652) is higher than the historical ~542-draw-call baseline (older measurement context); low is materially below both.
 - [x] Task 4.3: quality gates — done: build green; `CI=true pnpm test` 46 files / 487 tests pass; coverage on changed modules: quality-controller.ts 100% stmts / 98.07% branch / 100% lines, piece-renderer.ts 95.8% / 84.74% / 100% / 95.62% (scene.ts + main.ts excluded per vitest config); `pnpm lint` exit 0 (2 pre-existing warnings in audio-director.test.ts, untouched); chromium E2E 6/6 (postrace stabilized via `?tier=high` pin — f5963e6). Browser verification: perf-verify screenshots (portrait 390x844 + landscape 1180x820; high vs low boards visually identical); headed recovery probe: low→mid→high at ~10s per step; slow-environment degrade: mid→low within ~3s (~37fps headless); `?perf`/`?race`/`?debug` hooks unchanged.
-- [ ] Task: Phase Verification & Checkpoint (Refer to workflow.md)
+- [x] Task: Phase Verification & Checkpoint (Refer to workflow.md)
