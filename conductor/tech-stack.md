@@ -39,6 +39,11 @@ Vanilla TypeScript + Three.js, no UI framework, no game engine. A lean static PW
 ## Race Presentation
 - **Photo-finish drama (additive, v0.5.0)** — a pure tracker (`src/presentation/photo-finish.ts`) estimates the leader→rival arrival gap on the final approach and drives a presentation-level time scale (1.0 → 0.35, eased) plus one-shot accents on the confirmed flag: a DOM flash overlay (`src/ui/flash-overlay.ts`, outside the 3D scene, `pointer-events: none`) and a bounded camera push (`src/render/race-camera.ts`). Scaled dt drives the existing simulation and race visuals together; engine API, fairness, and draw calls unchanged.
 
+## Rendering & Performance (added 2026-09-11)
+- **Adaptive quality tiers** — `src/render/quality-controller.ts`: rolling-FPS sampler (≈2 s window below 55 fps steps a tier down; ≈10 s above 58 fps steps back up) across `high → mid → low`, with hysteresis to avoid oscillation. The tier persists to `race-it:quality`; a `?tier=` URL parameter forces a tier for deterministic tests (and disables sampling).
+- **Tier levers** — every tier caps the renderer pixel ratio (2 / 1.5 / 1); the `low` tier additionally batches road tiles per piece type through `InstancedMesh` (`src/render/piece-renderer.ts` — `setRenderMode('individual' | 'instanced')`, visuals and toy feedback identical via `syncInstances`). Applied once per frame from the single `view.onFrame` loop in `src/main.ts`.
+- **Measured (headless, full 144-piece board):** high/mid 652 draw calls; low 232 draw calls (64% fewer); 21,986 triangles constant across tiers.
+
 ## Runtime & Hosting
 - **Runtime:** modern evergreen mobile browsers — iOS Safari 16+, Android Chrome 110+.
 - **Hosting:** containerized static PWA served by **nginx:alpine** over **HTTPS** on the customer's **Coolify** instance (required for service worker/PWA install). No backend, no database.

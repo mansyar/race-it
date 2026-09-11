@@ -30,6 +30,6 @@
 
 ## Quality Bars
 - 60 fps target on device floor (iPhone 11+, iPad 9th gen+, mid-range Android); graceful degradation acceptable below.
-- Measured build-mode budgets (full 12x12 board, 144 pieces): ~542 draw calls, ~21,756 triangles - large headroom on device floor (headless run ~240 fps uncapped). Fallback if on-device fps < 60: batch tile types into InstancedMesh.
+- Adaptive quality (implemented): when frame rate drops, the game steps quality down automatically — lower render resolution (pixel-ratio cap), then batched instanced tiles at the lowest tier — and steps back up on sustained recovery; the tier persists on device, no settings UI. Measured build-mode budgets (full 12x12 board, 144 pieces): high/mid 652 draw calls, low 232 (instanced batching); 21,986 triangles constant.
 - Offline-first: after first load, the app must work with zero connectivity.
 - Responsive layout for portrait & landscape, phone & tablet.

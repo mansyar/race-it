@@ -38,6 +38,7 @@ Preschoolers ages 3–5 (with a parent installing/curating). No reading ability 
 ## Non-Functional Requirements
 - **Platform:** Installable PWA; works fully offline; all data stays on device (local storage, no accounts/cloud/ads).
 - **Device floor:** Hardware from the last ~5 years (iPhone 11+, iPad 9th gen+, mid-range Android).
+- **Performance:** 60 fps target on the device floor with automatic graceful degradation — the game lowers render quality (pixel-ratio cap, then batched instanced tiles) when frame rate drops and recovers when it improves; no settings or user action needed.
 - **UI:** Wordless, icon-only; large touch targets; toddler-proof against accidental exits.
 - **Hosting:** Customer's own server, served over HTTPS (required for PWA install); static bundle deployment.
 - **Assets:** Kenney Racing Kit (track pieces/scenery), Kenney Car Kit (karts), Kenney audio packs plus one CC0 crowd-cheer one-shot (Freesound) — all CC0.
