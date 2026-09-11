@@ -14,3 +14,4 @@
 - [x] **Track: Post-Race Navigation** *Archived: [postracenav_20260911](./archive/postracenav_20260911/index.md)*
 - [x] **Track: Session Resilience — Toddler-Proofing & Lifecycle Hardening** *Archived: [sessionresilience_20260911](./archive/sessionresilience_20260911/index.md)*
 - [x] **Track: Fair Start & Natural Motion** *Archived: [racephysics_20260911](./archive/racephysics_20260911/index.md)*
+- [x] **Track: Adaptive Performance Guardrails** *Archived: [perfguardrails_20260911](./archive/perfguardrails_20260911/index.md)*
