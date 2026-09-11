@@ -14,4 +14,4 @@
 - [x] **Track: Post-Race Navigation** *Archived: [postracenav_20260911](./archive/postracenav_20260911/index.md)*
 - [x] **Track: Session Resilience — Toddler-Proofing & Lifecycle Hardening** *Archived: [sessionresilience_20260911](./archive/sessionresilience_20260911/index.md)*
 - [x] **Track: Fair Start & Natural Motion** *Archived: [racephysics_20260911](./archive/racephysics_20260911/index.md)*
-- [~] **Track: Photo-Finish Drama** *Link: [photofinish_20260911](./tracks/photofinish_20260911/index.md)*
+- [x] **Track: Photo-Finish Drama** *Link: [photofinish_20260911](./tracks/photofinish_20260911/index.md)*
