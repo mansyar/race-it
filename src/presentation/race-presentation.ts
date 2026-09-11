@@ -1,5 +1,6 @@
-import type { Kart, RaceEngine, RaceState } from '../race/engine';
+import { baseSpeedFor, type Kart, type RaceEngine, type RaceState } from '../race/engine';
 import type { LoopCell } from '../race/path';
+import { RUNOUT_SECONDS, runoutOffset, visualPose } from '../render/kart-motion';
 import { type KartPose, kartPose } from '../render/kart-rig';
 import { computeCameraPlacement, gridToWorld } from '../render/layout';
 import { type RaceCameraPhase, raceCameraPose } from '../render/race-camera';
@@ -161,6 +162,7 @@ export function createRacePresentation(options: RacePresentationOptions): RacePr
   let winnerIndex: number | null = null;
   let trophyShown = false;
   let confettiSeed = 1;
+  let runoutPace: number | null = null;
   let hasSmoothedCamera = false;
   // One-shot: Build Again keeps camera smoothing through the idle reset so the
   // view eases back to the build placement instead of cutting to it.
@@ -168,11 +170,15 @@ export function createRacePresentation(options: RacePresentationOptions): RacePr
   let smoothedPos = { x: 0, y: 0, z: 0 };
   let smoothedTarget = { x: 0, y: 0, z: 0 };
   let lastCountdown = -1;
+  let prevProgress: number[] = engine.karts.map((kart) => kart.progress);
+  let prevPace: number[] = engine.karts.map(() => 0);
+  const baseSpeed = baseSpeedFor(engine.lapLength);
   let held = false;
 
   function resetCelebration(): void {
     spinning = false;
     spinElapsed = 0;
+    runoutPace = null;
     winnerIndex = null;
     trophyShown = false;
     trophy.hide();
@@ -248,6 +254,8 @@ export function createRacePresentation(options: RacePresentationOptions): RacePr
       lastCountdown = countdownStep(engine.countdownRemaining);
       options.onCountdownBeep?.(lastCountdown);
       hasSmoothedCamera = false;
+      prevProgress = engine.karts.map((kart) => kart.progress);
+      prevPace = engine.karts.map(() => 0);
       return;
     }
     if (state === 'running') {
@@ -277,15 +285,55 @@ export function createRacePresentation(options: RacePresentationOptions): RacePr
     confetti.burst(finishOrigin, confettiSeed);
   });
 
-  function currentPoses(): KartPose[] {
-    const poses = engine.karts.map((kart) => kartPose(path, kart.progress, kart.lane));
-    if (spinning && winnerIndex !== null) {
+  /** Measures each kart's pace (relative to base) and pace change from movement. */
+  function measurePaces(dt: number): { paces: number[]; accels: number[] } {
+    const paces = engine.karts.map((kart, index) => {
+      const previous = prevProgress[index] ?? kart.progress;
+      const pace = dt > 1e-6 ? (kart.progress - previous) / dt / baseSpeed : 1;
+      return Math.min(2, Math.max(0, pace));
+    });
+    const accels = paces.map((pace, index) => {
+      const previous = prevPace[index] ?? 0;
+      const accel = dt > 1e-6 ? (pace - previous) / dt : 0;
+      return Math.min(8, Math.max(-8, accel));
+    });
+    prevProgress = engine.karts.map((kart) => kart.progress);
+    prevPace = paces;
+    return { paces, accels };
+  }
+
+  function currentPoses(paces: number[], accels: number[]): KartPose[] {
+    const poses = engine.karts.map((kart, index) =>
+      visualPose(path, {
+        progress: kart.progress,
+        lane: kart.lane,
+        pace: paces[index] ?? 1,
+        accel: accels[index] ?? 0,
+        kartIndex: index,
+      }),
+    );
+    if (winnerIndex !== null) {
       const base = poses[winnerIndex];
-      if (base) {
+      const winner = engine.karts[winnerIndex];
+      if (base && winner) {
+        if (runoutPace === null) {
+          runoutPace = Math.min(1, Math.max(0, paces[winnerIndex] ?? 1));
+        }
+        // The engine freezes finished karts; the roll-out is a visual offset
+        // past the line, capped at half a unit at racing pace.
+        const rolled = kartPose(
+          path,
+          winner.progress + runoutOffset(spinElapsed, runoutPace),
+          winner.lane,
+        );
         poses[winnerIndex] = {
-          x: base.x,
-          z: base.z,
-          heading: victorySpinHeading(base.heading, spinElapsed / VICTORY_SPIN_SECONDS),
+          ...base,
+          x: rolled.x,
+          z: rolled.z,
+          heading: victorySpinHeading(
+            rolled.heading,
+            spinning ? (spinElapsed - RUNOUT_SECONDS) / VICTORY_SPIN_SECONDS : 1,
+          ),
         };
       }
     }
@@ -338,7 +386,7 @@ export function createRacePresentation(options: RacePresentationOptions): RacePr
       return;
     }
     spinElapsed += dt;
-    if (spinElapsed >= VICTORY_SPIN_SECONDS) {
+    if (spinElapsed >= RUNOUT_SECONDS + VICTORY_SPIN_SECONDS) {
       spinning = false;
     }
   }
@@ -398,7 +446,8 @@ export function createRacePresentation(options: RacePresentationOptions): RacePr
       updateTrafficLight();
       updateVictorySpin(dt);
       updateTrophy();
-      const poses = currentPoses();
+      const { paces, accels } = measurePaces(dt);
+      const poses = currentPoses(paces, accels);
       karts.update(poses);
       confetti.update(dt);
       updateCamera(dt, poses);

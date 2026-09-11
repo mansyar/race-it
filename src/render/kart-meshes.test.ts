@@ -173,6 +173,46 @@ describe('KartRenderer', () => {
   });
 });
 
+describe('suspension channels', () => {
+  async function loadedRenderer(): Promise<KartRenderer> {
+    const scenes = [singleMeshScene(), singleMeshScene(), singleMeshScene(), singleMeshScene()];
+    const renderer = new KartRenderer();
+    await renderer.load(mockLoader(scenes));
+    return renderer;
+  }
+
+  it('applies roll, pitch, and bob from extended poses', async () => {
+    const renderer = await loadedRenderer();
+    renderer.update([{ x: 2, z: -2, heading: 0.5, roll: 0.1, pitch: -0.04, bob: 0.015 }]);
+    const kart = renderer.group.children[0];
+    if (!kart) {
+      throw new Error('Expected a kart mesh');
+    }
+    expect(kart.rotation.z).toBeCloseTo(0.1, 10);
+    expect(kart.rotation.x).toBeCloseTo(-0.04, 10);
+    expect(kart.rotation.y).toBeCloseTo(0.5 + KART_FORWARD_ROTATION, 10);
+    expect(kart.position.y).toBeCloseTo(KART_Y_OFFSET + 0.015, 10);
+  });
+
+  it('uses a yaw-outermost euler order so lean follows the heading', async () => {
+    const renderer = await loadedRenderer();
+    renderer.update([{ x: 0, z: 0, heading: 1.1, roll: 0.05, pitch: 0, bob: 0 }]);
+    expect(renderer.group.children[0]?.rotation.order).toBe('YXZ');
+  });
+
+  it('defaults suspension channels to zero for base kart poses', async () => {
+    const renderer = await loadedRenderer();
+    renderer.update([pose(0)]);
+    const kart = renderer.group.children[0];
+    if (!kart) {
+      throw new Error('Expected a kart mesh');
+    }
+    expect(kart.rotation.x).toBe(0);
+    expect(kart.rotation.z).toBe(0);
+    expect(kart.position.y).toBeCloseTo(KART_Y_OFFSET);
+  });
+});
+
 // Native kart bounds measured with `node scripts/measure-glb-world.mjs`:
 // size [width 0.974, height 1.329, length 1.428], identical for all four karts.
 const NATIVE_KART_WIDTH = 0.974;

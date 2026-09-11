@@ -165,11 +165,14 @@ describe('KartPreview', () => {
     await preview.load();
     preview.render(400, 200);
     expect(calls.renderCount).toBe(KART_COLORS.length);
+    // WebGL's viewport origin is bottom-left while the swatch DOM runs
+    // row-major from the top, so red/blue must land in the top half (y=100)
+    // and green/yellow in the bottom half (y=0) to sit in their own cards.
     expect(calls.scissor).toEqual([
-      [0, 0, 200, 100],
-      [200, 0, 200, 100],
       [0, 100, 200, 100],
       [200, 100, 200, 100],
+      [0, 0, 200, 100],
+      [200, 0, 200, 100],
     ]);
     expect(calls.viewport).toEqual(calls.scissor);
     expect(calls.scissorTestEnabled).toBe(true);
