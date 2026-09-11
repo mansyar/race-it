@@ -30,12 +30,12 @@
 - [x] Task 3.3: implement audio additions (Green) (ab6faca) — additive `AudioDirector` methods + adapter wiring in `main.ts`; missing-asset behavior best-effort (consistent with existing audio).
 - [x] Task: Phase Verification & Checkpoint (Refer to workflow.md) — user listening check: cheer + music hold balance (agent cannot hear).
 
-## Phase 4 — Flash Overlay & Lifecycle Integration
+## Phase 4 — Flash Overlay & Lifecycle Integration [checkpoint: 41bbcde]
 
 - [x] Task 4.1: flash sink tests first (Red) (21e6d6a) — new `src/ui/flash-overlay.ts` (+jsdom test): single pulse lifecycle (~0.25 s fade), `pointer-events: none`, hidden in build mode, teardown removes DOM/listeners; presentation triggers exactly once on confirm, never on non-photo finishes.
 - [x] Task 4.2: implement flash + wire `main.ts` (Green) (3ef3f28) — overlay above canvas, below trophy/HUD; presentation options gain an additive `flash` sink (defaulted/no-op).
 - [x] Task 4.3: reset-matrix tests (regression; passed on first run — cleanup landed in 3.3/4.2) (41bbcde) — `race-presentation.test.ts`: pause/resume, interruption hold, RACE AGAIN, Build Again, quit leave no stale dilation/flash/cheer/camera state; `?race`/`?perf`/`?debug` intact.
-- [ ] Task: Phase Verification & Checkpoint (Refer to workflow.md) — phone portrait/landscape full flow; flash gentle; no regressions.
+- [x] Task: Phase Verification & Checkpoint (Refer to workflow.md) — phone portrait/landscape full flow; flash gentle; no regressions.
 
 ## Phase 5 — Verification & Quality Gates
 
