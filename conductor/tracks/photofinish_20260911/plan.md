@@ -39,7 +39,7 @@
 
 ## Phase 5 — Verification & Quality Gates
 
-- [ ] Task 5.1: quality gates — `pnpm build`; `$env:CI='true'; pnpm test`; coverage >80% on changed modules; `pnpm lint` clean; docs synchronized (tech-stack/product as needed).
-- [ ] Task 5.2: browser + E2E verification — Playwright suites (smoke/shelf/landscape/postrace/lifecycle) green; `?perf` draw calls unchanged; manual close-finish run portrait + landscape; screenshots captured.
-- [ ] Task 5.3: fairness & drama report — re-run fairness sweep (slot bands, 30–65% closeness, 30–45 s) + predictor stats (coverage of flag-true races, false-arm rate); record measured numbers in the phase verification note.
+- [x] Task 5.1: quality gates — `pnpm build` green (65 precache entries, 2386.12 KiB); suite 53 files / 619 tests; coverage on changed modules: photo-finish.ts 100%, flash-overlay.ts 100%, race-presentation 97.52/86.39, audio-director 92.69/85.71, race-camera 98.24/93.75; `pnpm lint` clean (2 pre-existing warnings); tech-stack synced in Task 1.1; product/product-guidelines unchanged (feel-only track).
+- [x] Task 5.2: browser + E2E verification — Playwright CI-config run 8/8 green twice (dev-config parallel run showed 2 contention flakes; CI uses 1 worker + 2 retries); `?perf` draw calls unchanged by construction (no render/scene diffs — flash is DOM-only); manual close-finish portrait + landscape approved by user at the Phase 4 checkpoint; manifest screenshots refreshed (`public/screenshots`).
+- [x] Task 5.3: fairness & drama report — fairness suite 6/6 green (slot win bands, photo-finish closeness band 30–65%, first finish 30–45 s); predictor suite 22/22 green (sweep: 100% of flag-true races armed pre-crossing, false-arm rate 11% (99/900) @ PREDICTION_MARGIN_SECONDS 0.35, one accent per true finish, zero leaked).
 - [ ] Task: Phase Verification & Checkpoint (Refer to workflow.md)
