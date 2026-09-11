@@ -97,6 +97,9 @@ interface Harness {
     suspendAll: ReturnType<typeof vi.fn>;
     resumeAll: ReturnType<typeof vi.fn>;
     stopAll: ReturnType<typeof vi.fn>;
+    beginPhotoFinish: ReturnType<typeof vi.fn>;
+    endPhotoFinish: ReturnType<typeof vi.fn>;
+    playCrowdCheer: ReturnType<typeof vi.fn>;
   };
   priorOnPause: ReturnType<typeof vi.fn>;
   priorOnResume: ReturnType<typeof vi.fn>;
@@ -183,6 +186,9 @@ function createHarness(
     suspendAll: vi.fn(),
     resumeAll: vi.fn(),
     stopAll: vi.fn(),
+    beginPhotoFinish: vi.fn(),
+    endPhotoFinish: vi.fn(),
+    playCrowdCheer: vi.fn(),
   };
 
   const presentation = createRacePresentation({
@@ -1148,6 +1154,104 @@ describe('createRacePresentation', () => {
         harness.presentation.update(1 / 60);
       }
       expect(cameraDistance(harness)).toBeCloseTo(standard, 1);
+    });
+  });
+
+  describe('photo-finish audio choreography', () => {
+    function sequencedTracker(): PhotoFinishTracker & {
+      tick: ReturnType<typeof vi.fn>;
+      reset: ReturnType<typeof vi.fn>;
+      setArmed: (value: boolean) => void;
+      setScale: (value: number) => void;
+    } {
+      let armed = false;
+      let scale = 1;
+      return {
+        tick: vi.fn(() => ({ timeScale: scale, accent: false })),
+        reset: vi.fn(),
+        setArmed(value) {
+          armed = value;
+        },
+        setScale(value) {
+          scale = value;
+        },
+        get armed() {
+          return armed;
+        },
+      };
+    }
+
+    it('begins the slow-motion treatment once when armed and ends it when the scale restores', () => {
+      const tracker = sequencedTracker();
+      const harness = createHarness({ photoFinish: tracker });
+      harness.raceToRunning();
+      expect(harness.audio.beginPhotoFinish).not.toHaveBeenCalled();
+
+      tracker.setArmed(true);
+      tracker.setScale(0.7);
+      harness.presentation.update(1 / 60);
+      harness.presentation.update(1 / 60);
+      expect(harness.audio.beginPhotoFinish).toHaveBeenCalledTimes(1);
+      expect(harness.audio.endPhotoFinish).not.toHaveBeenCalled();
+
+      tracker.setScale(1);
+      harness.presentation.update(1 / 60);
+      expect(harness.audio.endPhotoFinish).toHaveBeenCalledTimes(1);
+      harness.presentation.update(1 / 60);
+      expect(harness.audio.beginPhotoFinish).toHaveBeenCalledTimes(1);
+      expect(harness.audio.endPhotoFinish).toHaveBeenCalledTimes(1);
+    });
+
+    it('fires the crowd cheer exactly once on the confirmed accent', () => {
+      const tracker = sequencedTracker();
+      const harness = createHarness({ photoFinish: tracker });
+      harness.raceToRunning();
+      tracker.setArmed(true);
+      tracker.setScale(0.7);
+      tracker.tick.mockReturnValueOnce({ timeScale: 0.7, accent: true });
+      harness.presentation.update(1 / 60);
+      harness.presentation.update(1 / 60);
+      harness.presentation.update(1 / 60);
+      expect(harness.audio.playCrowdCheer).toHaveBeenCalledTimes(1);
+    });
+
+    it('leaves the audio untouched during an ordinary race', () => {
+      const tracker = sequencedTracker();
+      const harness = createHarness({ photoFinish: tracker });
+      harness.raceToAllFinished();
+      expect(harness.audio.playCrowdCheer).not.toHaveBeenCalled();
+      expect(harness.audio.beginPhotoFinish).not.toHaveBeenCalled();
+      expect(harness.audio.endPhotoFinish).not.toHaveBeenCalled();
+    });
+
+    it('ends the treatment when restarting mid-sequence (RACE AGAIN)', () => {
+      const tracker = sequencedTracker();
+      const harness = createHarness({ photoFinish: tracker });
+      harness.raceToRunning();
+      tracker.setArmed(true);
+      tracker.setScale(0.7);
+      harness.presentation.update(1 / 60);
+      expect(harness.audio.beginPhotoFinish).toHaveBeenCalledTimes(1);
+      harness.raceToAllFinished();
+      expect(harness.audio.endPhotoFinish).not.toHaveBeenCalled();
+      click('button[data-action="again"]', harness.trophy.root);
+      expect(harness.audio.endPhotoFinish).toHaveBeenCalledTimes(1);
+    });
+
+    it('freezes the treatment during an interruption hold and ends after resume', () => {
+      const tracker = sequencedTracker();
+      const harness = createHarness({ photoFinish: tracker });
+      harness.raceToRunning();
+      tracker.setArmed(true);
+      tracker.setScale(0.7);
+      harness.presentation.update(1 / 60);
+      harness.presentation.holdForInterruption();
+      tracker.setScale(1);
+      harness.presentation.update(0.5);
+      expect(harness.audio.endPhotoFinish).not.toHaveBeenCalled();
+      click('button[data-action="resume"]', harness.hud.overlay);
+      harness.presentation.update(1 / 60);
+      expect(harness.audio.endPhotoFinish).toHaveBeenCalledTimes(1);
     });
   });
 });
