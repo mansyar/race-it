@@ -41,3 +41,7 @@
 - [x] Task 5.2a (amendment): landscape car-picker fix (Red→Green) (d0b5fd7) — style contract test for the short-viewport compact rules; compact `.car-picker` / `.swatch` under `max-height: 520px` so RACE fits a 390px-tall viewport (≥64px targets); permanent slim e2e landscape regression (RACE in viewport → race starts); Phase 5 browser re-verification.
 - [x] Task 5.3: fairness & perf validation report (d0b5fd7) — record win shares per slot, photo-finish rate, durations (harness) and `?perf` draw calls/tris; compare against the Phase-1 baseline (results in the Phase 5 verification note).
 - [x] Task: Phase Verification & Checkpoint (Refer to workflow.md)
+
+## Phase: Review Fixes
+
+- [x] Task: Apply review suggestions 4b9de24
