@@ -18,8 +18,8 @@
 - [x] Task: Phase Verification & Checkpoint (Refer to workflow.md)
 
 ## Phase 4: Land on master
-- [ ] Task: Push `shipv050_20260911` and open a PR to `master`
-- [ ] Task: Merge the PR; confirm `master` reads `0.5.0` and the CI run is green
+- [x] Task: Push `shipv050_20260911` and open a PR to `master` (PR #11: https://github.com/mansyar/race-it/pull/11)
+- [x] Task: Merge the PR; confirm `master` reads `0.5.0` and the CI run is green (merged as e0c8c8d; master CI run 34603084033 success, all 4 jobs)
 - [ ] Task: Phase Verification & Checkpoint (Refer to workflow.md)
 
 ## Phase 5: Tag & Verify Release
