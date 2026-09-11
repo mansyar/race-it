@@ -17,10 +17,10 @@
 - [x] Task: Commit `chore(release): Bump version to 0.5.0` (commit: e89d5b0)
 - [x] Task: Phase Verification & Checkpoint (Refer to workflow.md)
 
-## Phase 4: Land on master
+## Phase 4: Land on master [checkpoint: e0c8c8d]
 - [x] Task: Push `shipv050_20260911` and open a PR to `master` (PR #11: https://github.com/mansyar/race-it/pull/11)
 - [x] Task: Merge the PR; confirm `master` reads `0.5.0` and the CI run is green (merged as e0c8c8d; master CI run 34603084033 success, all 4 jobs)
-- [ ] Task: Phase Verification & Checkpoint (Refer to workflow.md)
+- [x] Task: Phase Verification & Checkpoint (Refer to workflow.md)
 
 ## Phase 5: Tag & Verify Release
 - [ ] Task: Tag `master` as `v0.5.0` and push the tag
