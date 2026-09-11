@@ -12,6 +12,9 @@ export const PACK_FRAMING_FILL = 0.55;
 /** Look-ahead nudge (world units) applied to the pair midpoint along the lead heading. */
 export const LOOK_AHEAD_DISTANCE = 1.2;
 
+/** Deepest photo-finish push at full push: the finished hold tightens by 12.5%. */
+export const PHOTO_FINISH_PUSH = 0.125;
+
 /** Presentation phases the race camera understands. */
 export type RaceCameraPhase = 'build' | 'countdown' | 'running' | 'finished';
 
@@ -31,6 +34,12 @@ export interface RaceCameraInput {
   buildPlacement: CameraPlacement;
   /** Viewport aspect ratio (width / height) for the frustum-fit solve. */
   aspect: number;
+  /**
+   * Photo-finish push amount, clamped to [0, 1]. Only the finished hold is
+   * affected: 1 tightens the close hold by {@link PHOTO_FINISH_PUSH} and eases
+   * back to the standard distance as the amount returns to 0.
+   */
+  push?: number;
 }
 
 /** Distance between the build camera and its target. */
@@ -115,7 +124,8 @@ function solveFitDistance(
  * aims at the pair midpoint nudged ahead of the leader and zooms just enough
  * to fit both karts with margin, clamped between {@link RACE_ZOOM_FLOOR} and
  * {@link RACE_ZOOM_CEILING} times the full-board distance. Once finished it
- * holds close on the finish point through the celebration. Stateless: callers
+ * holds close on the finish point through the celebration, optionally pushed
+ * in by the bounded photo-finish `push`. Stateless: callers
  * smooth between frames and recompute the build placement on resize.
  */
 export function raceCameraPose(input: RaceCameraInput): CameraPlacement {
@@ -129,7 +139,8 @@ export function raceCameraPose(input: RaceCameraInput): CameraPlacement {
 
   if (phase === 'finished') {
     const target = { x: finishPoint.x, y: 0, z: finishPoint.z };
-    const hold = distance * RACE_ZOOM_FLOOR;
+    const push = Math.min(1, Math.max(0, input.push ?? 0));
+    const hold = distance * RACE_ZOOM_FLOOR * (1 - PHOTO_FINISH_PUSH * push);
     return {
       position: {
         x: target.x + direction.x * hold,

@@ -3,6 +3,7 @@ import { CAMERA_VERTICAL_FOV_DEG, type CameraPlacement } from './layout';
 import {
   LOOK_AHEAD_DISTANCE,
   PACK_FRAMING_FILL,
+  PHOTO_FINISH_PUSH,
   RACE_ZOOM_CEILING,
   RACE_ZOOM_FLOOR,
   type RaceCameraInput,
@@ -147,5 +148,43 @@ describe('raceCameraPose', () => {
     expect(pose.target.z).toBeCloseTo(-4, 6);
     expect(pose.target.y).toBe(0);
     expect(poseDistance(pose)).toBeCloseTo(baseDistance() * RACE_ZOOM_FLOOR, 6);
+  });
+
+  it('tightens the finished hold by the photo-finish push amount', () => {
+    const standard = raceCameraPose(runningInput({ phase: 'finished' }));
+    const pose = raceCameraPose(runningInput({ phase: 'finished', push: 1 }));
+    const standardDistance = poseDistance(standard);
+    const pushedDistance = poseDistance(pose);
+    expect(pushedDistance).toBeCloseTo(standardDistance * (1 - PHOTO_FINISH_PUSH), 6);
+    // The push stays within the 10–15% tightening band beyond the close hold.
+    const tightened = 1 - pushedDistance / standardDistance;
+    expect(tightened).toBeGreaterThanOrEqual(0.1);
+    expect(tightened).toBeLessThanOrEqual(0.15);
+    expect(pose.target).toEqual(standard.target);
+  });
+
+  it('eases the finished hold back toward the standard distance as the push unwinds', () => {
+    const standard = poseDistance(raceCameraPose(runningInput({ phase: 'finished' })));
+    const full = poseDistance(raceCameraPose(runningInput({ phase: 'finished', push: 1 })));
+    const half = poseDistance(raceCameraPose(runningInput({ phase: 'finished', push: 0.5 })));
+    expect(half).toBeGreaterThan(full);
+    expect(half).toBeLessThan(standard);
+    expect(half).toBeCloseTo((full + standard) / 2, 6);
+  });
+
+  it('clamps the push amount so the tightening stays bounded', () => {
+    const standard = raceCameraPose(runningInput({ phase: 'finished' }));
+    const bounds = raceCameraPose(runningInput({ phase: 'finished', push: 1 }));
+    expect(raceCameraPose(runningInput({ phase: 'finished', push: 4 }))).toEqual(bounds);
+    expect(raceCameraPose(runningInput({ phase: 'finished', push: -1 }))).toEqual(standard);
+  });
+
+  it('ignores the push while running so pack framing is unaffected', () => {
+    expect(raceCameraPose(runningInput({ push: 1 }))).toEqual(raceCameraPose(runningInput()));
+  });
+
+  it('leaves build and countdown placements untouched by the push', () => {
+    expect(raceCameraPose(runningInput({ phase: 'build', push: 1 }))).toEqual(buildPlacement);
+    expect(raceCameraPose(runningInput({ phase: 'countdown', push: 1 }))).toEqual(buildPlacement);
   });
 });
