@@ -11,11 +11,11 @@
 - [x] Task: Commit `docs(readme): Add project README` (commit: e4d9a3d)
 - [x] Task: Phase Verification & Checkpoint (Refer to workflow.md)
 
-## Phase 3: Version Bump & Full Gates
+## Phase 3: Version Bump & Full Gates [checkpoint: e89d5b0]
 - [x] Task: Bump `package.json` version 0.4.0 → 0.5.0 (commit: e89d5b0)
 - [x] Task: Run full gates — `pnpm lint`, `CI=true pnpm test -- --coverage`, `pnpm build`; Playwright via PR CI (lint clean; 586 tests, 97.41% stmts; build ok, SW precache 64 entries)
 - [x] Task: Commit `chore(release): Bump version to 0.5.0` (commit: e89d5b0)
-- [ ] Task: Phase Verification & Checkpoint (Refer to workflow.md)
+- [x] Task: Phase Verification & Checkpoint (Refer to workflow.md)
 
 ## Phase 4: Land on master
 - [ ] Task: Push `shipv050_20260911` and open a PR to `master`
