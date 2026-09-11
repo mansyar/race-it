@@ -14,7 +14,7 @@ import { LOOK_AHEAD_DISTANCE, RACE_ZOOM_FLOOR } from '../render/race-camera';
 import { createRaceHud } from '../ui/race-hud';
 import { createTrafficLight } from '../ui/traffic-light';
 import { createTrophy } from '../ui/trophy';
-import { type PhotoFinishTickInput, type PhotoFinishTracker } from './photo-finish';
+import type { PhotoFinishTickInput, PhotoFinishTracker } from './photo-finish';
 import {
   CAMERA_SMOOTH_RATE,
   createRacePresentation,

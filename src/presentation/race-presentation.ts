@@ -7,6 +7,7 @@ import { type RaceCameraPhase, raceCameraPose } from '../render/race-camera';
 import type { RaceHud } from '../ui/race-hud';
 import type { TrafficLight } from '../ui/traffic-light';
 import type { Trophy } from '../ui/trophy';
+import { createPhotoFinishTracker, type PhotoFinishTracker } from './photo-finish';
 
 /** Winner color words for the trophy overlay (product-guidelines palette). */
 export const WINNER_COLOR_WORDS = ['Red', 'Blue', 'Green', 'Yellow'] as const;
@@ -87,6 +88,11 @@ export interface RacePresentationOptions {
   onGo?: () => void;
   /** Race audio layers (music, hum, jingle) driven by the race lifecycle. */
   audio?: RaceAudioDirector;
+  /**
+   * Photo-finish tracker override (test seam). Defaults to a fresh tracker
+   * owned by this presentation.
+   */
+  photoFinish?: PhotoFinishTracker;
 }
 
 export interface RacePresentation {
@@ -155,6 +161,7 @@ export function createRacePresentation(options: RacePresentationOptions): RacePr
   const { engine, path, trafficLight, raceHud, trophy, confetti, karts, camera } = options;
   const startCell = path[0];
   const finishOrigin = startCell ? gridToWorld(startCell.x, startCell.y) : { x: 0, z: 0 };
+  const tracker = options.photoFinish ?? createPhotoFinishTracker();
 
   let goFlashRemaining = 0;
   let spinning = false;
@@ -174,6 +181,10 @@ export function createRacePresentation(options: RacePresentationOptions): RacePr
   let prevPace: number[] = engine.karts.map(() => 0);
   const baseSpeed = baseSpeedFor(engine.lapLength);
   let held = false;
+  // Pause overlay state: freezes the photo-finish ramp clock while paused.
+  let pausedHold = false;
+  // Current photo-finish time scale applied to the frame delta.
+  let timeScale = 1;
 
   function resetCelebration(): void {
     spinning = false;
@@ -201,12 +212,14 @@ export function createRacePresentation(options: RacePresentationOptions): RacePr
   const priorAgain = trophy.callbacks.onAgain;
   raceHud.callbacks.onPause = () => {
     priorPause();
+    pausedHold = true;
     options.audio?.suspendAll();
     engine.pause();
   };
   raceHud.callbacks.onResume = () => {
     priorResume();
     held = false;
+    pausedHold = false;
     engine.resume();
     options.audio?.resumeAll();
   };
@@ -244,6 +257,7 @@ export function createRacePresentation(options: RacePresentationOptions): RacePr
 
   engine.on('stateChange', (state) => {
     held = false;
+    pausedHold = false;
     if (state === 'countdown') {
       options.onBuildUiChange?.(false);
       options.audio?.startMusic();
@@ -273,6 +287,8 @@ export function createRacePresentation(options: RacePresentationOptions): RacePr
     }
     if (state === 'idle') {
       options.audio?.stopAll();
+      tracker.reset();
+      timeScale = 1;
       resetToBuildVisuals();
     }
   });
@@ -432,6 +448,32 @@ export function createRacePresentation(options: RacePresentationOptions): RacePr
     camera.lookAt(smoothedTarget.x, smoothedTarget.y, smoothedTarget.z);
   }
 
+  /**
+   * Advances the photo-finish tracker for one frame and returns the time scale
+   * to apply to it. Frozen while paused or held for an interruption so the
+   * ramp's wall-clock windows do not run behind an overlay; the idle branch
+   * resets the tracker (and the scale) when the race is abandoned.
+   */
+  function tickPhotoFinish(dt: number): number {
+    if (held || pausedHold || engine.state === 'idle') {
+      return timeScale;
+    }
+    const finishedCount = engine.karts.filter((kart) => kart.finished).length;
+    const resolved = finishedCount >= 2 ? (engine.result?.photoFinish ?? null) : null;
+    const { timeScale: next } = tracker.tick({
+      dt,
+      lapLength: engine.lapLength,
+      samples: engine.karts.map((kart) => ({
+        progress: kart.progress,
+        pace: kart.speed,
+        finished: kart.finished,
+      })),
+      photoFinish: resolved,
+    });
+    timeScale = next;
+    return timeScale;
+  }
+
   return {
     beginRace() {
       if (engine.state !== 'idle') {
@@ -441,16 +483,17 @@ export function createRacePresentation(options: RacePresentationOptions): RacePr
       engine.start();
     },
     update(dt: number) {
-      engine.tick(dt);
-      updateGoFlash(dt);
+      const scaledDt = dt * tickPhotoFinish(dt);
+      engine.tick(scaledDt);
+      updateGoFlash(scaledDt);
       updateTrafficLight();
-      updateVictorySpin(dt);
+      updateVictorySpin(scaledDt);
       updateTrophy();
-      const { paces, accels } = measurePaces(dt);
+      const { paces, accels } = measurePaces(scaledDt);
       const poses = currentPoses(paces, accels);
       karts.update(poses);
-      confetti.update(dt);
-      updateCamera(dt, poses);
+      confetti.update(scaledDt);
+      updateCamera(scaledDt, poses);
     },
     holdForInterruption() {
       if (held || (engine.state !== 'countdown' && engine.state !== 'running')) {
