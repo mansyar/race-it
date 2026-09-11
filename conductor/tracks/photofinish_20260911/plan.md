@@ -43,3 +43,7 @@
 - [x] Task 5.2: browser + E2E verification — Playwright CI-config run 8/8 green twice (dev-config parallel run showed 2 contention flakes; CI uses 1 worker + 2 retries); `?perf` draw calls unchanged by construction (no render/scene diffs — flash is DOM-only); manual close-finish portrait + landscape approved by user at the Phase 4 checkpoint; manifest screenshots refreshed (`public/screenshots`).
 - [x] Task 5.3: fairness & drama report — fairness suite 6/6 green (slot win bands, photo-finish closeness band 30–65%, first finish 30–45 s); predictor suite 22/22 green (sweep: 100% of flag-true races armed pre-crossing, false-arm rate 11% (99/900) @ PREDICTION_MARGIN_SECONDS 0.35, one accent per true finish, zero leaked).
 - [x] Task: Phase Verification & Checkpoint (Refer to workflow.md)
+
+## Phase: Review Fixes
+
+- [x] Task: Apply review suggestions 1e3a000
