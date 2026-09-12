@@ -15,6 +15,8 @@
 - [x] **Track: Session Resilience — Toddler-Proofing & Lifecycle Hardening** *Archived: [sessionresilience_20260911](./archive/sessionresilience_20260911/index.md)*
 - [x] **Track: Fair Start & Natural Motion** *Archived: [racephysics_20260911](./archive/racephysics_20260911/index.md)*
 - [x] **Track: Adaptive Performance Guardrails** *Archived: [perfguardrails_20260911](./archive/perfguardrails_20260911/index.md)*
-- [x] **Track: Ship v0.5.0 - Release & Deploy** *Archived: [shipv050_20260911](./archive/shipv050_20260911/index.md)*
+- [x] **Track: Ship v0.5.0 — Release & Deploy** *Archived: [shipv050_20260911](./archive/shipv050_20260911/index.md)*
 - [x] **Track: Photo-Finish Drama** *Archived: [photofinish_20260911](./archive/photofinish_20260911/index.md)*
+- [x] **Track: Boot Readiness & Loading Experience** *Archived: [bootready_20260912](./archive/bootready_20260912/index.md)*
+- [x] **Track: Safe PWA Update Flow** *Archived: [pwaupdate_20260912](./archive/pwaupdate_20260912/index.md)*
 - [x] **Track: WebGL Context-Loss Recovery** *Archived: [contextrecovery_20260912](./archive/contextrecovery_20260912/index.md)*

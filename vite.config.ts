@@ -5,7 +5,8 @@ import { pwaManifest } from './src/pwa-manifest.ts';
 export default defineConfig({
   plugins: [
     VitePWA({
-      registerType: 'autoUpdate',
+      registerType: 'prompt',
+      injectRegister: null,
       includeAssets: ['favicon.ico', 'apple-touch-icon-180x180.png'],
       manifest: pwaManifest,
       workbox: {

@@ -12,10 +12,10 @@ Vanilla TypeScript + Three.js, no UI framework, no game engine. A lean static PW
 | Build tool | **Vite** | 8.2.2 | Dev server + static bundling. Requires Node ^20.19 or ≥22.12 (local Node 24.16.0 ✔). |
 | 3D rendering | **Three.js** | 0.185.1 | WebGL renderer, GLTFLoader for Kenney models, raycasting for tile placement. No game engine — custom fixed-timestep game loop. |
 | UI | **None (vanilla DOM)** | — | Icon buttons/HUD as DOM overlay over the canvas; keeps bundle tiny. |
-| PWA | **vite-plugin-pwa** | 1.3.0 | Service worker (offline-first precache), web manifest, auto-update. Supports Vite ^8 ✔ (Workbox 7.4.x underneath). |
+| PWA | **vite-plugin-pwa** | 1.3.0 | Service worker (offline-first precache), web manifest. Registration is app-owned: prompt-style updates install silently and activate only at a quiet Build-mode moment (see PWA Update Lifecycle below) — never `autoUpdate`. Supports Vite ^8 ✔ (Workbox 7.4.x underneath). |
 | PWA assets | **@vite-pwa/assets-generator** | 1.0.2 | Generates icons/splash assets for manifest. |
 | Testing | **Vitest** | 5.0.0 | Unit tests for track validation, race logic, storage. Supports Vite ^8 ✔. |
-| E2E testing | **Playwright** | exact pin at install | Chromium-only suite: smoke (boot + demo-loop race), shelf save/load/delete, a landscape picker regression (RACE reachable and starts the race in a 390px-tall viewport), WebGL context-loss recovery (`e2e/context-loss.spec.ts`, driving the `WEBGL_lose_context` extension), and a headed Chrome installability gate (CDP) against the production build via `vite preview`; browsers cached in CI. |
+| E2E testing | **Playwright** | exact pin at install | Chromium-only suite: smoke (boot + demo-loop race), shelf save/load/delete, a landscape picker regression (RACE reachable and starts the race in a 390px-tall viewport), WebGL context-loss recovery (`e2e/context-loss.spec.ts`, driving the `WEBGL_lose_context` extension), a headed Chrome installability gate (CDP) against the production build via `vite preview`, and a two-build deferred-update flow suite (race safety + quiet Build-mode gate, fixtures via `scripts/build-update-fixtures.mjs`); browsers cached in CI. |
 | Test typings | **@types/node** | 24.13.3 | Dev-only Node API typings (fs/path/url imports) for tests that read project files, e.g. the splash-screen contract test. Module-scoped imports only — `tsconfig` adds `"node"` to `types`, so Node imports type-check while app code gains no Node globals. |
 | Lint/Format | **Biome** | 2.5.12 | Single fast tool for linting + formatting; config MUST be aligned with `conductor/code_styleguides/` (Google TS style): single quotes, explicit semicolons, named exports only (no default exports), `===`, no `any`, no `_`-prefixed identifiers. |
 
@@ -49,6 +49,18 @@ Vanilla TypeScript + Three.js, no UI framework, no game engine. A lean static PW
 - **Hold & re-sync wiring (`src/main.ts`)** — on loss: in-flight races held via `presentation.holdForInterruption()`, audio suspended (`audio.suspendAll()`), canvas taps gated while the scene is invisible; on restore: `view.resize()`, picker previews re-rendered, audio resumed under the existing visibility/hold gates. Wordless; no new UI. GO and race-start taps are gated while the context is not stable; `?debug` exposes `window.__raceItContext` (state, draw calls, reload counter).
 - **Silent reload fallback** — if no restore arrives within the grace while visible, exactly one silent `location.reload()` with a sessionStorage attempt cap (≤2 per session, reset on stable). The working board always autosaves (including invalid in-progress builds) so any recovery returns exactly what the child built. Covered by unit tests for the state machine plus `e2e/context-loss.spec.ts` (race hold, build-mode wordless hold, silent fallback with invalid board, reload cap).
 
+## PWA Update Lifecycle (added 2026-09-12)
+- **Registration strategy** — `vite.config.ts` uses `registerType: 'prompt'` with `injectRegister: null`; the app registers the service worker itself (raw `navigator.serviceWorker.register('/sw.js')` in `src/main.ts`) and owns all update decisions. Never `autoUpdate` — a deploy must not reload a running session.
+- **Deferred activation** — `src/pwa/update-controller.ts` (state machine with injectable clock/timers) checks at launch, on foreground, on reconnect, and every ~15 min while visible+online. A discovered update stays waiting and is applied only in Build mode after ≥3 s without pointer input while visible. Amendment 2026-09-12: applying posts SKIP_WAITING directly to the waiting worker (the generated `sw.js` already listens for it) and reloads once the new worker activates — the vite-plugin-pwa virtual register module was dropped because its dynamic `workbox-window` import cannot resolve under pnpm without adding a runtime dependency. Newer waiting versions replace older ones; a never-applied update activates on the next launch via the standard SW lifecycle.
+- **Quiet-window input tracking** — `src/pwa/input-activity.ts` (passive pointer listeners) reports whether input has been idle.
+- No new runtime dependency; workbox precache globs and hosting are unchanged.
+
+## Boot & Loading (added 2026-09-12)
+- **Asset readiness tracker** — `src/asset-readiness.ts`: named asset groups load independently and retry gently in the background (exponential backoff 500 ms → 10 s cap, retried indefinitely; a wordless *retry cue* appears after 3 consecutive failures or 8 s without a success). `pieces` and `karts` are race-critical groups; `scenery` is decorative and never blocks the race.
+- **Staged table reveal** — the table appears immediately; track pieces pop in first, then scenery and karts join as they arrive (existing toy-feedback pop-in; no blocking spinner, no dead screen).
+- **GO readiness gate** — `src/ui/go-button.ts` starts *sleeping* (dim, breathing) and only wakes once every race-critical group is ready; if loads stall, GO shows a retry pulse and a tap forces an immediate attempt. Blocked-track validity gating is unchanged.
+- **Debug** — `?debug` additionally exposes `__raceItBoot()` (readiness snapshot) alongside the existing hooks.
+
 ## Runtime & Hosting
 - **Runtime:** modern evergreen mobile browsers — iOS Safari 16+, Android Chrome 110+.
 - **Hosting:** containerized static PWA served by **nginx:alpine** over **HTTPS** on the customer's **Coolify** instance (required for service worker/PWA install). No backend, no database.
@@ -59,7 +71,7 @@ Vanilla TypeScript + Three.js, no UI framework, no game engine. A lean static PW
 - CI installs the exact pinned toolchain on every run (reproducible builds).
 
 ## CI/CD & Deployment
-- **CI:** GitHub Actions on `mansyar/race-it` (public, default branch `master`) — `ci.yml` runs on every push/PR: Biome lint+format, Vitest unit + coverage gate ≥80%, `tsc --noEmit && vite build` (dist artifact reused), Playwright E2E (smoke + shelf + installability gate). pnpm store + Playwright browser caches; superseded runs cancelled.
+- **CI:** GitHub Actions on `mansyar/race-it` (public, default branch `master`) — `ci.yml` runs on every push/PR: Biome lint+format, Vitest unit + coverage gate ≥80%, `tsc --noEmit && vite build` (dist artifact reused), Playwright E2E (smoke + shelf + boot + context-loss + installability gate + two-build update flow). pnpm store + Playwright browser caches; superseded runs cancelled.
 - **Release:** `release.yml` on `v*` semver tags — multi-stage Docker build (node:24-alpine → nginx:alpine) → push **GHCR** `ghcr.io/mansyar/race-it` (`:vX.Y.Z` + `:latest`, public) → publish GitHub Release with auto-generated notes grouped by conventional-commit type → trigger Coolify deploy via authenticated webhook (`Authorization: Bearer` token).
 - **Secrets (repo):** `COOLIFY_DEPLOY_WEBHOOK`, `COOLIFY_API_TOKEN` (Bearer).
 
