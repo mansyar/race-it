@@ -18,6 +18,7 @@ import { createRaceEngine, type RaceEngine } from './race/engine';
 import { kartColorIndex, loadLineup, saveLineup } from './race/lineup';
 import { extractLoopPath } from './race/path';
 import { ConfettiBurst } from './render/confetti';
+import { CONTEXT_RELOAD_KEY, createContextLossGuard } from './render/context-loss';
 import { type BuildTool, handleCellTap } from './render/interaction';
 import { KartRenderer } from './render/kart-meshes';
 import { KartPreview } from './render/kart-preview';
@@ -80,13 +81,18 @@ if (root && appReady()) {
     pieces.update(model.toSnapshot());
     scenery.update(model.toSnapshot());
     bar.setUndoEnabled(editor.canUndo());
-    go.setValid(validateTrack(model).valid);
-    if (validateTrack(model).valid) {
-      saveTrack(model);
-    }
+    const validation = validateTrack(model);
+    go.setValid(validation.valid);
+    // Persist the working board on every edit — including invalid in-progress
+    // builds — so a context-loss fallback reload returns to exactly this board.
+    saveTrack(model);
   };
 
   const view = createBuildScene(root, (x, y) => {
+    if (contextGuard.state !== 'stable') {
+      // The canvas is dead — ignore blind board edits until it returns.
+      return;
+    }
     const result = handleCellTap(editor, tool, x, y);
     if (result === 'placed') {
       audio.playOneShot('place');
@@ -105,6 +111,30 @@ if (root && appReady()) {
   // Toddler-proof the play surface: no long-press context menus or callouts,
   // no double-tap/pinch zoom, and no native drag ghosts on the toy table.
   installGestureGuards(root);
+
+  // Context-loss recovery: three.js keeps the renderer alive across
+  // `webglcontextlost`/`webglcontextrestored`, but the toy above it must hold
+  // too — freeze any in-flight race behind the existing resume overlay,
+  // suspend audio, and ignore board taps while the canvas is dead. A browser
+  // restore re-syncs in place; if it never comes, one silent, capped reload
+  // returns the child to the same auto-saved board.
+  const contextGuard = createContextLossGuard({
+    target: view.renderer.domElement,
+    visibilityTarget: document,
+    isVisible: () => document.visibilityState === 'visible',
+    storage: window.sessionStorage,
+    onLost: () => {
+      audio.suspendAll();
+      presentation?.holdForInterruption();
+    },
+    onRestored: () => {
+      view.resize();
+      renderKartPreviews();
+      if (document.visibilityState === 'visible' && !presentation?.isHolding()) {
+        audio.resumeAll();
+      }
+    },
+  });
 
   // Adaptive quality: boot at the stored (or `?tier=`-forced) level and step it
   // from the frame loop; each tier applies its pixel-ratio cap to the scene and
@@ -288,6 +318,17 @@ if (root && appReady()) {
         buildLabel: import.meta.env.VITE_BUILD_LABEL ?? null,
       },
     };
+    (window as unknown as Record<string, unknown>).__raceItContext = {
+      state: () => contextGuard.state,
+      drawCalls: () => view.renderer.info.render.calls,
+      reloads: () => {
+        try {
+          return Number(window.sessionStorage.getItem(CONTEXT_RELOAD_KEY) ?? 0);
+        } catch {
+          return 0;
+        }
+      },
+    };
   }
 
   // Debug mode: `?race` runs a headless seeded race on the current track and
@@ -354,6 +395,9 @@ if (root && appReady()) {
       readiness.retryFailed();
     },
     onGo: () => {
+      if (contextGuard.state !== 'stable') {
+        return;
+      }
       audio.playOneShot('click');
       picker.setLineup(loadLineup());
       picker.show();
@@ -452,6 +496,9 @@ if (root && appReady()) {
 
   const picker = createCarPicker({
     onRace: (lineup) => {
+      if (contextGuard.state !== 'stable') {
+        return;
+      }
       try {
         const path = extractLoopPath(model);
         const engine = createRaceEngine(path, { kartCount: lineup.karts.length });
