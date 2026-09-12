@@ -30,6 +30,15 @@ async function canvasBox(
 /** Runs lose/restore on the scene canvas via the `WEBGL_lose_context` extension. */
 async function contextExtension(page: Page, action: 'lose' | 'restore'): Promise<void> {
   await page.evaluate((mode) => {
+    const stashed = window as unknown as { __raceItLoseCtx?: WEBGL_lose_context };
+    if (mode === 'restore') {
+      // `getExtension` returns null once the context is lost, so the handle
+      // stashed at lose time is the only way back.
+      const ext = stashed.__raceItLoseCtx;
+      if (!ext) throw new Error('WEBGL_lose_context was not stashed (lose first)');
+      ext.restoreContext();
+      return;
+    }
     const canvas = document.querySelector('#app > canvas') as HTMLCanvasElement | null;
     if (!canvas) throw new Error('canvas missing');
     const gl = (canvas.getContext('webgl2') ?? canvas.getContext('webgl')) as
@@ -39,29 +48,24 @@ async function contextExtension(page: Page, action: 'lose' | 'restore'): Promise
     if (!gl) throw new Error('WebGL context missing');
     const ext = gl.getExtension('WEBGL_lose_context');
     if (!ext) throw new Error('WEBGL_lose_context extension unavailable');
-    if (mode === 'lose') {
-      ext.loseContext();
-    } else {
-      ext.restoreContext();
-    }
+    stashed.__raceItLoseCtx = ext;
+    ext.loseContext();
   }, action);
 }
 
 /** Guard state exposed by the `?debug` seam. */
 function contextState(page: Page): Promise<string> {
-  return page.evaluate(
-    () =>
-      (window as unknown as { __raceItContext: { state: () => string } }).__raceItContext.state(),
+  return page.evaluate(() =>
+    (window as unknown as { __raceItContext: { state: () => string } }).__raceItContext.state(),
   );
 }
 
 /** Last-frame draw calls exposed by the `?debug` seam. */
 function drawCalls(page: Page): Promise<number> {
-  return page.evaluate(
-    () =>
-      (
-        window as unknown as { __raceItContext: { drawCalls: () => number } }
-      ).__raceItContext.drawCalls(),
+  return page.evaluate(() =>
+    (
+      window as unknown as { __raceItContext: { drawCalls: () => number } }
+    ).__raceItContext.drawCalls(),
   );
 }
 
