@@ -12,7 +12,7 @@ Vanilla TypeScript + Three.js, no UI framework, no game engine. A lean static PW
 | Build tool | **Vite** | 8.2.2 | Dev server + static bundling. Requires Node ^20.19 or ≥22.12 (local Node 24.16.0 ✔). |
 | 3D rendering | **Three.js** | 0.185.1 | WebGL renderer, GLTFLoader for Kenney models, raycasting for tile placement. No game engine — custom fixed-timestep game loop. |
 | UI | **None (vanilla DOM)** | — | Icon buttons/HUD as DOM overlay over the canvas; keeps bundle tiny. |
-| PWA | **vite-plugin-pwa** | 1.3.0 | Service worker (offline-first precache), web manifest, auto-update. Supports Vite ^8 ✔ (Workbox 7.4.x underneath). |
+| PWA | **vite-plugin-pwa** | 1.3.0 | Service worker (offline-first precache), web manifest. Registration is app-owned: prompt-style updates install silently and activate only at a quiet Build-mode moment (see PWA Update Lifecycle below) — never `autoUpdate`. Supports Vite ^8 ✔ (Workbox 7.4.x underneath). |
 | PWA assets | **@vite-pwa/assets-generator** | 1.0.2 | Generates icons/splash assets for manifest. |
 | Testing | **Vitest** | 5.0.0 | Unit tests for track validation, race logic, storage. Supports Vite ^8 ✔. |
 | E2E testing | **Playwright** | exact pin at install | Chromium-only suite: smoke (boot + demo-loop race), shelf save/load/delete, a landscape picker regression (RACE reachable and starts the race in a 390px-tall viewport), and a headed Chrome installability gate (CDP) against the production build via `vite preview`; browsers cached in CI. |
@@ -38,6 +38,12 @@ Vanilla TypeScript + Three.js, no UI framework, no game engine. A lean static PW
 - **Adaptive quality tiers** — `src/render/quality-controller.ts`: rolling-FPS sampler (≈2 s window below 55 fps steps a tier down; ≈10 s above 58 fps steps back up) across `high → mid → low`, with hysteresis to avoid oscillation. The tier persists to `race-it:quality`; a `?tier=` URL parameter forces a tier for deterministic tests (and disables sampling).
 - **Tier levers** — every tier caps the renderer pixel ratio (2 / 1.5 / 1); the `low` tier additionally batches road tiles per piece type through `InstancedMesh` (`src/render/piece-renderer.ts` — `setRenderMode('individual' | 'instanced')`, visuals and toy feedback identical via `syncInstances`). Applied once per frame from the single `view.onFrame` loop in `src/main.ts`.
 - **Measured (headless, full 144-piece board):** high/mid 652 draw calls; low 232 draw calls (64% fewer); 21,986 triangles constant across tiers.
+
+## PWA Update Lifecycle (added 2026-09-12)
+- **Registration strategy** — `vite.config.ts` uses `registerType: 'prompt'` with `injectRegister: null`; the app registers the service worker itself (vite-plugin-pwa register API) and owns all update decisions. Never `autoUpdate` — a deploy must not reload a running session.
+- **Deferred activation** — `src/pwa/update-controller.ts` (state machine with injectable clock/timers) checks at launch, on foreground, on reconnect, and every ~15 min while visible+online. A discovered update stays waiting and is applied only in Build mode after ≥3 s without pointer input while visible (SKIP_WAITING via `updateServiceWorker(true)`). Newer waiting versions replace older ones; a never-applied update activates on the next launch via the standard SW lifecycle.
+- **Quiet-window input tracking** — `src/pwa/input-activity.ts` (passive pointer listeners) reports whether input has been idle.
+- No new runtime dependency; workbox precache globs and hosting are unchanged.
 
 ## Runtime & Hosting
 - **Runtime:** modern evergreen mobile browsers — iOS Safari 16+, Android Chrome 110+.
