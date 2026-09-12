@@ -506,6 +506,12 @@ if (root && appReady()) {
             renderKartPreviews();
           }),
       },
+      // Audio warmth is deliberately non-critical: it can never gate GO or
+      // raise the retry cue, and failures retry silently like scenery.
+      {
+        name: 'audio',
+        load: () => audio.warm(),
+      },
     ],
     onStateChange: (snapshot) => {
       go.setReady(snapshot.raceReady);
@@ -514,6 +520,7 @@ if (root && appReady()) {
   });
   if (new URLSearchParams(window.location.search).has('debug')) {
     (window as unknown as Record<string, unknown>).__raceItBoot = () => readiness.snapshot();
+    (window as unknown as Record<string, unknown>).__raceItAudio = () => audio.warmSnapshot();
   }
   readiness.start();
 
