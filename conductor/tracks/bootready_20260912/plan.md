@@ -37,3 +37,6 @@
 - [x] Task 4.1: gates (25668f4) — `$env:CI='true'; pnpm test -- --coverage` (≥80% on changed modules), `pnpm lint`, `pnpm build`, `pnpm exec playwright test`; perf sanity via the existing perf spec (`?perf` draw calls unchanged; no new per-frame work; no new asset requests).
 - [x] Task 4.2: manual device/network checklist (25668f4) — throttled first load (staged reveal, no dead states), airplane-mode first visit (retry cue + recovery when network returns), portrait + landscape, `?race`/`?perf`/`?debug` intact. (User-assisted per `workflow.md`; recorded in the checkpoint note.)
 - [ ] Task: Phase Verification & Checkpoint (Refer to workflow.md)
+
+## Phase: Review Fixes
+- [x] Task: Apply review suggestions e112910 — hung-attempt watchdog (`ATTEMPT_TIMEOUT_MS = 10_000`): an attempt that never settles now counts as a failure (retry + stall cue engage; late settlements ignored; single-flight preserved); +3 specs (16/16 targeted, 610/610 full, 13/13 E2E), build + lint green.
