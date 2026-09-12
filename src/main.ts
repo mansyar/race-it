@@ -12,10 +12,13 @@ import { TrackEditor } from './grid/track-editor';
 import { loadOrSeedTrack, saveTrack } from './grid/track-store';
 import { validateTrack } from './grid/track-validator';
 import { createRacePresentation, type RacePresentation } from './presentation/race-presentation';
+import { createInputActivity } from './pwa/input-activity';
+import { createUpdateController } from './pwa/update-controller';
 import { createRaceEngine, type RaceEngine } from './race/engine';
 import { kartColorIndex, loadLineup, saveLineup } from './race/lineup';
 import { extractLoopPath } from './race/path';
 import { ConfettiBurst } from './render/confetti';
+import { CONTEXT_RELOAD_KEY, createContextLossGuard } from './render/context-loss';
 import { type BuildTool, handleCellTap } from './render/interaction';
 import { KartRenderer } from './render/kart-meshes';
 import { KartPreview } from './render/kart-preview';
@@ -64,6 +67,8 @@ if (root && appReady()) {
   let selectedType: PieceType | null = null;
   let presentation: RacePresentation | null = null;
   let raceEngine: RaceEngine | null = null;
+  let pickingCars = false;
+  let racing = false;
 
   const pieces = new PieceRenderer();
   const karts = new KartRenderer();
@@ -76,13 +81,18 @@ if (root && appReady()) {
     pieces.update(model.toSnapshot());
     scenery.update(model.toSnapshot());
     bar.setUndoEnabled(editor.canUndo());
-    go.setValid(validateTrack(model).valid);
-    if (validateTrack(model).valid) {
-      saveTrack(model);
-    }
+    const validation = validateTrack(model);
+    go.setValid(validation.valid);
+    // Persist the working board on every edit — including invalid in-progress
+    // builds — so a context-loss fallback reload returns to exactly this board.
+    saveTrack(model);
   };
 
   const view = createBuildScene(root, (x, y) => {
+    if (contextGuard.state !== 'stable') {
+      // The canvas is dead — ignore blind board edits until it returns.
+      return;
+    }
     const result = handleCellTap(editor, tool, x, y);
     if (result === 'placed') {
       audio.playOneShot('place');
@@ -102,6 +112,30 @@ if (root && appReady()) {
   // no double-tap/pinch zoom, and no native drag ghosts on the toy table.
   installGestureGuards(root);
 
+  // Context-loss recovery: three.js keeps the renderer alive across
+  // `webglcontextlost`/`webglcontextrestored`, but the toy above it must hold
+  // too — freeze any in-flight race behind the existing resume overlay,
+  // suspend audio, and ignore board taps while the canvas is dead. A browser
+  // restore re-syncs in place; if it never comes, one silent, capped reload
+  // returns the child to the same auto-saved board.
+  const contextGuard = createContextLossGuard({
+    target: view.renderer.domElement,
+    visibilityTarget: document,
+    isVisible: () => document.visibilityState === 'visible',
+    storage: window.sessionStorage,
+    onLost: () => {
+      audio.suspendAll();
+      presentation?.holdForInterruption();
+    },
+    onRestored: () => {
+      view.resize();
+      renderKartPreviews();
+      if (document.visibilityState === 'visible' && !presentation?.isHolding()) {
+        audio.resumeAll();
+      }
+    },
+  });
+
   // Adaptive quality: boot at the stored (or `?tier=`-forced) level and step it
   // from the frame loop; each tier applies its pixel-ratio cap to the scene and
   // switches the piece renderer to the batched path at `low`.
@@ -115,6 +149,65 @@ if (root && appReady()) {
   });
   view.setPixelRatioCap(quality.tier);
   pieces.setRenderMode(quality.tier === 'low' ? 'instanced' : 'individual');
+
+  // PWA update flow: the app owns service-worker registration and defers
+  // activation to a quiet Build-mode moment, so a deploy can never reload the
+  // page mid-race. Applying posts SKIP_WAITING to the waiting worker and
+  // reloads once it activates (spec FR1-FR7).
+  const inputActivity = createInputActivity();
+  const swSupported = 'serviceWorker' in navigator && import.meta.env.PROD;
+  let swRegistration: ServiceWorkerRegistration | null = null;
+  const updateController = createUpdateController({
+    supported: swSupported,
+    input: inputActivity,
+    isOnline: () => navigator.onLine,
+    isVisible: () => document.visibilityState === 'visible',
+    isBuildScreen: () => !pickingCars && !racing,
+    update: async () => {
+      await swRegistration?.update();
+    },
+    apply: () => {
+      const waiting = swRegistration?.waiting;
+      if (!waiting) {
+        return;
+      }
+      if (waiting.state === 'activated') {
+        window.location.reload();
+        return;
+      }
+      waiting.addEventListener('statechange', () => {
+        if (waiting.state === 'activated') {
+          window.location.reload();
+        }
+      });
+      waiting.postMessage({ type: 'SKIP_WAITING' });
+    },
+  });
+  if (swSupported) {
+    void navigator.serviceWorker
+      .register('/sw.js', { scope: '/' })
+      .then((registration) => {
+        swRegistration = registration;
+        if (registration.waiting) {
+          updateController.notifyUpdateReady();
+        }
+        registration.addEventListener('updatefound', () => {
+          const installing = registration.installing;
+          installing?.addEventListener('statechange', () => {
+            if (installing.state === 'installed' && registration.waiting) {
+              updateController.notifyUpdateReady();
+            }
+          });
+        });
+      })
+      .catch(() => {
+        // Registration failures stay silent; offline-first boot must not break.
+      });
+  }
+  updateController.noteLaunch();
+  window.addEventListener('online', () => {
+    updateController.noteOnline();
+  });
 
   // Debug mode: `?perf` fills the whole board (worst case, 144 pieces) and
   // exposes renderer stats on the window for manual fps/draw-call measurement.
@@ -220,6 +313,21 @@ if (root && appReady()) {
         });
         return grid.map((row) => row.join(''));
       },
+      pwa: {
+        status: () => updateController.status,
+        buildLabel: import.meta.env.VITE_BUILD_LABEL ?? null,
+      },
+    };
+    (window as unknown as Record<string, unknown>).__raceItContext = {
+      state: () => contextGuard.state,
+      drawCalls: () => view.renderer.info.render.calls,
+      reloads: () => {
+        try {
+          return Number(window.sessionStorage.getItem(CONTEXT_RELOAD_KEY) ?? 0);
+        } catch {
+          return 0;
+        }
+      },
     };
   }
 
@@ -287,9 +395,14 @@ if (root && appReady()) {
       readiness.retryFailed();
     },
     onGo: () => {
+      if (contextGuard.state !== 'stable') {
+        return;
+      }
       audio.playOneShot('click');
       picker.setLineup(loadLineup());
       picker.show();
+      pickingCars = true;
+      updateController.noteScreenChange();
       renderKartPreviews();
       installHint.hide();
     },
@@ -383,6 +496,9 @@ if (root && appReady()) {
 
   const picker = createCarPicker({
     onRace: (lineup) => {
+      if (contextGuard.state !== 'stable') {
+        return;
+      }
       try {
         const path = extractLoopPath(model);
         const engine = createRaceEngine(path, { kartCount: lineup.karts.length });
@@ -408,7 +524,11 @@ if (root && appReady()) {
           karts,
           camera: view.camera,
           kartOrder: order,
-          onBuildUiChange: setBuildUiVisible,
+          onBuildUiChange: (visible) => {
+            racing = !visible;
+            setBuildUiVisible(visible);
+            updateController.noteScreenChange();
+          },
           onCountdownBeep: (step) => {
             audio.playCountdownBeep(step);
           },
@@ -423,6 +543,8 @@ if (root && appReady()) {
         bar.setRemoveActive(false);
         saveLineup(lineup);
         picker.hide();
+        pickingCars = false;
+        updateController.noteScreenChange();
         audio.playOneShot('confirmA');
         presentation.beginRace();
       } catch (error) {
@@ -432,6 +554,8 @@ if (root && appReady()) {
     onBack: () => {
       audio.playOneShot('click');
       picker.hide();
+      pickingCars = false;
+      updateController.noteScreenChange();
       installHint.show();
     },
     onToggle: () => {
@@ -562,6 +686,7 @@ if (root && appReady()) {
       presentation?.holdForInterruption();
     },
     onVisible() {
+      updateController.noteForeground();
       if (!presentation?.isHolding()) {
         audio.resumeAll();
       }
@@ -572,6 +697,7 @@ if (root && appReady()) {
     },
     onRestore() {
       view.resize();
+      updateController.noteForeground();
       if (document.visibilityState === 'visible' && !presentation?.isHolding()) {
         audio.resumeAll();
       }
