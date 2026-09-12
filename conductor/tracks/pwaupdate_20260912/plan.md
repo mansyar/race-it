@@ -27,10 +27,10 @@
 
 ## Phase 4 — Two-Build Update E2E [checkpoint: ]
 - [x] Task 4.1: fixture builder — `scripts/build-update-fixtures.mjs` builds variants A/B (env `VITE_BUILD_LABEL=a|b`) into `.e2e/fixtures/a|b` (gitignored). (f9b7af2)
-- [~] Task 4.2: update e2e first (Red) — `e2e/update-flow.spec.ts` (`serviceWorkers: 'allow'`, self-hosted static server over a mutable fixture dir):
+- [x] Task 4.2: update e2e first (Red) — `e2e/update-flow.spec.ts` (`serviceWorkers: 'allow'`, self-hosted static server over a mutable fixture dir): (b2d9512)
   1. **Race safety:** load A, start race, swap served files to B + force `registration.update()`; assert no reload while racing (sentinel + label still A); after Build Again, assert silent reload to B with the board intact.
   2. **Quiet gate:** load A, make B available; repeated input defers the swap; once input stops, the swap lands within a few seconds.
-- [ ] Task 4.3: implement harness pieces (Green) + stabilize — run repeatedly under the single-worker CI config; record timings.
+- [x] Task 4.3: implement harness pieces (Green) + stabilize — run repeatedly under the single-worker CI config; record timings. (b2d9512)
 - [ ] Task: Phase Verification & Checkpoint — manual two-build scenario once + CI-config green.
 
 ## Phase 5 — Quality Gates & Documentation [checkpoint: ]
