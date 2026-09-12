@@ -44,6 +44,11 @@ Vanilla TypeScript + Three.js, no UI framework, no game engine. A lean static PW
 - **Tier levers** — every tier caps the renderer pixel ratio (2 / 1.5 / 1); the `low` tier additionally batches road tiles per piece type through `InstancedMesh` (`src/render/piece-renderer.ts` — `setRenderMode('individual' | 'instanced')`, visuals and toy feedback identical via `syncInstances`). Applied once per frame from the single `view.onFrame` loop in `src/main.ts`.
 - **Measured (headless, full 144-piece board):** high/mid 652 draw calls; low 232 draw calls (64% fewer); 21,986 triangles constant across tiers.
 
+## Context-Loss Resilience (added 2026-09-12)
+- **Guard module** — `src/render/context-loss.ts`: an observable state machine (`stable → lost → restoring → stable`, with a `failed` terminal for the reload path) fed by injected listeners (`webglcontextlost` / `webglcontextrestored`), clock, and sessionStorage; `GRACE_MS ≈ 3 s` centralized and injectable. Three.js 0.185 already `preventDefault()`s the loss and re-initializes GL on restore — this module adds the app-level signal, hold semantics, and fallback policy above it. No new dependencies; three.js internals untouched.
+- **Hold & re-sync wiring (`src/main.ts`)** — on loss: in-flight races held via `presentation.holdForInterruption()`, audio suspended (`audio.suspendAll()`), canvas taps gated while the scene is invisible; on restore: `view.resize()`, picker previews re-rendered, audio resumed under the existing visibility/hold gates. Wordless; no new UI.
+- **Silent reload fallback** — if no restore arrives within the grace while visible, exactly one silent `location.reload()` with a sessionStorage attempt cap (≤2 per session, reset on stable). The working board always autosaves (including invalid in-progress builds) so any recovery returns exactly what the child built.
+
 ## Runtime & Hosting
 - **Runtime:** modern evergreen mobile browsers — iOS Safari 16+, Android Chrome 110+.
 - **Hosting:** containerized static PWA served by **nginx:alpine** over **HTTPS** on the customer's **Coolify** instance (required for service worker/PWA install). No backend, no database.
