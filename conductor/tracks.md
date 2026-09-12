@@ -17,4 +17,4 @@
 - [x] **Track: Adaptive Performance Guardrails** *Archived: [perfguardrails_20260911](./archive/perfguardrails_20260911/index.md)*
 - [x] **Track: Ship v0.5.0 - Release & Deploy** *Archived: [shipv050_20260911](./archive/shipv050_20260911/index.md)*
 - [x] **Track: Photo-Finish Drama** *Archived: [photofinish_20260911](./archive/photofinish_20260911/index.md)*
-- [ ] **Track: WebGL Context-Loss Recovery** *Link: [contextrecovery_20260912](./tracks/contextrecovery_20260912/index.md)*
+- [~] **Track: WebGL Context-Loss Recovery** *Link: [contextrecovery_20260912](./tracks/contextrecovery_20260912/index.md)*
