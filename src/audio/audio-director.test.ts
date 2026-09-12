@@ -188,7 +188,7 @@ interface FakeElement {
 
 function masterNodeOf(context: FakeContext): FakeGainNode {
   const node = context.nodes.find((candidate) => candidate.kind === 'gain');
-  if (!node || node.kind !== 'gain') {
+  if (node?.kind !== 'gain') {
     throw new Error('expected the master gain node to exist');
   }
   return node;
@@ -197,7 +197,7 @@ function masterNodeOf(context: FakeContext): FakeGainNode {
 function humGainOf(context: FakeContext): FakeGainNode {
   const master = masterNodeOf(context);
   const node = context.nodes.find((candidate) => candidate.kind === 'gain' && candidate !== master);
-  if (!node || node.kind !== 'gain') {
+  if (node?.kind !== 'gain') {
     throw new Error('expected the hum gain node to exist');
   }
   return node;

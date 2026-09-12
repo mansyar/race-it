@@ -13,6 +13,12 @@ export interface PlayableAudio {
   loop?: boolean;
   /** Optional pausing (music loop). */
   pause?: () => void;
+  /** Optional playback position in seconds (one-shot restart guard). */
+  currentTime?: number;
+  /** Optional buffered-ahead state (HTMLAudioElement readyState; the warm-up polls it). */
+  readyState?: number;
+  /** Optional hot-load trigger used by the boot warm-up. */
+  load?: () => void;
 }
 
 /** Minimal WebAudio param surface used by the director (hum ramps). */
@@ -92,7 +98,44 @@ export const PHOTO_FINISH_HUM_DUCK = 0.4;
 export const HUM_OSCILLATOR_HZ = [80, 160] as const;
 export const HUM_FILTER_HZ = 400;
 
+/** Number of pre-warmed reusable elements per one-shot (bounded overlap, no play-time construction). */
+export const SFX_POOL_SIZE = 2;
+
+/** `readyState` that counts as warm (HAVE_FUTURE_DATA — playback can start). */
+export const WARM_READY_STATE = 3;
+
+/** Cadence of the element warm-up poll, in milliseconds. */
+export const WARM_POLL_INTERVAL_MS = 50;
+
+/** Per-element warm-up deadline; a miss marks the sound failed so the caller can retry. */
+export const WARM_TIMEOUT_MS = 5000;
+
 const MUTE_STORAGE_KEY = 'race-it:muted';
+
+/** Warm-up status of one sound (or the music loop). */
+export type WarmStatus = 'idle' | 'warming' | 'ready' | 'failed';
+
+/** Observable warm-up entry for one sound. */
+export interface WarmEntrySnapshot {
+  status: WarmStatus;
+  attempts: number;
+}
+
+/** Observable boot warm-up state (per-sound status + attempts), exposed via `?debug`. */
+export interface AudioWarmSnapshot {
+  sounds: Record<SfxName, WarmEntrySnapshot>;
+  music: WarmEntrySnapshot;
+  poolSize: number;
+}
+
+/** Internal warm pool: the reusable elements for one sound + per-slot readiness. */
+interface WarmPool {
+  elements: PlayableAudio[];
+  ready: boolean[];
+  status: WarmStatus;
+  attempts: number;
+  nextIndex: number;
+}
 
 /** Audio layers the race presentation drives: music, hum, jingle, suspend. */
 export interface AudioDirector {
@@ -125,6 +168,10 @@ export interface AudioDirector {
   unlock: () => void;
   setMuted: (muted: boolean) => void;
   isMuted: () => boolean;
+  /** Boot warm-up: loads every pooled one-shot and the music element; resolves when all are ready, rejects so callers can retry. */
+  warm: () => Promise<void>;
+  /** Observable warm-up state (per-sound status + attempts). */
+  warmSnapshot: () => AudioWarmSnapshot;
 }
 
 export interface AudioDirectorOptions {
@@ -142,11 +189,22 @@ export interface AudioDirectorOptions {
  * suppresses new one-shot elements, and pauses the music element.
  * Photo-finish additions ease the music tempo (~0.85) and dip the hum (~40%)
  * while the slow-motion holds, restoring both on release.
+ * The boot warm-up (`warm()`) pre-builds a small reusable element pool per
+ * one-shot plus one music element, loads them all, and reports per-sound
+ * readiness; playback then serves from the pool (round-robin) instead of
+ * constructing an element per play. Warm failures are reportable, never
+ * user-visible.
  * @param options - Injectable audio element + WebAudio context factories.
  * @returns The director facade.
  */
 export function createAudioDirector(options: AudioDirectorOptions = {}): AudioDirector {
-  const makeAudio: (url: string) => PlayableAudio = options.makeAudio ?? ((url) => new Audio(url));
+  const makeAudio: (url: string) => PlayableAudio =
+    options.makeAudio ??
+    ((url) => {
+      const element = new Audio(url);
+      element.preload = 'auto';
+      return element;
+    });
   const makeAudioContext: () => AudioContextLike =
     options.makeAudioContext ?? (() => new AudioContext());
   const context = makeAudioContext();
@@ -161,6 +219,11 @@ export function createAudioDirector(options: AudioDirectorOptions = {}): AudioDi
 
   let musicElement: PlayableAudio | undefined;
   let wantMusic = false;
+  let musicStarted = false;
+  // Warm pools are created by warm() at boot; absent means cold per-play construction.
+  let pools: Map<SfxName, WarmPool> | undefined;
+  let musicPool: WarmPool | undefined;
+  let warmPromise: Promise<void> | undefined;
   let suspended = false;
   let jingleDuckTimer: number | undefined;
   let humGain: GainNodeLike | undefined;
@@ -169,20 +232,159 @@ export function createAudioDirector(options: AudioDirectorOptions = {}): AudioDi
   let photoFinish = false;
   let tempoTimer: number | undefined;
 
-  function playElement(url: string, playbackRate?: number): void {
-    const element = makeAudio(url);
-    element.volume = GAINS.oneShot;
-    if (playbackRate !== undefined) {
-      element.playbackRate = playbackRate;
+  function playSound(name: SfxName, playbackRate?: number): void {
+    let element: PlayableAudio | undefined;
+    const pool = pools?.get(name);
+    if (pool) {
+      const slot = pool.nextIndex % pool.elements.length;
+      element = pool.elements[slot];
+      pool.nextIndex = (slot + 1) % pool.elements.length;
     }
-    element.play();
+    if (!element) {
+      element = makeAudio(SFX[name]);
+    }
+    element.volume = GAINS.oneShot;
+    element.playbackRate = playbackRate ?? 1;
+    if (typeof element.currentTime === 'number') {
+      element.currentTime = 0;
+    }
+    const result: unknown = element.play();
+    if (result instanceof Promise) {
+      result.catch(() => undefined);
+    }
+  }
+
+  /** Creates the looping music element at music gain (shared by the warm-up and on-demand starts). */
+  function createMusicElement(): PlayableAudio {
+    const element = makeAudio(MUSIC.loop);
+    element.volume = GAINS.music;
+    element.loop = true;
+    musicElement = element;
+    return element;
+  }
+
+  /** Resets the music element to the top of the track with fresh mix state for a new race. */
+  function resetMusicElement(element: PlayableAudio): void {
+    if (typeof element.currentTime === 'number') {
+      element.currentTime = 0;
+    }
+    element.playbackRate = 1;
+    element.volume = GAINS.music;
+  }
+
+  /** Waits until an element can play (readyState >= WARM_READY_STATE) or the warm deadline passes. */
+  function warmElement(element: PlayableAudio): Promise<void> {
+    return new Promise<void>((resolve, reject) => {
+      let done = false;
+      let poll: number | undefined;
+      let deadline: number | undefined;
+      const finish = (error?: Error): void => {
+        if (done) {
+          return;
+        }
+        done = true;
+        if (poll !== undefined) {
+          clearTimeout(poll);
+        }
+        if (deadline !== undefined) {
+          clearTimeout(deadline);
+        }
+        if (error) {
+          reject(error);
+        } else {
+          resolve();
+        }
+      };
+      const check = (): void => {
+        if (done) {
+          return;
+        }
+        if ((element.readyState ?? 0) >= WARM_READY_STATE) {
+          finish();
+          return;
+        }
+        poll = window.setTimeout(check, WARM_POLL_INTERVAL_MS);
+      };
+      deadline = window.setTimeout(() => {
+        finish(new Error('Audio element did not warm in time'));
+      }, WARM_TIMEOUT_MS);
+      element.load?.();
+      check();
+    });
+  }
+
+  /** Builds the warm pools once: SFX_POOL_SIZE elements per one-shot plus the shared music element. */
+  function ensurePools(): void {
+    if (!pools) {
+      pools = new Map<SfxName, WarmPool>();
+      for (const name of Object.keys(SFX) as SfxName[]) {
+        const elements = Array.from({ length: SFX_POOL_SIZE }, () => makeAudio(SFX[name]));
+        pools.set(name, {
+          elements,
+          ready: elements.map(() => false),
+          status: 'idle',
+          attempts: 0,
+          nextIndex: 0,
+        });
+      }
+    }
+    if (!musicPool) {
+      const element = musicElement ?? createMusicElement();
+      musicPool = {
+        elements: [element],
+        ready: [false],
+        status: 'idle',
+        attempts: 0,
+        nextIndex: 0,
+      };
+    }
+  }
+
+  /** One warm pass: attempts every not-yet-ready element and updates each entry's observable state. */
+  function warmInternal(): Promise<void> {
+    ensurePools();
+    const entries: WarmPool[] = [...(pools?.values() ?? [])];
+    if (musicPool) {
+      entries.push(musicPool);
+    }
+    const attempts: Promise<void>[] = [];
+    for (const entry of entries) {
+      const pending: Promise<void>[] = [];
+      entry.elements.forEach((element, index) => {
+        if (entry.ready[index]) {
+          return;
+        }
+        pending.push(
+          warmElement(element).then(() => {
+            entry.ready[index] = true;
+          }),
+        );
+      });
+      if (pending.length === 0) {
+        continue;
+      }
+      entry.attempts += 1;
+      entry.status = 'warming';
+      attempts.push(
+        Promise.all(pending).then(
+          () => {
+            entry.status = entry.ready.every(Boolean) ? 'ready' : 'failed';
+          },
+          (error: unknown) => {
+            entry.status = 'failed';
+            throw error;
+          },
+        ),
+      );
+    }
+    return Promise.all(attempts).then(() => undefined);
   }
 
   function playOneShotInternal(name: SfxName): void {
     if (muted) {
       return;
     }
-    playElement(SFX[name]);
+    playSound(name);
   }
 
   /** Eases the music element's playback rate toward a target within the tempo window. */
@@ -243,18 +445,21 @@ export function createAudioDirector(options: AudioDirectorOptions = {}): AudioDi
 
   function startMusicInternal(): void {
     wantMusic = true;
-    if (muted || musicElement) {
+    if (musicStarted) {
       return;
     }
-    const element = makeAudio(MUSIC.loop);
-    element.volume = GAINS.music;
-    element.loop = true;
+    if (muted) {
+      return;
+    }
+    const element = musicElement ?? createMusicElement();
+    resetMusicElement(element);
     element.play();
-    musicElement = element;
+    musicStarted = true;
   }
 
   function stopMusicInternal(): void {
     wantMusic = false;
+    musicStarted = false;
     photoFinish = false;
     if (jingleDuckTimer !== undefined) {
       clearTimeout(jingleDuckTimer);
@@ -264,8 +469,8 @@ export function createAudioDirector(options: AudioDirectorOptions = {}): AudioDi
       clearInterval(tempoTimer);
       tempoTimer = undefined;
     }
+    // Keep the warm element for the next race (reset to the top on start).
     musicElement?.pause?.();
-    musicElement = undefined;
   }
 
   function stopHumInternal(): void {
@@ -297,7 +502,7 @@ export function createAudioDirector(options: AudioDirectorOptions = {}): AudioDi
       if (rate === undefined) {
         return;
       }
-      playElement(SFX.countdown, rate);
+      playSound('countdown', rate);
     },
     startMusic(): void {
       startMusicInternal();
@@ -337,7 +542,7 @@ export function createAudioDirector(options: AudioDirectorOptions = {}): AudioDi
       if (muted) {
         return;
       }
-      playElement(SFX.jingle);
+      playSound('jingle');
       const music = musicElement;
       if (!music) {
         return;
@@ -402,17 +607,41 @@ export function createAudioDirector(options: AudioDirectorOptions = {}): AudioDi
       masterGain.gain.value = value ? 0 : GAINS.master;
       localStorage.setItem(MUTE_STORAGE_KEY, String(value));
       if (value) {
-        musicElement?.pause?.();
+        if (musicStarted) {
+          musicElement?.pause?.();
+        }
         return;
       }
-      if (wantMusic && musicElement) {
-        musicElement.play();
+      if (!wantMusic) {
         return;
       }
-      if (wantMusic) {
-        startMusicInternal();
+      if (musicStarted) {
+        musicElement?.play();
+        return;
       }
+      startMusicInternal();
     },
     isMuted: () => muted,
+    warm(): Promise<void> {
+      if (!warmPromise) {
+        warmPromise = warmInternal().finally(() => {
+          warmPromise = undefined;
+        });
+      }
+      return warmPromise;
+    },
+    warmSnapshot(): AudioWarmSnapshot {
+      const sounds = {} as Record<SfxName, WarmEntrySnapshot>;
+      for (const name of Object.keys(SFX) as SfxName[]) {
+        const entry = pools?.get(name);
+        sounds[name] = entry
+          ? { status: entry.status, attempts: entry.attempts }
+          : { status: 'idle', attempts: 0 };
+      }
+      const music = musicPool
+        ? { status: musicPool.status, attempts: musicPool.attempts }
+        : { status: 'idle' as const, attempts: 0 };
+      return { sounds, music, poolSize: SFX_POOL_SIZE };
+    },
   };
 }
