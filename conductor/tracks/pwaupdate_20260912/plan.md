@@ -8,7 +8,7 @@
 
 **Coordination note:** `src/main.ts` is also touched by the completed-but-unmerged `feature/photo-finish` branch — keep edits additive and localized so the eventual integration merge stays clean.
 
-## Phase 1 — Tech-Stack Addendum (doc-only) [checkpoint: ]
+## Phase 1 — Tech-Stack Addendum (doc-only) [checkpoint: 70145ae]
 - [x] Task 1.1: document the update-lifecycle change in `tech-stack.md` — registration strategy `autoUpdate` → `prompt` with app-owned deferred activation (`src/pwa/update-controller.ts` + quiet window), SKIP_WAITING apply via `updateServiceWorker(true)`, discovery cadence, no new dependency; commit before implementation per workflow. (69896f3)
 - [ ] Task: Phase Verification & Checkpoint (Refer to workflow.md) — doc review.
 
