@@ -8,12 +8,12 @@
 
 **Coordination note:** `src/main.ts` is concurrently touched by the completed-but-unmerged `feature/boot-readiness` branch and the in-progress `feature/pwa-update-flow` branch — keep edits additive and localized so the eventual integration merges stay clean.
 
-## Phase 1 — Tech-Stack Addendum (doc-only) [checkpoint: ]
+## Phase 1 — Tech-Stack Addendum (doc-only) [checkpoint: f9745ac]
 - [x] Task 1.1: document the context-loss recovery design in `tech-stack.md` — new `src/render/context-loss.ts` module boundary (state machine + adapters), hold/re-sync wiring in `main.ts`, silent-reload fallback policy with attempt cap, always-autosave board change; commit before implementation per workflow. (f9745ac)
-- [ ] Task: Phase Verification & Checkpoint (Refer to workflow.md) — doc review.
+- [x] Task: Phase Verification & Checkpoint (Refer to workflow.md) — doc review.
 
 ## Phase 2 — Context-Loss Guard Core (pure) [checkpoint: ]
-- [ ] Task 2.1: guard tests first (Red) — `src/render/context-loss.test.ts` (fake timers, injected event target / clock / storage): loss → lost callback + grace timer; restore within grace → restored callback, timer cleared, no failure; grace expiry while visible → a single failed callback; loss while hidden defers grace/report to first visible; failed fires at most once; reload attempts capped (≤2) with the counter read/written via injected storage and reset on stable; `dispose()` detaches listeners and clears timers; loss handler calls `preventDefault()` defensively.
+- [~] Task 2.1: guard tests first (Red) — `src/render/context-loss.test.ts` (fake timers, injected event target / clock / storage): loss → lost callback + grace timer; restore within grace → restored callback, timer cleared, no failure; grace expiry while visible → a single failed callback; loss while hidden defers grace/report to first visible; failed fires at most once; reload attempts capped (≤2) with the counter read/written via injected storage and reset on stable; `dispose()` detaches listeners and clears timers; loss handler calls `preventDefault()` defensively.
 - [ ] Task 2.2: implement `src/render/context-loss.ts` (Green) — observable state machine, `GRACE_MS ≈ 3 s` centralized and injectable, JSDoc public API, no globals.
 - [ ] Task: Phase Verification & Checkpoint — table-walk the transition matrix with the user.
 
