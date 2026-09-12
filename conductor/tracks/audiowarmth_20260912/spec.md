@@ -11,7 +11,7 @@ This track warms all bundled audio at boot: a small reusable element pool per SF
 ## Functional Requirements
 
 ### FR-1 — Warmed element pool (`src/audio/audio-director.ts`, extended)
-- At creation, the director pre-builds a pool of `PlayableAudio` elements per SFX (`SFX_POOL_SIZE`, default 2) via the existing injectable `makeAudio` factory, plus one music element. The default factory sets `preload = 'auto'`.
+- On the first `warm()` (triggered at boot), the director builds a pool of `PlayableAudio` elements per SFX (`SFX_POOL_SIZE`, default 2) via the existing injectable `makeAudio` factory, plus one music element; before warming, playback keeps the legacy per-play construction fallback. The default factory sets `preload = 'auto'`.
 - New `warm(): Promise<void>` starts loading every element (dedicated `load` support on the minimal surface) and resolves only when all elements report ready; it rejects if any element fails so the readiness tracker can retry. It is idempotent: already-warm elements are left alone, failed ones are re-attempted.
 - New `warmSnapshot()` returns observable state for tests/debug: per-sound status (`idle | warming | ready | failed`) + attempt counts + pool size, and the music entry.
 - `playOneShot` / `playCountdownBeep` route through the pool (round-robin): reset `currentTime` to 0 (guarded), apply volume/playbackRate, `play()`, and swallow rejections. Overlap stays bounded at pool size — no element is created during play once warm.
