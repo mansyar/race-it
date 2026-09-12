@@ -13,8 +13,8 @@
 - [ ] Task: Phase Verification & Checkpoint (Refer to workflow.md) — doc review.
 
 ## Phase 2 — Update Controller & Quiet Window (pure) [checkpoint: ]
-- [ ] Task 2.1: controller tests first (Red) — `src/pwa/update-controller.test.ts` (fake timers, injected deps): status model (idle/checking/ready/applying/unsupported); discovery at launch + foreground + online + ~15 min cadence with visible+online guards and silent offline skip; waiting update tracked once, newer replaces older; gate matrix — apply only when screen=build ∧ quiet ≥3 s ∧ visible; any input restarts quiet; leaving Build mode cancels; apply fires exactly once and completes despite later input; no-op when unsupported.
-- [ ] Task 2.2: implement `src/pwa/update-controller.ts` (Green) — pure state machine, injected clock/timers, `QUIET_MS = 3_000` and `CHECK_INTERVAL_MS = 15 * 60_000` centralized, observable `status`, JSDoc public API.
+- [x] Task 2.1: controller tests first (Red) — `src/pwa/update-controller.test.ts` (fake timers, injected deps): status model (idle/checking/ready/applying/unsupported); discovery at launch + foreground + online + ~15 min cadence with visible+online guards and silent offline skip; waiting update tracked once, newer replaces older; gate matrix — apply only when screen=build ∧ quiet ≥3 s ∧ visible; any input restarts quiet; leaving Build mode cancels; apply fires exactly once and completes despite later input; no-op when unsupported. (8140ed9)
+- [x] Task 2.2: implement `src/pwa/update-controller.ts` (Green) — pure state machine, injected clock/timers, `QUIET_MS = 3_000` and `CHECK_INTERVAL_MS = 15 * 60_000` centralized, observable `status`, JSDoc public API. (8140ed9)
 - [ ] Task 2.3: quiet-window tests first (Red) — `src/pwa/input-activity.test.ts`: pointerdown counts as activity and marks held; pointerup/pointercancel end the hold; held pointer blocks quiet; quiet only after 3 s without activity; dispose removes listeners.
 - [ ] Task 2.4: implement `src/pwa/input-activity.ts` (Green) — window listeners (passive), injectable target/clock.
 - [ ] Task: Phase Verification & Checkpoint — table-walk the gate matrix with the user; confirm constants.
