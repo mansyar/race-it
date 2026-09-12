@@ -70,11 +70,22 @@ export function createInputActivity(options: InputActivityOptions = {}): InputAc
     markActivity();
   }
 
+  function handleBlur(): void {
+    if (heldPointers === 0) {
+      return;
+    }
+    // A release outside the window (or a lost pointerup) would otherwise
+    // strand the quiet gate with a phantom hold for the rest of the session.
+    heldPointers = 0;
+    markActivity();
+  }
+
   const listenerOptions: AddEventListenerOptions = { capture: true, passive: true };
 
   target.addEventListener('pointerdown', handlePointerDown, listenerOptions);
   target.addEventListener('pointerup', handlePointerRelease, listenerOptions);
   target.addEventListener('pointercancel', handlePointerRelease, listenerOptions);
+  target.addEventListener('blur', handleBlur, listenerOptions);
 
   return {
     idleMs(at: number): number {
@@ -97,6 +108,7 @@ export function createInputActivity(options: InputActivityOptions = {}): InputAc
       target.removeEventListener('pointerdown', handlePointerDown, { capture: true });
       target.removeEventListener('pointerup', handlePointerRelease, { capture: true });
       target.removeEventListener('pointercancel', handlePointerRelease, { capture: true });
+      target.removeEventListener('blur', handleBlur, { capture: true });
       activityListeners.clear();
     },
   };

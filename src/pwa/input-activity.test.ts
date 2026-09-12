@@ -90,6 +90,19 @@ describe('input activity tracking', () => {
     expect(input.isHolding()).toBe(false);
   });
 
+  it('clears a stuck hold when the window loses focus', () => {
+    const h = createFakeTarget();
+    const input = createInputActivity({ target: h.target, now: h.now });
+    h.setNow(1_000);
+    h.dispatch('pointerdown');
+    expect(input.isHolding()).toBe(true);
+    h.setNow(5_000);
+    // A mouse release outside the window never delivers pointerup; blur resets.
+    h.dispatch('blur');
+    expect(input.isHolding()).toBe(false);
+    expect(input.idleMs(5_000)).toBe(0);
+  });
+
   it('keeps a pointer held over time and resets idle on release', () => {
     const h = createFakeTarget();
     const input = createInputActivity({ target: h.target, now: h.now });
@@ -133,7 +146,7 @@ describe('input activity tracking', () => {
     const input = createInputActivity({ target: h.target, now: h.now });
     const listener = vi.fn();
     input.onActivity(listener);
-    expect(h.listenerCount()).toBe(3);
+    expect(h.listenerCount()).toBe(4);
     input.dispose();
     input.dispose();
     expect(h.listenerCount()).toBe(0);

@@ -6,7 +6,7 @@
 import { execSync } from 'node:child_process';
 import { cpSync, existsSync, mkdirSync, mkdtempSync, readFileSync } from 'node:fs';
 import { createServer } from 'node:http';
-import { dirname, extname, join, normalize, resolve } from 'node:path';
+import { dirname, extname, join, normalize, resolve, sep } from 'node:path';
 import { fileURLToPath } from 'node:url';
 
 const ROOT = resolve(dirname(fileURLToPath(import.meta.url)), '..', '..');
@@ -57,12 +57,19 @@ export function swapServedCopy(dir: string, label: 'a' | 'b'): void {
 export function startStaticSite(root: string): Promise<StaticSite> {
   const server = createServer((request, response) => {
     const url = new URL(request.url ?? '/', 'http://127.0.0.1');
-    let pathname = decodeURIComponent(url.pathname);
+    let pathname: string;
+    try {
+      pathname = decodeURIComponent(url.pathname);
+    } catch {
+      response.writeHead(400);
+      response.end();
+      return;
+    }
     if (pathname.endsWith('/')) {
       pathname += 'index.html';
     }
     const filePath = normalize(join(root, pathname));
-    if (!filePath.startsWith(root)) {
+    if (!filePath.startsWith(root + sep)) {
       response.writeHead(403);
       response.end();
       return;
