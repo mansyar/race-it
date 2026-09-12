@@ -9,7 +9,7 @@
 **Coordination note:** `src/main.ts` is concurrently touched by the completed-but-unmerged `feature/boot-readiness` branch and the in-progress `feature/pwa-update-flow` branch — keep edits additive and localized so the eventual integration merges stay clean.
 
 ## Phase 1 — Tech-Stack Addendum (doc-only) [checkpoint: ]
-- [ ] Task 1.1: document the context-loss recovery design in `tech-stack.md` — new `src/render/context-loss.ts` module boundary (state machine + adapters), hold/re-sync wiring in `main.ts`, silent-reload fallback policy with attempt cap, always-autosave board change; commit before implementation per workflow.
+- [x] Task 1.1: document the context-loss recovery design in `tech-stack.md` — new `src/render/context-loss.ts` module boundary (state machine + adapters), hold/re-sync wiring in `main.ts`, silent-reload fallback policy with attempt cap, always-autosave board change; commit before implementation per workflow. (f9745ac)
 - [ ] Task: Phase Verification & Checkpoint (Refer to workflow.md) — doc review.
 
 ## Phase 2 — Context-Loss Guard Core (pure) [checkpoint: ]
