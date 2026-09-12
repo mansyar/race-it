@@ -19,7 +19,7 @@
 - iOS: `load()` before a gesture is legal (fetch/decode only) — playback stays gated by the existing first-pointerdown `unlock()`.
 
 ## Phase 1 — Tech-Stack Addendum (doc-only)
-- [ ] Task 1.1: document the audio warmth design in `tech-stack.md` — warmed `PlayableAudio` pool (`SFX_POOL_SIZE`), `warm()`/`warmSnapshot()` surface, pre-created music element reuse across races, non-critical `audio` readiness group in `main.ts`, `__raceItAudio` debug hook, no new dependencies; commit before implementation per workflow.
+- [x] Task 1.1: document the audio warmth design in `tech-stack.md` — warmed `PlayableAudio` pool (`SFX_POOL_SIZE`), `warm()`/`warmSnapshot()` surface, pre-created music element reuse across races, non-critical `audio` readiness group in `main.ts`, `__raceItAudio` debug hook, no new dependencies; commit before implementation per workflow. (09c5811)
 - [ ] Task: Phase Verification & Checkpoint (Refer to workflow.md) — doc review.
 
 ## Phase 2 — Warm Pool Core (FR-1, FR-2, FR-4)
