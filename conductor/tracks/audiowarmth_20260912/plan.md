@@ -38,7 +38,7 @@
 - [x] Task: Phase Verification & Checkpoint (Refer to workflow.md) — manual scenario with the user.
 
 ## Phase 4 — Quality Gates, Manual Verification & Docs
-- [ ] Task 4.1: quality gates — `pnpm build`; `$env:CI='true'; pnpm test -- --coverage` (>80% on `src/audio/audio-director.ts`); `pnpm lint`; full Playwright suite; record numbers.
+- [x] Task 4.1: quality gates — `pnpm build`; `$env:CI='true'; pnpm test -- --coverage` (>80% on `src/audio/audio-director.ts`); `pnpm lint`; full Playwright suite; record numbers. (0a25da1)
 - [ ] Task 4.2: manual verification — iOS Safari + Android Chrome: first palette tap / GO / countdown music audibly instant after boot; flaky first load warms silently and recovers; mute toggle; backgrounding mid-race; installed PWA; portrait + landscape.
 - [ ] Task 4.3: final docs — `tech-stack.md` synced against final code; completion checklist per workflow.
 - [ ] Task: Phase Verification & Checkpoint (Refer to workflow.md).
