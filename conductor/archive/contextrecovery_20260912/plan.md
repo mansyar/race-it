@@ -32,3 +32,6 @@
 - [x] Task 4.2: manual verification — iOS Safari + installed PWA: background under memory pressure → foreground (hold/resume or fallback reload); airplane-mode boot; repeated loss cycles (no reload loop); picker previews after a loss; portrait + landscape. — confirmed on-device by the user.
 - [x] Task 4.3: final docs — `tech-stack.md` synced against final code; completion checklist per workflow. (121a20f)
 - [x] Task: Phase Verification & Checkpoint — gates + on-device verification confirmed with the user.
+
+## Phase: Review Fixes
+- [x] Task: Apply review suggestions efbee19
