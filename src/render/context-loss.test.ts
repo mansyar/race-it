@@ -1,10 +1,10 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import {
   CONTEXT_RELOAD_KEY,
+  type ContextLossGuard,
   createContextLossGuard,
   GRACE_MS,
   MAX_RELOAD_ATTEMPTS,
-  type ContextLossGuard,
   type StorageLike,
 } from './context-loss';
 
