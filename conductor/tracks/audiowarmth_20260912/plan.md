@@ -39,6 +39,6 @@
 
 ## Phase 4 — Quality Gates, Manual Verification & Docs
 - [x] Task 4.1: quality gates — `pnpm build`; `$env:CI='true'; pnpm test -- --coverage` (>80% on `src/audio/audio-director.ts`); `pnpm lint`; full Playwright suite; record numbers. (0a25da1)
-- [ ] Task 4.2: manual verification — iOS Safari + Android Chrome: first palette tap / GO / countdown music audibly instant after boot; flaky first load warms silently and recovers; mute toggle; backgrounding mid-race; installed PWA; portrait + landscape.
-- [ ] Task 4.3: final docs — `tech-stack.md` synced against final code; completion checklist per workflow.
+- [x] Task 4.2: manual verification — iOS Safari + Android Chrome: first palette tap / GO / countdown music audibly instant after boot; flaky first load warms silently and recovers; mute toggle; backgrounding mid-race; installed PWA; portrait + landscape. — deferred to the next Ship track per user (needs HTTPS deploy + real devices); automated coverage stands.
+- [x] Task 4.3: final docs — `tech-stack.md` synced against final code; completion checklist per workflow. (ff3c02a)
 - [ ] Task: Phase Verification & Checkpoint (Refer to workflow.md).
