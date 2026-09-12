@@ -28,14 +28,14 @@
 - [x] Task 2.3: coverage ≥80% on the module + refactor under green; `$env:CI='true'; pnpm test` + `pnpm lint` clean; commit. (200d479)
 - [x] Task: Phase Verification & Checkpoint (Refer to workflow.md) — table-walk the warm/play/music state matrix with the user.
 
-## Phase 3 — Boot Wiring, Debug Hook & E2E (FR-3)
+## Phase 3 — Boot Wiring, Debug Hook & E2E (FR-3) [checkpoint: 0a25da1]
 - [x] Task 3.1: audio E2E first (Red) — new `e2e/audio.spec.ts` (`?debug`; `page.route` on `.ogg`):
   1. **Slow OGGs:** route-delayed responses → `__raceItAudio` shows `warming` → `ready`; GO still wakes and a race starts while audio is still warming.
   2. **Failure/retry:** aborted `.ogg` routes → attempts increase over time (silent backoff), no crash and no unhandled rejection noise, GO unaffected; un-abort → recovers to `ready`.
   3. Confirm the spec fails against the pre-change revision. (ecab186)
 - [x] Task 3.2: wire `src/main.ts` (Green) — add the `audio` readiness group (`critical: false`, `load: () => audio.warm()`), expose `window.__raceItAudio` under `?debug`; `?race`/`?perf`/unlock/lifecycle flows untouched. (0a25da1)
 - [x] Task 3.3: stabilize + regression pass — run the new spec repeatedly under the CI single-worker config; all existing specs (smoke, boot, lifecycle, postrace, shelf, landscape, perf, installability) stay green. (0a25da1)
-- [ ] Task: Phase Verification & Checkpoint (Refer to workflow.md) — manual scenario with the user.
+- [x] Task: Phase Verification & Checkpoint (Refer to workflow.md) — manual scenario with the user.
 
 ## Phase 4 — Quality Gates, Manual Verification & Docs
 - [ ] Task 4.1: quality gates — `pnpm build`; `$env:CI='true'; pnpm test -- --coverage` (>80% on `src/audio/audio-director.ts`); `pnpm lint`; full Playwright suite; record numbers.
