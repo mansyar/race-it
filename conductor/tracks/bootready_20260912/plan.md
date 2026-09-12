@@ -34,6 +34,6 @@
 - [ ] Task: Phase Verification & Checkpoint (Refer to workflow.md)
 
 ## Phase 4 — Quality Gates, Performance & Manual Verification (AC 3–6)
-- [ ] Task 4.1: gates — `$env:CI='true'; pnpm test -- --coverage` (≥80% on changed modules), `pnpm lint`, `pnpm build`, `pnpm exec playwright test`; perf sanity via the existing perf spec (`?perf` draw calls unchanged; no new per-frame work; no new asset requests).
-- [ ] Task 4.2: manual device/network checklist — throttled first load (staged reveal, no dead states), airplane-mode first visit (retry cue + recovery when network returns), portrait + landscape, `?race`/`?perf`/`?debug` intact. (User-assisted per `workflow.md`; recorded in the checkpoint note.)
+- [x] Task 4.1: gates (25668f4) — `$env:CI='true'; pnpm test -- --coverage` (≥80% on changed modules), `pnpm lint`, `pnpm build`, `pnpm exec playwright test`; perf sanity via the existing perf spec (`?perf` draw calls unchanged; no new per-frame work; no new asset requests).
+- [~] Task 4.2: manual device/network checklist — throttled first load (staged reveal, no dead states), airplane-mode first visit (retry cue + recovery when network returns), portrait + landscape, `?race`/`?perf`/`?debug` intact. (User-assisted per `workflow.md`; recorded in the checkpoint note.)
 - [ ] Task: Phase Verification & Checkpoint (Refer to workflow.md)
