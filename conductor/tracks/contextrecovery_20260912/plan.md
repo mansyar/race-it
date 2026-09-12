@@ -18,13 +18,13 @@
 - [x] Task: Phase Verification & Checkpoint — table-walk the transition matrix with the user.
 
 ## Phase 3 — App Wiring & Context E2E [checkpoint: ]
-- [ ] Task 3.1: e2e first (Red) — `e2e/context-loss.spec.ts` (standard preview config; drives the `WEBGL_lose_context` extension via `page.evaluate`):
+- [x] Task 3.1: e2e first (Red) — `e2e/context-loss.spec.ts` (standard preview config; drives the `WEBGL_lose_context` extension via `page.evaluate`):
   1. **Race hold:** start a race, `loseContext()` → resume overlay appears and the race cannot progress; `restoreContext()` + resume tap → race continues to completion.
   2. **Build intact:** `loseContext()` in build mode → board edits ignored while lost; `restoreContext()` → scene renders again (draw-call probe via the `?debug` seam), board intact.
   3. **Silent fallback:** `loseContext()` with no restore → one silent reload within grace; a half-built invalid board survives (always-autosave).
-  4. **No loop:** consecutive immediate losses never exceed the reload attempt cap.
-- [ ] Task 3.2: wire in `src/main.ts` (Green) — create the guard on `view.renderer.domElement`; on lost: suspend audio + `presentation.holdForInterruption()` when racing, gate `handleCellTap`; on restored: `view.resize()` + re-render picker previews + audio resume gates; on failed: one reload (guard-owned attempt counter); drop the valid-only gate so `rerender()` always autosaves; `?debug` exposes `window.__raceItContext` (state + counters + last-frame draw calls).
-- [ ] Task 3.3: stabilize + regression pass — run the new spec repeatedly under the CI single-worker config; confirm `?race` / `?perf` / `?debug` and all existing specs (smoke, lifecycle, postrace, shelf, landscape, perf, installability) stay green.
+  4. **No loop:** consecutive immediate losses never exceed the reload attempt cap. (6e07d82)
+- [x] Task 3.2: wire in `src/main.ts` (Green) — create the guard on `view.renderer.domElement`; on lost: suspend audio + `presentation.holdForInterruption()` when racing, gate `handleCellTap`; on restored: `view.resize()` + re-render picker previews + audio resume gates; on failed: one reload (guard-owned attempt counter); drop the valid-only gate so `rerender()` always autosaves; `?debug` exposes `window.__raceItContext` (state + counters + last-frame draw calls). (6ff8b7a)
+- [x] Task 3.3: stabilize + regression pass — run the new spec repeatedly under the CI single-worker config; confirm `?race` / `?perf` / `?debug` and all existing specs (smoke, lifecycle, postrace, shelf, landscape, perf, installability) stay green. (9aaeede)
 - [ ] Task: Phase Verification & Checkpoint — manual scenario with the user.
 
 ## Phase 4 — Quality Gates, Manual Verification & Docs [checkpoint: ]
