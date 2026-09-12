@@ -10,10 +10,11 @@ import {
 } from '../render/kart-motion';
 import { kartPose } from '../render/kart-rig';
 import { computeCameraPlacement } from '../render/layout';
-import { LOOK_AHEAD_DISTANCE, RACE_ZOOM_FLOOR } from '../render/race-camera';
+import { LOOK_AHEAD_DISTANCE, PHOTO_FINISH_PUSH, RACE_ZOOM_FLOOR } from '../render/race-camera';
 import { createRaceHud } from '../ui/race-hud';
 import { createTrafficLight } from '../ui/traffic-light';
 import { createTrophy } from '../ui/trophy';
+import type { PhotoFinishTickInput, PhotoFinishTracker } from './photo-finish';
 import {
   CAMERA_SMOOTH_RATE,
   createRacePresentation,
@@ -96,7 +97,11 @@ interface Harness {
     suspendAll: ReturnType<typeof vi.fn>;
     resumeAll: ReturnType<typeof vi.fn>;
     stopAll: ReturnType<typeof vi.fn>;
+    beginPhotoFinish: ReturnType<typeof vi.fn>;
+    endPhotoFinish: ReturnType<typeof vi.fn>;
+    playCrowdCheer: ReturnType<typeof vi.fn>;
   };
+  flash: { flash: ReturnType<typeof vi.fn>; hide: ReturnType<typeof vi.fn> };
   priorOnPause: ReturnType<typeof vi.fn>;
   priorOnResume: ReturnType<typeof vi.fn>;
   priorOnQuit: ReturnType<typeof vi.fn>;
@@ -127,7 +132,13 @@ function packTarget(harness: Harness): { x: number; z: number } {
   };
 }
 
-function createHarness(options: { countdownSeconds?: number; kartOrder?: number[] } = {}): Harness {
+function createHarness(
+  options: {
+    countdownSeconds?: number;
+    kartOrder?: number[];
+    photoFinish?: PhotoFinishTracker;
+  } = {},
+): Harness {
   const engine = createRaceEngine(path, {
     seed: 42,
     countdownSeconds: options.countdownSeconds ?? 0.05,
@@ -176,6 +187,13 @@ function createHarness(options: { countdownSeconds?: number; kartOrder?: number[
     suspendAll: vi.fn(),
     resumeAll: vi.fn(),
     stopAll: vi.fn(),
+    beginPhotoFinish: vi.fn(),
+    endPhotoFinish: vi.fn(),
+    playCrowdCheer: vi.fn(),
+  };
+  const flash = {
+    flash: vi.fn(),
+    hide: vi.fn(),
   };
 
   const presentation = createRacePresentation({
@@ -188,10 +206,12 @@ function createHarness(options: { countdownSeconds?: number; kartOrder?: number[
     karts,
     camera,
     kartOrder: options.kartOrder,
+    photoFinish: options.photoFinish,
     onBuildUiChange,
     onCountdownBeep,
     onGo,
     audio,
+    flash,
   });
 
   return {
@@ -207,6 +227,7 @@ function createHarness(options: { countdownSeconds?: number; kartOrder?: number[
     onCountdownBeep,
     onGo,
     audio,
+    flash,
     priorOnPause,
     priorOnResume,
     priorOnQuit,
@@ -935,6 +956,406 @@ describe('createRacePresentation', () => {
       const callsBefore = harness.confetti.update.mock.calls.length;
       harness.presentation.update(0.016);
       expect(harness.confetti.update.mock.calls.length).toBeGreaterThan(callsBefore);
+    });
+  });
+
+  describe('photo-finish time dilation', () => {
+    function stubTracker(timeScale: number): PhotoFinishTracker & {
+      tick: ReturnType<typeof vi.fn>;
+      reset: ReturnType<typeof vi.fn>;
+    } {
+      const tick = vi.fn(() => ({ timeScale, accent: false }));
+      const reset = vi.fn();
+      return {
+        tick,
+        reset,
+        get armed() {
+          return timeScale < 1;
+        },
+      };
+    }
+
+    it('feeds live kart samples and the unresolved flag to the tracker', () => {
+      const tracker = stubTracker(1);
+      const harness = createHarness({ photoFinish: tracker });
+      const progressBefore = harness.engine.karts[0]?.progress ?? -1;
+      harness.raceToRunning();
+      const call = tracker.tick.mock.calls[0]?.[0] as PhotoFinishTickInput | undefined;
+      expect(call?.dt).toBeCloseTo(0.06);
+      expect(call?.lapLength).toBe(harness.engine.lapLength);
+      expect(call?.samples).toHaveLength(4);
+      expect(call?.photoFinish).toBeNull();
+      const sample0 = call?.samples?.[0];
+      expect(sample0?.progress).toBe(progressBefore);
+      expect(sample0?.pace).toBe(harness.engine.karts[0]?.speed);
+      expect(sample0?.finished).toBe(false);
+    });
+
+    it('scales the tick the engine receives while the tracker slows time', () => {
+      const scaled = createHarness({ countdownSeconds: 3, photoFinish: stubTracker(0.5) });
+      scaled.presentation.beginRace();
+      scaled.presentation.update(1 / 60);
+      expect(scaled.engine.countdownRemaining).toBeCloseTo(3 - 0.5 / 60, 10);
+
+      const normal = createHarness({ countdownSeconds: 3, photoFinish: stubTracker(1) });
+      normal.presentation.beginRace();
+      normal.presentation.update(1 / 60);
+      expect(normal.engine.countdownRemaining).toBeCloseTo(3 - 1 / 60, 10);
+    });
+
+    it('dilates the visual layers with the same scaled step', () => {
+      const harness = createHarness({ photoFinish: stubTracker(0.5) });
+      harness.presentation.beginRace();
+      for (let i = 0; i < 30 && harness.engine.state !== 'running'; i++) {
+        harness.presentation.update(1 / 60);
+      }
+      expect(harness.engine.state).toBe('running');
+      harness.presentation.update(1 / 60);
+      expect(harness.confetti.update).toHaveBeenLastCalledWith((1 / 60) * 0.5);
+    });
+
+    it('eases the camera by the scaled step so motion stays coherent', () => {
+      const harness = createHarness({ photoFinish: stubTracker(0.5) });
+      harness.presentation.beginRace();
+      for (let i = 0; i < 30 && harness.engine.state !== 'running'; i++) {
+        harness.presentation.update(1 / 60);
+      }
+      const firstLook = harness.camera.lookAt.mock.calls.at(-1);
+      if (!firstLook) {
+        throw new Error('Expected an initial camera target');
+      }
+      harness.presentation.update(1 / 60);
+      const nextTarget = packTarget(harness);
+      const t = 1 - Math.exp(-CAMERA_SMOOTH_RATE * ((1 / 60) * 0.5));
+      const expectedX = firstLook[0] + (nextTarget.x - firstLook[0]) * t;
+      const expectedZ = firstLook[2] + (nextTarget.z - firstLook[2]) * t;
+      const look = harness.camera.lookAt.mock.calls.at(-1);
+      expect(look?.[0]).toBeCloseTo(expectedX, 3);
+      expect(look?.[2]).toBeCloseTo(expectedZ, 3);
+    });
+
+    it('keeps full speed with the real tracker away from the finish', () => {
+      const harness = createHarness({ countdownSeconds: 3 });
+      harness.presentation.beginRace();
+      harness.presentation.update(1 / 60);
+      expect(harness.engine.countdownRemaining).toBeCloseTo(3 - 1 / 60, 10);
+    });
+
+    it('freezes the ramp while paused and resumes it on resume', () => {
+      const tracker = stubTracker(1);
+      const harness = createHarness({ photoFinish: tracker });
+      harness.raceToRunning();
+      click('button[data-action="pause"]', harness.hud.root);
+      tracker.tick.mockClear();
+      harness.presentation.update(0.5);
+      expect(tracker.tick).not.toHaveBeenCalled();
+      click('button[data-action="resume"]', harness.hud.overlay);
+      harness.presentation.update(0.1);
+      expect(tracker.tick).toHaveBeenCalledTimes(1);
+    });
+
+    it('freezes the ramp while held for interruption and resumes from the overlay', () => {
+      const tracker = stubTracker(1);
+      const harness = createHarness({ photoFinish: tracker });
+      harness.raceToRunning();
+      harness.presentation.holdForInterruption();
+      tracker.tick.mockClear();
+      harness.presentation.update(0.5);
+      expect(tracker.tick).not.toHaveBeenCalled();
+      click('button[data-action="resume"]', harness.hud.overlay);
+      harness.presentation.update(0.1);
+      expect(tracker.tick).toHaveBeenCalledTimes(1);
+    });
+
+    it('resets the tracker when a new countdown starts (RACE AGAIN)', () => {
+      const tracker = stubTracker(1);
+      const harness = createHarness({ photoFinish: tracker });
+      harness.raceToAllFinished();
+      tracker.reset.mockClear();
+      click('button[data-action="again"]', harness.trophy.root);
+      expect(tracker.reset).toHaveBeenCalledTimes(1);
+    });
+
+    it('resets the tracker when leaving the race for the builder', () => {
+      const buildAgain = stubTracker(1);
+      const buildAgainHarness = createHarness({ photoFinish: buildAgain });
+      buildAgainHarness.raceToAllFinished();
+      buildAgain.reset.mockClear();
+      click('button[data-action="build-again"]', buildAgainHarness.trophy.root);
+      expect(buildAgain.reset).toHaveBeenCalledTimes(1);
+
+      const quit = stubTracker(1);
+      const quitHarness = createHarness({ photoFinish: quit });
+      quitHarness.raceToRunning();
+      quit.reset.mockClear();
+      click('button[data-action="pause"]', quitHarness.hud.root);
+      click('button[data-action="quit"]', quitHarness.hud.overlay);
+      click('button[data-confirm="yes"]', quitHarness.hud.confirm);
+      expect(quit.reset).toHaveBeenCalledTimes(1);
+    });
+
+    it('reports the resolved flag once two karts have crossed', () => {
+      const tracker = stubTracker(1);
+      const harness = createHarness({ photoFinish: tracker });
+      harness.raceToAllFinished();
+      const lastCall = tracker.tick.mock.calls.at(-1)?.[0] as PhotoFinishTickInput | undefined;
+      expect(typeof lastCall?.photoFinish).toBe('boolean');
+      expect(lastCall?.photoFinish).toBe(harness.engine.result?.photoFinish);
+    });
+  });
+
+  function sequencedTracker(): PhotoFinishTracker & {
+    tick: ReturnType<typeof vi.fn>;
+    reset: ReturnType<typeof vi.fn>;
+    setArmed: (value: boolean) => void;
+    setScale: (value: number) => void;
+  } {
+    let armed = false;
+    let scale = 1;
+    const tick = vi.fn(() => ({ timeScale: scale, accent: false }));
+    const reset = vi.fn();
+    return {
+      tick,
+      reset,
+      setArmed(value) {
+        armed = value;
+      },
+      setScale(value) {
+        scale = value;
+      },
+      get armed() {
+        return armed;
+      },
+    };
+  }
+
+  describe('photo-finish camera push', () => {
+    function pushStub(): PhotoFinishTracker & {
+      tick: ReturnType<typeof vi.fn>;
+      reset: ReturnType<typeof vi.fn>;
+    } {
+      const tick = vi.fn(() => ({ timeScale: 1, accent: false }));
+      const reset = vi.fn();
+      return {
+        tick,
+        reset,
+        get armed() {
+          return true;
+        },
+      };
+    }
+
+    /** Distance from the last recorded camera pose (position.set -> lookAt). */
+    function cameraDistance(target: Harness): number {
+      const set = target.camera.position.set.mock.calls.at(-1);
+      const look = target.camera.lookAt.mock.calls.at(-1);
+      if (!set || !look) {
+        throw new Error('Expected a camera pose');
+      }
+      return Math.hypot(set[0] - look[0], set[1] - look[1], set[2] - look[2]);
+    }
+
+    it('pushes the finished hold in on confirmation and eases back to standard', () => {
+      const tracker = pushStub();
+      const harness = createHarness({ photoFinish: tracker });
+      harness.raceToAllFinished();
+      harness.presentation.update(1 / 60);
+      const standard = cameraDistance(harness);
+      // The flag confirms: the next tracker tick reports the one-shot accent.
+      tracker.tick.mockReturnValueOnce({ timeScale: 1, accent: true });
+      harness.presentation.update(1 / 60);
+      for (let i = 0; i < 12; i++) {
+        harness.presentation.update(1 / 60);
+      }
+      const pushed = cameraDistance(harness);
+      expect(pushed).toBeLessThan(standard);
+      expect(pushed).toBeGreaterThanOrEqual(standard * (1 - PHOTO_FINISH_PUSH) - 1e-6);
+      for (let i = 0; i < 160; i++) {
+        harness.presentation.update(1 / 60);
+      }
+      expect(cameraDistance(harness)).toBeCloseTo(standard, 1);
+    });
+
+    it('never pushes on a finish that is not a photo finish', () => {
+      const tracker = pushStub();
+      const harness = createHarness({ photoFinish: tracker });
+      harness.raceToAllFinished();
+      harness.presentation.update(1 / 60);
+      const standard = cameraDistance(harness);
+      for (let i = 0; i < 160; i++) {
+        harness.presentation.update(1 / 60);
+      }
+      expect(cameraDistance(harness)).toBeCloseTo(standard, 1);
+    });
+  });
+
+  describe('photo-finish audio choreography', () => {
+    it('begins the slow-motion treatment once when armed and ends it when the scale restores', () => {
+      const tracker = sequencedTracker();
+      const harness = createHarness({ photoFinish: tracker });
+      harness.raceToRunning();
+      expect(harness.audio.beginPhotoFinish).not.toHaveBeenCalled();
+
+      tracker.setArmed(true);
+      tracker.setScale(0.7);
+      harness.presentation.update(1 / 60);
+      harness.presentation.update(1 / 60);
+      expect(harness.audio.beginPhotoFinish).toHaveBeenCalledTimes(1);
+      expect(harness.audio.endPhotoFinish).not.toHaveBeenCalled();
+
+      tracker.setScale(1);
+      harness.presentation.update(1 / 60);
+      expect(harness.audio.endPhotoFinish).toHaveBeenCalledTimes(1);
+      harness.presentation.update(1 / 60);
+      expect(harness.audio.beginPhotoFinish).toHaveBeenCalledTimes(1);
+      expect(harness.audio.endPhotoFinish).toHaveBeenCalledTimes(1);
+    });
+
+    it('fires the crowd cheer exactly once on the confirmed accent', () => {
+      const tracker = sequencedTracker();
+      const harness = createHarness({ photoFinish: tracker });
+      harness.raceToRunning();
+      tracker.setArmed(true);
+      tracker.setScale(0.7);
+      tracker.tick.mockReturnValueOnce({ timeScale: 0.7, accent: true });
+      harness.presentation.update(1 / 60);
+      harness.presentation.update(1 / 60);
+      harness.presentation.update(1 / 60);
+      expect(harness.audio.playCrowdCheer).toHaveBeenCalledTimes(1);
+    });
+
+    it('leaves the audio untouched during an ordinary race', () => {
+      const tracker = sequencedTracker();
+      const harness = createHarness({ photoFinish: tracker });
+      harness.raceToAllFinished();
+      expect(harness.audio.playCrowdCheer).not.toHaveBeenCalled();
+      expect(harness.audio.beginPhotoFinish).not.toHaveBeenCalled();
+      expect(harness.audio.endPhotoFinish).not.toHaveBeenCalled();
+    });
+
+    it('ends the treatment when restarting mid-sequence (RACE AGAIN)', () => {
+      const tracker = sequencedTracker();
+      const harness = createHarness({ photoFinish: tracker });
+      harness.raceToRunning();
+      tracker.setArmed(true);
+      tracker.setScale(0.7);
+      harness.presentation.update(1 / 60);
+      expect(harness.audio.beginPhotoFinish).toHaveBeenCalledTimes(1);
+      harness.raceToAllFinished();
+      expect(harness.audio.endPhotoFinish).not.toHaveBeenCalled();
+      click('button[data-action="again"]', harness.trophy.root);
+      expect(harness.audio.endPhotoFinish).toHaveBeenCalledTimes(1);
+    });
+
+    it('freezes the treatment during an interruption hold and ends after resume', () => {
+      const tracker = sequencedTracker();
+      const harness = createHarness({ photoFinish: tracker });
+      harness.raceToRunning();
+      tracker.setArmed(true);
+      tracker.setScale(0.7);
+      harness.presentation.update(1 / 60);
+      harness.presentation.holdForInterruption();
+      tracker.setScale(1);
+      harness.presentation.update(0.5);
+      expect(harness.audio.endPhotoFinish).not.toHaveBeenCalled();
+      click('button[data-action="resume"]', harness.hud.overlay);
+      harness.presentation.update(1 / 60);
+      expect(harness.audio.endPhotoFinish).toHaveBeenCalledTimes(1);
+    });
+  });
+
+  describe('photo-finish flash overlay', () => {
+    it('flashes exactly once on the confirmed accent', () => {
+      const tracker = sequencedTracker();
+      const harness = createHarness({ photoFinish: tracker });
+      harness.raceToRunning();
+      tracker.tick.mockReturnValueOnce({ timeScale: 1, accent: true });
+      harness.presentation.update(1 / 60);
+      harness.presentation.update(1 / 60);
+      harness.presentation.update(1 / 60);
+      expect(harness.flash.flash).toHaveBeenCalledTimes(1);
+    });
+
+    it('never flashes on a finish that is not a photo finish', () => {
+      const tracker = sequencedTracker();
+      const harness = createHarness({ photoFinish: tracker });
+      harness.raceToAllFinished();
+      for (let i = 0; i < 120; i++) {
+        harness.presentation.update(1 / 60);
+      }
+      expect(harness.flash.flash).not.toHaveBeenCalled();
+    });
+
+    it('flashes exactly once on a real confirmed photo finish', () => {
+      const harness = createHarness();
+      harness.raceToAllFinished();
+      for (let i = 0; i < 120; i++) {
+        harness.presentation.update(1 / 60);
+      }
+      expect(harness.engine.result?.photoFinish).toBe(true);
+      expect(harness.flash.flash).toHaveBeenCalledTimes(1);
+    });
+
+    it('clears any in-flight pulse when the race resets (RACE AGAIN)', () => {
+      const tracker = sequencedTracker();
+      const harness = createHarness({ photoFinish: tracker });
+      harness.raceToRunning();
+      tracker.tick.mockReturnValueOnce({ timeScale: 1, accent: true });
+      harness.presentation.update(1 / 60);
+      expect(harness.flash.flash).toHaveBeenCalledTimes(1);
+      harness.raceToAllFinished();
+      click('button[data-action="again"]', harness.trophy.root);
+      expect(harness.flash.hide).toHaveBeenCalledTimes(1);
+    });
+  });
+
+  describe('photo-finish reset matrix', () => {
+    /** Runs a confirmed close finish: armed slow motion plus one accent. */
+    function runCloseFinish(harness: Harness, tracker: ReturnType<typeof sequencedTracker>): void {
+      harness.raceToRunning();
+      tracker.setArmed(true);
+      tracker.setScale(0.7);
+      tracker.tick.mockReturnValueOnce({ timeScale: 0.7, accent: true });
+      harness.presentation.update(1 / 60);
+      expect(harness.audio.playCrowdCheer).toHaveBeenCalledTimes(1);
+      expect(harness.flash.flash).toHaveBeenCalledTimes(1);
+    }
+
+    it('pause and resume do not double the cheer or the flash', () => {
+      const tracker = sequencedTracker();
+      const harness = createHarness({ photoFinish: tracker });
+      runCloseFinish(harness, tracker);
+      click('button[data-action="pause"]', harness.hud.root);
+      harness.presentation.update(0.5);
+      click('button[data-action="resume"]', harness.hud.overlay);
+      for (let i = 0; i < 10; i++) {
+        harness.presentation.update(1 / 60);
+      }
+      expect(harness.audio.playCrowdCheer).toHaveBeenCalledTimes(1);
+      expect(harness.flash.flash).toHaveBeenCalledTimes(1);
+    });
+
+    it('Build Again mid-sequence releases the dilation, audio, and flash', () => {
+      const tracker = sequencedTracker();
+      const harness = createHarness({ photoFinish: tracker });
+      runCloseFinish(harness, tracker);
+      harness.raceToAllFinished();
+      click('button[data-action="build-again"]', harness.trophy.root);
+      expect(tracker.reset).toHaveBeenCalledTimes(1);
+      expect(harness.audio.endPhotoFinish).toHaveBeenCalledTimes(1);
+      expect(harness.flash.hide).toHaveBeenCalledTimes(1);
+    });
+
+    it('quit mid-sequence releases the dilation, audio, and flash', () => {
+      const tracker = sequencedTracker();
+      const harness = createHarness({ photoFinish: tracker });
+      runCloseFinish(harness, tracker);
+      click('button[data-action="pause"]', harness.hud.root);
+      click('button[data-action="quit"]', harness.hud.overlay);
+      click('button[data-confirm="yes"]', harness.hud.confirm);
+      expect(tracker.reset).toHaveBeenCalledTimes(1);
+      expect(harness.audio.endPhotoFinish).toHaveBeenCalledTimes(1);
+      expect(harness.flash.hide).toHaveBeenCalledTimes(1);
     });
   });
 });

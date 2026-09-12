@@ -14,6 +14,7 @@ import clickUrl from './sfx/click_001.ogg?url';
 import confirmAUrl from './sfx/confirmation_001.ogg?url';
 import confirmBUrl from './sfx/confirmation_002.ogg?url';
 import confirmGoUrl from './sfx/confirmation_003.ogg?url';
+import crowdCheerUrl from './sfx/crowdCheer.ogg?url';
 import nopeUrl from './sfx/error_001.ogg?url';
 import jingleVictoryUrl from './sfx/jingleVictory.ogg?url';
 import placeUrl from './sfx/pluck_001.ogg?url';
@@ -63,6 +64,8 @@ export const SFX = {
   nope: nopeUrl,
   /** Victory jingle played once at the trophy (with music ducked). */
   jingle: jingleVictoryUrl,
+  /** Crowd cheer one-shot at a confirmed photo finish (CC0, Freesound). */
+  crowdCheer: crowdCheerUrl,
 } as const;
 
 /** Background music loop from Kenney Music Loops (CC0) — "Polka Train". */

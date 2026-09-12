@@ -201,6 +201,31 @@ body {
   pointer-events: none;
 }
 
+/* Photo-finish flash: one soft warm-white pulse above the canvas, below the
+   HUD/trophy layers. The fade duration mirrors FLASH_FADE_SECONDS in
+   src/ui/flash-overlay.ts; the layer never intercepts taps. */
+.flash-overlay {
+  position: fixed;
+  inset: 0;
+  pointer-events: none;
+  background: rgba(255, 246, 226, 0.85);
+  opacity: 0;
+  z-index: 16;
+}
+
+.flash-overlay.flashing {
+  animation: photo-finish-flash 0.25s ease-out forwards;
+}
+
+@keyframes photo-finish-flash {
+  from {
+    opacity: 1;
+  }
+  to {
+    opacity: 0;
+  }
+}
+
 /* Interactive race controls opt back into taps. */
 .trophy,
 .pause-button,
