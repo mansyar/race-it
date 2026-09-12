@@ -18,9 +18,9 @@
 - Coverage excludes `main.ts` (wiring covered by E2E per house precedent); `?race` headless mode never touches the audio director.
 - iOS: `load()` before a gesture is legal (fetch/decode only) — playback stays gated by the existing first-pointerdown `unlock()`.
 
-## Phase 1 — Tech-Stack Addendum (doc-only)
+## Phase 1 — Tech-Stack Addendum (doc-only) [checkpoint: 09c5811]
 - [x] Task 1.1: document the audio warmth design in `tech-stack.md` — warmed `PlayableAudio` pool (`SFX_POOL_SIZE`), `warm()`/`warmSnapshot()` surface, pre-created music element reuse across races, non-critical `audio` readiness group in `main.ts`, `__raceItAudio` debug hook, no new dependencies; commit before implementation per workflow. (09c5811)
-- [ ] Task: Phase Verification & Checkpoint (Refer to workflow.md) — doc review.
+- [x] Task: Phase Verification & Checkpoint (Refer to workflow.md) — doc review.
 
 ## Phase 2 — Warm Pool Core (FR-1, FR-2, FR-4)
 - [ ] Task 2.1: warm tests first (Red) — extend `src/audio/audio-director.test.ts` (injected fake factory + fake timers): `warm()` loads every pooled element and resolves only when all report ready; rejects when any fails; snapshot `idle → warming → ready | failed` + attempt counts; re-warm is idempotent (ready untouched, failed re-attempted); one-shots reuse pre-created elements round-robin with guarded `currentTime` reset (no factory calls during play); volume/countdown-rate rules unchanged; `play()` rejections swallowed with no unhandled promise; music element created once, `startMusic` resets to top + plays, `stopMusic` pauses and keeps it warm, next race reuses it; mute/unmute and suspend/resume semantics preserved.
