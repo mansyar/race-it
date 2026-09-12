@@ -28,7 +28,7 @@
 - [x] Task: Phase Verification & Checkpoint — manual scenario confirmed with the user.
 
 ## Phase 4 — Quality Gates, Manual Verification & Docs [checkpoint: ]
-- [ ] Task 4.1: quality gates — `pnpm build`; `$env:CI='true'; pnpm test -- --coverage` (>80% on `src/render/context-loss.ts`); `pnpm lint`; full Playwright suite including `context-loss.spec.ts`; record numbers.
-- [ ] Task 4.2: manual verification — iOS Safari + installed PWA: background under memory pressure → foreground (hold/resume or fallback reload); airplane-mode boot; repeated loss cycles (no reload loop); picker previews after a loss; portrait + landscape.
-- [ ] Task 4.3: final docs — `tech-stack.md` synced against final code; completion checklist per workflow.
+- [x] Task 4.1: quality gates — `pnpm build`; `$env:CI='true'; pnpm test -- --coverage` (>80% on `src/render/context-loss.ts`); `pnpm lint`; full Playwright suite including `context-loss.spec.ts`; record numbers — 670 unit tests, total coverage 97.37% (95.52% on `context-loss.ts`), 15/15 Playwright, lint clean (2 pre-existing warnings).
+- [x] Task 4.2: manual verification — iOS Safari + installed PWA: background under memory pressure → foreground (hold/resume or fallback reload); airplane-mode boot; repeated loss cycles (no reload loop); picker previews after a loss; portrait + landscape. — confirmed on-device by the user.
+- [x] Task 4.3: final docs — `tech-stack.md` synced against final code; completion checklist per workflow. (121a20f)
 - [ ] Task: Phase Verification & Checkpoint.
