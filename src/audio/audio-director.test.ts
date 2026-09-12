@@ -8,8 +8,12 @@ import {
   MUSIC_TEMPO_EASE_MS,
   PHOTO_FINISH_HUM_DUCK,
   PHOTO_FINISH_MUSIC_RATE,
+  SFX_POOL_SIZE,
   type SfxName,
   VICTORY_DUCK,
+  WARM_POLL_INTERVAL_MS,
+  WARM_READY_STATE,
+  WARM_TIMEOUT_MS,
 } from './audio-director';
 
 interface RampCall {
@@ -365,7 +369,7 @@ describe('createAudioDirector', () => {
     expect(played).toHaveLength(1);
   });
 
-  it('pauses and forgets the music on stopMusic', () => {
+  it('pauses and keeps the music element warm on stopMusic', () => {
     const director = createDirector();
     director.startMusic();
     const musicElement = elements[0];
@@ -376,6 +380,8 @@ describe('createAudioDirector', () => {
     expect(musicElement.pauses).toBe(1);
     director.startMusic();
     expect(played).toHaveLength(2);
+    // The warm element is reused for the next race — no fresh construction.
+    expect(elements).toHaveLength(1);
   });
 
   it('ramps the hum gain up to the hum stage on startHum', () => {
@@ -589,21 +595,24 @@ describe('createAudioDirector', () => {
     expect(played.map((entry) => entry.url)).toEqual([SFX.crowdCheer]);
   });
 
-  it('drops a pending tempo ease when the music stops and starts fresh', () => {
+  it('resets a half-eased tempo when the music stops and starts again', () => {
     vi.useFakeTimers();
     try {
       const director = createDirector();
       director.startMusic();
+      const musicElement = elements[0];
+      if (!musicElement) {
+        throw new Error('expected the music element to exist');
+      }
       director.beginPhotoFinish();
       vi.advanceTimersByTime(MUSIC_TEMPO_EASE_MS / 2);
       director.stopMusic();
       director.startMusic();
-      const fresh = elements[1];
-      if (!fresh) {
-        throw new Error('expected a fresh music element to exist');
-      }
+      // The warm element is reused and reset to top-of-track tempo.
+      expect(elements).toHaveLength(1);
+      expect(musicElement.playbackRate).toBe(1);
       vi.advanceTimersByTime(MUSIC_TEMPO_EASE_MS * 2);
-      expect(fresh.playbackRate).toBe(1);
+      expect(musicElement.playbackRate).toBe(1);
     } finally {
       vi.useRealTimers();
     }
@@ -618,5 +627,333 @@ describe('createAudioDirector', () => {
     director.resumeAll();
     const ramps = rampValuesOf(humGain, 'linearRampToValueAtTime');
     expect(ramps[ramps.length - 1]).toBeCloseTo(GAINS.hum * (1 - PHOTO_FINISH_HUM_DUCK), 6);
+  });
+});
+
+describe('boot warm-up (warm pool & music reuse)', () => {
+  interface WarmElement {
+    url: string;
+    volume: number;
+    playbackRate: number;
+    loop: boolean;
+    currentTime: number;
+    readyState: number;
+    loads: number;
+    plays: number;
+    pauses: number;
+    play: () => void | Promise<void>;
+    pause: () => void;
+    load: () => void;
+  }
+
+  interface WarmPlayedEntry {
+    url: string;
+    volume: number;
+    playbackRate: number;
+    currentTime: number;
+  }
+
+  let made: WarmElement[];
+  let warmPlayed: WarmPlayedEntry[];
+  let context: FakeContext;
+  let failUrls: Set<string>;
+  let blockLoads: boolean;
+  let playRejects: boolean;
+
+  beforeEach(() => {
+    localStorage.clear();
+    made = [];
+    warmPlayed = [];
+    context = createFakeContext();
+    failUrls = new Set();
+    blockLoads = false;
+    playRejects = false;
+  });
+
+  function createWarmDirector() {
+    return createAudioDirector({
+      makeAudio: (url) => {
+        const element: WarmElement = {
+          url,
+          volume: 1,
+          playbackRate: 1,
+          loop: false,
+          currentTime: 0,
+          readyState: 0,
+          loads: 0,
+          plays: 0,
+          pauses: 0,
+          play() {
+            this.plays += 1;
+            warmPlayed.push({
+              url: this.url,
+              volume: this.volume,
+              playbackRate: this.playbackRate,
+              currentTime: this.currentTime,
+            });
+            if (playRejects) {
+              return Promise.reject(new Error('play blocked'));
+            }
+            return undefined;
+          },
+          pause() {
+            this.pauses += 1;
+          },
+          load() {
+            this.loads += 1;
+            if (blockLoads || failUrls.has(this.url)) {
+              return;
+            }
+            this.readyState = 4;
+          },
+        };
+        made.push(element);
+        return element;
+      },
+      makeAudioContext: () => context,
+    });
+  }
+
+  function musicOf(): WarmElement {
+    const element = made.find((candidate) => candidate.url === MUSIC.loop);
+    if (!element) {
+      throw new Error('expected the music element to exist');
+    }
+    return element;
+  }
+
+  function clickPoolOf(): WarmElement[] {
+    return made.filter((candidate) => candidate.url === SFX.click);
+  }
+
+  it('reports idle entries and pool size before any warm-up', () => {
+    const director = createWarmDirector();
+    const snapshot = director.warmSnapshot();
+    expect(snapshot.poolSize).toBe(SFX_POOL_SIZE);
+    for (const name of Object.keys(SFX) as SfxName[]) {
+      expect(snapshot.sounds[name]).toEqual({ status: 'idle', attempts: 0 });
+    }
+    expect(snapshot.music).toEqual({ status: 'idle', attempts: 0 });
+  });
+
+  it('pre-creates and loads every pooled element, then reports ready', async () => {
+    vi.useFakeTimers();
+    try {
+      const director = createWarmDirector();
+      const warm = director.warm();
+      await vi.advanceTimersByTimeAsync(WARM_POLL_INTERVAL_MS);
+      await expect(warm).resolves.toBeUndefined();
+      expect(made).toHaveLength(Object.keys(SFX).length * SFX_POOL_SIZE + 1);
+      for (const element of made) {
+        expect(element.loads).toBe(1);
+      }
+      const snapshot = director.warmSnapshot();
+      for (const name of Object.keys(SFX) as SfxName[]) {
+        expect(snapshot.sounds[name]).toEqual({ status: 'ready', attempts: 1 });
+      }
+      expect(snapshot.music).toEqual({ status: 'ready', attempts: 1 });
+      expect(musicOf().loop).toBe(true);
+      expect(musicOf().volume).toBe(GAINS.music);
+    } finally {
+      vi.useRealTimers();
+    }
+  });
+
+  it('rejects when any element fails to warm and marks only that sound failed', async () => {
+    vi.useFakeTimers();
+    try {
+      const director = createWarmDirector();
+      failUrls.add(SFX.click);
+      const warm = director.warm();
+      warm.catch(() => undefined);
+      await vi.advanceTimersByTimeAsync(WARM_TIMEOUT_MS + WARM_POLL_INTERVAL_MS);
+      await expect(warm).rejects.toThrow();
+      const snapshot = director.warmSnapshot();
+      expect(snapshot.sounds.click).toEqual({ status: 'failed', attempts: 1 });
+      expect(snapshot.sounds.place).toEqual({ status: 'ready', attempts: 1 });
+    } finally {
+      vi.useRealTimers();
+    }
+  });
+
+  it('leaves ready sounds alone and re-attempts only failed ones on re-warm', async () => {
+    vi.useFakeTimers();
+    try {
+      const director = createWarmDirector();
+      failUrls.add(SFX.click);
+      const first = director.warm();
+      first.catch(() => undefined);
+      await vi.advanceTimersByTimeAsync(WARM_TIMEOUT_MS + WARM_POLL_INTERVAL_MS);
+      await expect(first).rejects.toThrow();
+      const clickPool = clickPoolOf();
+      expect(clickPool).toHaveLength(SFX_POOL_SIZE);
+      for (const element of clickPool) {
+        expect(element.loads).toBe(1);
+      }
+      const placeElement = made.find((candidate) => candidate.url === SFX.place);
+      if (!placeElement) {
+        throw new Error('expected a place element to exist');
+      }
+      failUrls.delete(SFX.click);
+      await expect(director.warm()).resolves.toBeUndefined();
+      for (const element of clickPool) {
+        expect(element.loads).toBe(2);
+      }
+      expect(placeElement.loads).toBe(1);
+      const snapshot = director.warmSnapshot();
+      expect(snapshot.sounds.click).toEqual({ status: 'ready', attempts: 2 });
+      expect(snapshot.sounds.place).toEqual({ status: 'ready', attempts: 1 });
+    } finally {
+      vi.useRealTimers();
+    }
+  });
+
+  it('shares one in-flight attempt between concurrent warm() calls', async () => {
+    vi.useFakeTimers();
+    try {
+      const director = createWarmDirector();
+      blockLoads = true;
+      const first = director.warm();
+      const second = director.warm();
+      expect(second).toBe(first);
+      blockLoads = false;
+      for (const element of made) {
+        element.readyState = WARM_READY_STATE;
+      }
+      await vi.advanceTimersByTimeAsync(WARM_POLL_INTERVAL_MS);
+      await expect(first).resolves.toBeUndefined();
+      const snapshot = director.warmSnapshot();
+      expect(snapshot.sounds.click).toEqual({ status: 'ready', attempts: 1 });
+    } finally {
+      vi.useRealTimers();
+    }
+  });
+
+  it('reports warming while loads are pending and ready once they settle', async () => {
+    vi.useFakeTimers();
+    try {
+      const director = createWarmDirector();
+      blockLoads = true;
+      const warm = director.warm();
+      const mid = director.warmSnapshot();
+      expect(mid.sounds.click).toEqual({ status: 'warming', attempts: 1 });
+      expect(mid.music).toEqual({ status: 'warming', attempts: 1 });
+      for (const element of made) {
+        element.readyState = WARM_READY_STATE;
+      }
+      await vi.advanceTimersByTimeAsync(WARM_POLL_INTERVAL_MS);
+      await expect(warm).resolves.toBeUndefined();
+      expect(director.warmSnapshot().sounds.click).toEqual({ status: 'ready', attempts: 1 });
+    } finally {
+      vi.useRealTimers();
+    }
+  });
+
+  it('plays one-shots from the warmed pool without constructing new elements', async () => {
+    vi.useFakeTimers();
+    try {
+      const director = createWarmDirector();
+      await director.warm();
+      const created = made.length;
+      const clickPool = clickPoolOf();
+      const first = clickPool[0];
+      if (!first) {
+        throw new Error('expected the first click element to exist');
+      }
+      first.currentTime = 5;
+      director.playOneShot('click');
+      director.playOneShot('click');
+      director.playOneShot('click');
+      expect(made).toHaveLength(created);
+      expect(clickPool[0]?.plays).toBe(2);
+      expect(clickPool[1]?.plays).toBe(1);
+      expect(first.currentTime).toBe(0);
+      expect(warmPlayed).toHaveLength(3);
+      for (const entry of warmPlayed) {
+        expect(entry.volume).toBe(GAINS.oneShot);
+        expect(entry.playbackRate).toBe(1);
+      }
+    } finally {
+      vi.useRealTimers();
+    }
+  });
+
+  it('reuses the countdown pool with a fresh playback rate per beep', async () => {
+    vi.useFakeTimers();
+    try {
+      const director = createWarmDirector();
+      await director.warm();
+      director.playCountdownBeep(3);
+      director.playCountdownBeep(2);
+      director.playCountdownBeep(1);
+      director.playCountdownBeep(3);
+      expect(warmPlayed.map((entry) => entry.playbackRate)).toEqual([
+        ...COUNTDOWN_RATES,
+        COUNTDOWN_RATES[0],
+      ]);
+    } finally {
+      vi.useRealTimers();
+    }
+  });
+
+  it('swallows play() rejections without an unhandled promise', async () => {
+    vi.useFakeTimers();
+    try {
+      const director = createWarmDirector();
+      await director.warm();
+      playRejects = true;
+      expect(() => {
+        director.playOneShot('click');
+      }).not.toThrow();
+      await vi.advanceTimersByTimeAsync(0);
+      expect(clickPoolOf()[0]?.plays).toBe(1);
+    } finally {
+      vi.useRealTimers();
+    }
+  });
+
+  it('creates the music element once during warm() and reuses it across races', async () => {
+    const director = createWarmDirector();
+    await director.warm();
+    const musicElement = musicOf();
+    const created = made.length;
+    director.startMusic();
+    expect(musicElement.plays).toBe(1);
+    director.stopMusic();
+    expect(musicElement.pauses).toBe(1);
+    director.startMusic();
+    expect(musicElement.plays).toBe(2);
+    expect(made).toHaveLength(created);
+  });
+
+  it('resets the music to the top with fresh mix state for a new race', async () => {
+    const director = createWarmDirector();
+    await director.warm();
+    const musicElement = musicOf();
+    musicElement.currentTime = 7;
+    musicElement.playbackRate = 0.9;
+    musicElement.volume = 0.2;
+    director.startMusic();
+    expect(musicElement.currentTime).toBe(0);
+    expect(musicElement.playbackRate).toBe(1);
+    expect(musicElement.volume).toBe(GAINS.music);
+  });
+
+  it('starts a muted race from the top on unmute, then resumes in place', async () => {
+    const director = createWarmDirector();
+    await director.warm();
+    const musicElement = musicOf();
+    director.setMuted(true);
+    director.startMusic();
+    expect(musicElement.plays).toBe(0);
+    director.setMuted(false);
+    expect(musicElement.plays).toBe(1);
+    expect(musicElement.currentTime).toBe(0);
+    musicElement.currentTime = 7;
+    director.setMuted(true);
+    expect(musicElement.pauses).toBe(1);
+    director.setMuted(false);
+    expect(musicElement.plays).toBe(2);
+    expect(musicElement.currentTime).toBe(7);
   });
 });
