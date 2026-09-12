@@ -18,4 +18,4 @@
 - [x] **Track: Ship v0.5.0 - Release & Deploy** *Archived: [shipv050_20260911](./archive/shipv050_20260911/index.md)*
 - [x] **Track: Photo-Finish Drama** *Archived: [photofinish_20260911](./archive/photofinish_20260911/index.md)*
 - [x] **Track: Boot Readiness & Loading Experience** *Archived: [bootready_20260912](./archive/bootready_20260912/index.md)*
-- [x] **Track: Audio Warmth & Readiness** *Link: [audiowarmth_20260912](./tracks/audiowarmth_20260912/index.md)*
+- [x] **Track: Audio Warmth & Readiness** *Archived: [audiowarmth_20260912](./archive/audiowarmth_20260912/index.md)*
