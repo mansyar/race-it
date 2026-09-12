@@ -20,7 +20,7 @@
 - [x] Task 1.3: coverage ≥80% on the module + refactor under green (7f65a1b); `$env:CI='true'; pnpm test` and `pnpm lint` clean; commit.
 - [ ] Task: Phase Verification & Checkpoint (Refer to workflow.md)
 
-## Phase 2 — GO Readiness States (FR-3, FR-4 cue)
+## Phase 2 — GO Readiness States (FR-3, FR-4 cue) [checkpoint: 0f731e8]
 - [x] Task 2.1: go-button tests first (Red) (7f084ec) — extend `src/ui/go-button.test.ts`: starts sleeping (`data-boot="sleeping"`, `aria-disabled="true"`, sleeping visual class); `setReady(true)` → `data-boot="ready"`, enabled for valid tracks only; taps while sleeping never fire `onGo` (blocked feedback only); `setRetrying(true)` → `data-boot="retry"` + retry pulse; retry tap fires `onRetry`, never `onGo`; awake/valid/invalid semantics unchanged once ready; existing tests updated to the new contract (intentional).
 - [x] Task 2.2: implement the additive states in `src/ui/go-button.ts` (Green) (a38cbbd) — `setReady`, `setRetrying`, `onRetry` callback, `data-boot` output; tap routing order (retry → blocked → go).
 - [x] Task 2.3: CSS contract tests first (Red) (ba0a816) — extend `src/style.test.ts`: sleeping dots element/state present; retry cue uses the existing ≥64px pill; sleeping dims but never hides; `data-boot` selectors exist for all three states.
