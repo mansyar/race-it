@@ -79,6 +79,15 @@ export const VICTORY_DUCK = 0.4;
 /** How long the victory jingle ducks the music, in seconds. */
 export const JINGLE_SECONDS = 3;
 
+/** Deepest music tempo during the photo-finish slow motion (playback rate, ~0.85). */
+export const PHOTO_FINISH_MUSIC_RATE = 0.85;
+
+/** Duration of the music tempo ease down/up, in milliseconds. */
+export const MUSIC_TEMPO_EASE_MS = 400;
+
+/** Fraction the engine hum is ducked while the photo-finish slow motion holds (~40%). */
+export const PHOTO_FINISH_HUM_DUCK = 0.4;
+
 /** Procedural engine hum oscillator blend (Hz) under a low-pass filter. */
 export const HUM_OSCILLATOR_HZ = [80, 160] as const;
 export const HUM_FILTER_HZ = 400;
@@ -100,6 +109,12 @@ export interface AudioDirector {
   stopHum: () => void;
   /** Plays the victory jingle once, ducking the music, then swells back. */
   playVictoryJingle: () => void;
+  /** Eases the music tempo down (~0.85) and dips the engine hum for the photo-finish slow motion. */
+  beginPhotoFinish: () => void;
+  /** Restores the music tempo and hum after the photo-finish slow motion. */
+  endPhotoFinish: () => void;
+  /** Plays the crowd-cheer one-shot for a confirmed photo finish. */
+  playCrowdCheer: () => void;
   /** Silences everything in place (mid-race pause, page hidden). */
   suspendAll: () => void;
   /** Restores whatever was suspended (resume, page visible again). */
@@ -125,6 +140,8 @@ export interface AudioDirectorOptions {
  * on the graph at the hum stage, 0.15), and a mute toggle persisted under
  * `race-it:muted`. Muting silences the master gain (graph-routed layers),
  * suppresses new one-shot elements, and pauses the music element.
+ * Photo-finish additions ease the music tempo (~0.85) and dip the hum (~40%)
+ * while the slow-motion holds, restoring both on release.
  * @param options - Injectable audio element + WebAudio context factories.
  * @returns The director facade.
  */
@@ -148,6 +165,9 @@ export function createAudioDirector(options: AudioDirectorOptions = {}): AudioDi
   let jingleDuckTimer: number | undefined;
   let humGain: GainNodeLike | undefined;
   let humOscillators: OscillatorNodeLike[] = [];
+  // Photo-finish slow-motion treatment: active flag + music tempo ease timer.
+  let photoFinish = false;
+  let tempoTimer: number | undefined;
 
   function playElement(url: string, playbackRate?: number): void {
     const element = makeAudio(url);
@@ -156,6 +176,59 @@ export function createAudioDirector(options: AudioDirectorOptions = {}): AudioDi
       element.playbackRate = playbackRate;
     }
     element.play();
+  }
+
+  function playOneShotInternal(name: SfxName): void {
+    if (muted) {
+      return;
+    }
+    playElement(SFX[name]);
+  }
+
+  /** Eases the music element's playback rate toward a target within the tempo window. */
+  function rampMusicRate(target: number): void {
+    if (tempoTimer !== undefined) {
+      clearInterval(tempoTimer);
+      tempoTimer = undefined;
+    }
+    const element = musicElement;
+    if (!element) {
+      return;
+    }
+    const from = element.playbackRate ?? 1;
+    if (from === target) {
+      return;
+    }
+    const steps = 8;
+    const stepMs = MUSIC_TEMPO_EASE_MS / steps;
+    let step = 0;
+    tempoTimer = window.setInterval(() => {
+      step += 1;
+      const t = Math.min(1, step / steps);
+      const current = musicElement;
+      if (!current) {
+        clearInterval(tempoTimer);
+        tempoTimer = undefined;
+        return;
+      }
+      current.playbackRate = from + (target - from) * t;
+      if (t >= 1) {
+        clearInterval(tempoTimer);
+        tempoTimer = undefined;
+      }
+    }, stepMs);
+  }
+
+  /** Glides the hum gain to a target over a duration (photo-finish dip/swell). */
+  function glideHum(target: number, seconds: number): void {
+    const gain = humGain?.gain;
+    if (!gain) {
+      return;
+    }
+    const at = context.currentTime;
+    gain.cancelScheduledValues(at);
+    gain.setValueAtTime(gain.value, at);
+    gain.linearRampToValueAtTime(target, at + seconds);
   }
 
   function rampHum(target: number, at: number): void {
@@ -182,9 +255,14 @@ export function createAudioDirector(options: AudioDirectorOptions = {}): AudioDi
 
   function stopMusicInternal(): void {
     wantMusic = false;
+    photoFinish = false;
     if (jingleDuckTimer !== undefined) {
       clearTimeout(jingleDuckTimer);
       jingleDuckTimer = undefined;
+    }
+    if (tempoTimer !== undefined) {
+      clearInterval(tempoTimer);
+      tempoTimer = undefined;
     }
     musicElement?.pause?.();
     musicElement = undefined;
@@ -208,10 +286,7 @@ export function createAudioDirector(options: AudioDirectorOptions = {}): AudioDi
 
   return {
     playOneShot(name: SfxName): void {
-      if (muted) {
-        return;
-      }
-      playElement(SFX[name]);
+      playOneShotInternal(name);
     },
     playCountdownBeep(step: number): void {
       if (muted) {
@@ -273,6 +348,25 @@ export function createAudioDirector(options: AudioDirectorOptions = {}): AudioDi
         music.volume = GAINS.music;
       }, JINGLE_SECONDS * 1000);
     },
+    beginPhotoFinish(): void {
+      if (photoFinish) {
+        return;
+      }
+      photoFinish = true;
+      rampMusicRate(PHOTO_FINISH_MUSIC_RATE);
+      glideHum(GAINS.hum * (1 - PHOTO_FINISH_HUM_DUCK), HUM_FADE_SECONDS);
+    },
+    endPhotoFinish(): void {
+      if (!photoFinish) {
+        return;
+      }
+      photoFinish = false;
+      rampMusicRate(1);
+      glideHum(GAINS.hum, HUM_FADE_SECONDS);
+    },
+    playCrowdCheer(): void {
+      playOneShotInternal('crowdCheer');
+    },
     suspendAll(): void {
       suspended = true;
       context.suspend();
@@ -290,7 +384,10 @@ export function createAudioDirector(options: AudioDirectorOptions = {}): AudioDi
       if (musicElement && wantMusic && !muted) {
         musicElement.play();
       }
-      rampHum(GAINS.hum, context.currentTime);
+      rampHum(
+        photoFinish ? GAINS.hum * (1 - PHOTO_FINISH_HUM_DUCK) : GAINS.hum,
+        context.currentTime,
+      );
     },
     stopAll(): void {
       suspended = false;

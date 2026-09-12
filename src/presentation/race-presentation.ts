@@ -7,6 +7,7 @@ import { type RaceCameraPhase, raceCameraPose } from '../render/race-camera';
 import type { RaceHud } from '../ui/race-hud';
 import type { TrafficLight } from '../ui/traffic-light';
 import type { Trophy } from '../ui/trophy';
+import { createPhotoFinishTracker, type PhotoFinishTracker } from './photo-finish';
 
 /** Winner color words for the trophy overlay (product-guidelines palette). */
 export const WINNER_COLOR_WORDS = ['Red', 'Blue', 'Green', 'Yellow'] as const;
@@ -15,6 +16,9 @@ export const VICTORY_SPIN_SECONDS = 2.0;
 
 /** How long the green GO light stays lit after the race starts. */
 export const GO_FLASH_SECONDS = 0.8;
+
+/** How long the photo-finish camera push eases back to the standard hold (seconds). */
+export const PHOTO_PUSH_RELEASE_SECONDS = 0.9;
 
 /** Exponential camera smoothing rate (higher = snappier follow). */
 export const CAMERA_SMOOTH_RATE = 8;
@@ -43,6 +47,12 @@ export interface RaceAudioDirector {
   stopHum: () => void;
   /** Plays the victory jingle once (music ducks underneath). */
   playVictoryJingle: () => void;
+  /** Eases music tempo + dips the hum while the photo-finish slow motion runs. */
+  beginPhotoFinish?: () => void;
+  /** Restores the standard mix when the photo-finish sequence releases. */
+  endPhotoFinish?: () => void;
+  /** Plays the crowd cheer on the confirmed photo finish. */
+  playCrowdCheer?: () => void;
   /** Silences everything (mid-race pause). */
   suspendAll: () => void;
   /** Restores everything (mid-race resume). */
@@ -63,6 +73,14 @@ export interface CameraLike {
   position: { set: (x: number, y: number, z: number) => void };
   lookAt: (x: number, y: number, z: number) => void;
   aspect: number;
+}
+
+/** DOM flash sink fired once when a photo finish is confirmed. */
+export interface FlashSink {
+  /** Starts the single soft pulse. */
+  flash(): void;
+  /** Clears any in-flight pulse when the race resets. */
+  hide(): void;
 }
 
 export interface RacePresentationOptions {
@@ -87,6 +105,13 @@ export interface RacePresentationOptions {
   onGo?: () => void;
   /** Race audio layers (music, hum, jingle) driven by the race lifecycle. */
   audio?: RaceAudioDirector;
+  /**
+   * Photo-finish tracker override (test seam). Defaults to a fresh tracker
+   * owned by this presentation.
+   */
+  photoFinish?: PhotoFinishTracker;
+  /** Photo-finish flash layer; omitted = no flash (headless/debug runs). */
+  flash?: FlashSink;
 }
 
 export interface RacePresentation {
@@ -155,6 +180,7 @@ export function createRacePresentation(options: RacePresentationOptions): RacePr
   const { engine, path, trafficLight, raceHud, trophy, confetti, karts, camera } = options;
   const startCell = path[0];
   const finishOrigin = startCell ? gridToWorld(startCell.x, startCell.y) : { x: 0, z: 0 };
+  const tracker = options.photoFinish ?? createPhotoFinishTracker();
 
   let goFlashRemaining = 0;
   let spinning = false;
@@ -174,6 +200,17 @@ export function createRacePresentation(options: RacePresentationOptions): RacePr
   let prevPace: number[] = engine.karts.map(() => 0);
   const baseSpeed = baseSpeedFor(engine.lapLength);
   let held = false;
+  // Pause overlay state: freezes the photo-finish ramp clock while paused.
+  let pausedHold = false;
+  // Current photo-finish time scale applied to the frame delta.
+  let timeScale = 1;
+  // Photo-finish push envelope clock; starts expired, re-armed to 0 by the
+  // tracker's one-shot confirm accent.
+  let pushElapsed = PHOTO_PUSH_RELEASE_SECONDS;
+  // Photo-finish audio treatment: active from the arming edge to scale restore.
+  let slowMotionAudio = false;
+  // Previous arm state, so the treatment starts on the arming edge only.
+  let armedPrev = false;
 
   function resetCelebration(): void {
     spinning = false;
@@ -201,12 +238,14 @@ export function createRacePresentation(options: RacePresentationOptions): RacePr
   const priorAgain = trophy.callbacks.onAgain;
   raceHud.callbacks.onPause = () => {
     priorPause();
+    pausedHold = true;
     options.audio?.suspendAll();
     engine.pause();
   };
   raceHud.callbacks.onResume = () => {
     priorResume();
     held = false;
+    pausedHold = false;
     engine.resume();
     options.audio?.resumeAll();
   };
@@ -244,6 +283,7 @@ export function createRacePresentation(options: RacePresentationOptions): RacePr
 
   engine.on('stateChange', (state) => {
     held = false;
+    pausedHold = false;
     if (state === 'countdown') {
       options.onBuildUiChange?.(false);
       options.audio?.startMusic();
@@ -273,6 +313,15 @@ export function createRacePresentation(options: RacePresentationOptions): RacePr
     }
     if (state === 'idle') {
       options.audio?.stopAll();
+      if (slowMotionAudio) {
+        slowMotionAudio = false;
+        options.audio?.endPhotoFinish?.();
+      }
+      armedPrev = false;
+      options.flash?.hide();
+      tracker.reset();
+      timeScale = 1;
+      pushElapsed = PHOTO_PUSH_RELEASE_SECONDS;
       resetToBuildVisuals();
     }
   });
@@ -391,7 +440,7 @@ export function createRacePresentation(options: RacePresentationOptions): RacePr
     }
   }
 
-  function updateCamera(dt: number, poses: KartPose[]): void {
+  function updateCamera(dt: number, poses: KartPose[], push: number): void {
     if (path.length === 0 || engine.karts.length === 0) {
       return;
     }
@@ -412,6 +461,7 @@ export function createRacePresentation(options: RacePresentationOptions): RacePr
       finishPoint: finishOrigin,
       buildPlacement: build,
       aspect: camera.aspect,
+      push,
     });
 
     if (!hasSmoothedCamera) {
@@ -432,6 +482,68 @@ export function createRacePresentation(options: RacePresentationOptions): RacePr
     camera.lookAt(smoothedTarget.x, smoothedTarget.y, smoothedTarget.z);
   }
 
+  /**
+   * Advances the photo-finish tracker for one frame and returns the time scale
+   * to apply to it. Frozen while paused or held for an interruption so the
+   * ramp's wall-clock windows do not run behind an overlay; the idle branch
+   * resets the tracker (and the scale) when the race is abandoned. Starts the
+   * slow-motion audio treatment on the arming edge and ends it when the scale
+   * restores (or on reset).
+   */
+  function tickPhotoFinish(dt: number): number {
+    if (held || pausedHold || engine.state === 'idle') {
+      return timeScale;
+    }
+    const finishedCount = engine.karts.filter((kart) => kart.finished).length;
+    const resolved = finishedCount >= 2 ? (engine.result?.photoFinish ?? null) : null;
+    const { timeScale: next, accent } = tracker.tick({
+      dt,
+      lapLength: engine.lapLength,
+      samples: engine.karts.map((kart) => ({
+        progress: kart.progress,
+        pace: kart.speed,
+        finished: kart.finished,
+      })),
+      photoFinish: resolved,
+    });
+    timeScale = next;
+    if (accent) {
+      pushElapsed = 0;
+      options.audio?.playCrowdCheer?.();
+      options.flash?.flash();
+    }
+    const armedNow = tracker.armed;
+    if (armedNow && !armedPrev && !slowMotionAudio) {
+      slowMotionAudio = true;
+      options.audio?.beginPhotoFinish?.();
+    } else if (slowMotionAudio && next >= 1) {
+      slowMotionAudio = false;
+      options.audio?.endPhotoFinish?.();
+    }
+    armedPrev = armedNow;
+    return timeScale;
+  }
+
+  /** Current photo-finish push amount (1 = fully pushed in, 0 = standard hold). */
+  function photoPushAmount(): number {
+    if (pushElapsed >= PHOTO_PUSH_RELEASE_SECONDS) {
+      return 0;
+    }
+    const t = pushElapsed / PHOTO_PUSH_RELEASE_SECONDS;
+    return 1 - t * t * (3 - 2 * t);
+  }
+
+  /**
+   * Advances the push envelope by the scaled step. Frozen while paused or held
+   * for an interruption, mirroring the ramp freeze; the idle branch resets it.
+   */
+  function advancePhotoPush(dt: number): number {
+    if (!held && !pausedHold) {
+      pushElapsed += dt;
+    }
+    return photoPushAmount();
+  }
+
   return {
     beginRace() {
       if (engine.state !== 'idle') {
@@ -441,16 +553,18 @@ export function createRacePresentation(options: RacePresentationOptions): RacePr
       engine.start();
     },
     update(dt: number) {
-      engine.tick(dt);
-      updateGoFlash(dt);
+      const scaledDt = dt * tickPhotoFinish(dt);
+      const push = advancePhotoPush(scaledDt);
+      engine.tick(scaledDt);
+      updateGoFlash(scaledDt);
       updateTrafficLight();
-      updateVictorySpin(dt);
+      updateVictorySpin(scaledDt);
       updateTrophy();
-      const { paces, accels } = measurePaces(dt);
+      const { paces, accels } = measurePaces(scaledDt);
       const poses = currentPoses(paces, accels);
       karts.update(poses);
-      confetti.update(dt);
-      updateCamera(dt, poses);
+      confetti.update(scaledDt);
+      updateCamera(scaledDt, poses, push);
     },
     holdForInterruption() {
       if (held || (engine.state !== 'countdown' && engine.state !== 'running')) {

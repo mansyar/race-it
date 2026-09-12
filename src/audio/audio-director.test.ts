@@ -5,6 +5,9 @@ import {
   createAudioDirector,
   GAINS,
   JINGLE_SECONDS,
+  MUSIC_TEMPO_EASE_MS,
+  PHOTO_FINISH_HUM_DUCK,
+  PHOTO_FINISH_MUSIC_RATE,
   type SfxName,
   VICTORY_DUCK,
 } from './audio-director';
@@ -507,5 +510,113 @@ describe('createAudioDirector', () => {
     } finally {
       vi.useRealTimers();
     }
+  });
+
+  it('eases the music tempo down for the photo finish and restores it', () => {
+    vi.useFakeTimers();
+    try {
+      const director = createDirector();
+      director.startMusic();
+      const musicElement = elements[0];
+      if (!musicElement) {
+        throw new Error('expected the music element to exist');
+      }
+      director.beginPhotoFinish();
+      vi.advanceTimersByTime(MUSIC_TEMPO_EASE_MS);
+      expect(musicElement.playbackRate).toBeCloseTo(PHOTO_FINISH_MUSIC_RATE, 4);
+      vi.advanceTimersByTime(MUSIC_TEMPO_EASE_MS);
+      expect(musicElement.playbackRate).toBeCloseTo(PHOTO_FINISH_MUSIC_RATE, 4);
+      director.endPhotoFinish();
+      vi.advanceTimersByTime(MUSIC_TEMPO_EASE_MS);
+      expect(musicElement.playbackRate).toBeCloseTo(1, 4);
+    } finally {
+      vi.useRealTimers();
+    }
+  });
+
+  it('dips the engine hum and swells it back for the photo finish', () => {
+    const director = createDirector();
+    director.startHum();
+    const humGain = humGainOf(context);
+    director.beginPhotoFinish();
+    const dipped = rampValuesOf(humGain, 'linearRampToValueAtTime');
+    expect(dipped[dipped.length - 1]).toBeCloseTo(GAINS.hum * (1 - PHOTO_FINISH_HUM_DUCK), 6);
+    director.endPhotoFinish();
+    const restored = rampValuesOf(humGain, 'linearRampToValueAtTime');
+    expect(restored[restored.length - 1]).toBeCloseTo(GAINS.hum, 6);
+  });
+
+  it('applies the photo-finish treatment only once while active', () => {
+    vi.useFakeTimers();
+    try {
+      const director = createDirector();
+      director.startMusic();
+      director.startHum();
+      const musicElement = elements[0];
+      if (!musicElement) {
+        throw new Error('expected the music element to exist');
+      }
+      const humGain = humGainOf(context);
+      director.beginPhotoFinish();
+      director.beginPhotoFinish();
+      vi.advanceTimersByTime(MUSIC_TEMPO_EASE_MS);
+      expect(musicElement.playbackRate).toBeCloseTo(PHOTO_FINISH_MUSIC_RATE, 4);
+      const dipRamps = rampValuesOf(humGain, 'linearRampToValueAtTime').filter(
+        (value) => Math.abs(value - GAINS.hum * (1 - PHOTO_FINISH_HUM_DUCK)) < 1e-9,
+      );
+      expect(dipRamps).toHaveLength(1);
+    } finally {
+      vi.useRealTimers();
+    }
+  });
+
+  it('plays the crowd cheer at one-shot gain and stays silent while muted', () => {
+    const director = createDirector();
+    director.playOneShot('crowdCheer');
+    expect(played).toHaveLength(1);
+    expect(played[0]?.url).toBe(SFX.crowdCheer);
+    expect(played[0]?.volume).toBe(GAINS.oneShot);
+    director.setMuted(true);
+    director.playOneShot('crowdCheer');
+    expect(played).toHaveLength(1);
+  });
+
+  it('plays the crowd cheer after a suspend and resume cycle', () => {
+    const director = createDirector();
+    director.suspendAll();
+    director.resumeAll();
+    director.playOneShot('crowdCheer');
+    expect(played.map((entry) => entry.url)).toEqual([SFX.crowdCheer]);
+  });
+
+  it('drops a pending tempo ease when the music stops and starts fresh', () => {
+    vi.useFakeTimers();
+    try {
+      const director = createDirector();
+      director.startMusic();
+      director.beginPhotoFinish();
+      vi.advanceTimersByTime(MUSIC_TEMPO_EASE_MS / 2);
+      director.stopMusic();
+      director.startMusic();
+      const fresh = elements[1];
+      if (!fresh) {
+        throw new Error('expected a fresh music element to exist');
+      }
+      vi.advanceTimersByTime(MUSIC_TEMPO_EASE_MS * 2);
+      expect(fresh.playbackRate).toBe(1);
+    } finally {
+      vi.useRealTimers();
+    }
+  });
+
+  it('restores the hum at the dipped level when resuming during a photo finish', () => {
+    const director = createDirector();
+    director.startHum();
+    director.beginPhotoFinish();
+    const humGain = humGainOf(context);
+    director.suspendAll();
+    director.resumeAll();
+    const ramps = rampValuesOf(humGain, 'linearRampToValueAtTime');
+    expect(ramps[ramps.length - 1]).toBeCloseTo(GAINS.hum * (1 - PHOTO_FINISH_HUM_DUCK), 6);
   });
 });

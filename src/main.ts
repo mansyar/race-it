@@ -1,6 +1,7 @@
 import * as THREE from 'three';
 import { appReady } from './app';
 import { createAppLifecycle } from './app-lifecycle';
+import { createAssetReadiness } from './asset-readiness';
 import { KARTS, MODELS, MUSIC, SCENERY, SFX } from './assets/manifest';
 import { createAudioDirector } from './audio/audio-director';
 import { installGestureGuards } from './gesture-guards';
@@ -31,6 +32,7 @@ import './style.css';
 import { createBuildBar } from './ui/build-bar';
 import { createCarPicker } from './ui/car-picker';
 import { createCornerCluster } from './ui/corner-cluster';
+import { createFlashOverlay } from './ui/flash-overlay';
 import { createGoButton } from './ui/go-button';
 import { readInstallEnv } from './ui/install-context';
 import { createInstallHint } from './ui/install-hint';
@@ -330,6 +332,7 @@ if (root && appReady()) {
       audio.playOneShot('click');
     },
   });
+  const flash = createFlashOverlay();
 
   const setBuildUiVisible = (visible: boolean): void => {
     go.root.classList.toggle('hidden', !visible);
@@ -345,6 +348,10 @@ if (root && appReady()) {
   const go = createGoButton({
     onBlockedTap: () => {
       audio.playOneShot('nope');
+    },
+    onRetry: () => {
+      audio.playOneShot('click');
+      readiness.retryFailed();
     },
     onGo: () => {
       audio.playOneShot('click');
@@ -482,6 +489,7 @@ if (root && appReady()) {
             audio.playOneShot('go');
           },
           audio,
+          flash,
         });
         // Leaving remove mode behind would leak build feedback into the race.
         feedback.setRemoveMode(false);
@@ -517,12 +525,6 @@ if (root && appReady()) {
       kartPreview.render(rect.width, rect.height);
     }
   };
-  kartPreview
-    .load()
-    .then(renderKartPreviews)
-    .catch((error: unknown) => {
-      console.error('Failed to load kart preview models', error);
-    });
   window.addEventListener('resize', renderKartPreviews);
 
   const appUi = document.createElement('div');
@@ -540,32 +542,57 @@ if (root && appReady()) {
 
   const raceUi = document.createElement('div');
   raceUi.className = 'race-ui';
-  raceUi.append(trafficLight.root, raceHud.root, trophy.root);
+  raceUi.append(flash.root, trafficLight.root, raceHud.root, trophy.root);
   root.append(raceUi);
 
   go.setValid(validateTrack(model).valid);
 
-  pieces
-    .load()
-    .then(() => {
-      view.scene.add(pieces.update(model.toSnapshot()));
-      return scenery.load();
-    })
-    .then(() => {
-      view.scene.add(scenery.update(model.toSnapshot()));
-    })
-    .catch((error: unknown) => {
-      console.error('Failed to load track pieces or scenery', error);
-    });
-  karts
-    .load()
-    .then(() => {
-      view.scene.add(karts.group);
-      view.scene.add(confetti.points);
-    })
-    .catch((error: unknown) => {
-      console.error('Failed to load kart models', error);
-    });
+  // Boot readiness: the table fills in stages — pieces first (with the toy
+  // pop-in), then scenery and karts as they arrive. GO only wakes once the
+  // critical groups are ready; failures retry gently behind a wordless cue.
+  const readiness = createAssetReadiness({
+    groups: [
+      {
+        name: 'pieces',
+        critical: true,
+        load: () =>
+          pieces.load().then(() => {
+            view.scene.add(pieces.update(model.toSnapshot()));
+            for (const holder of pieces.group.children) {
+              const cellIndex: unknown = holder.userData.cellIndex;
+              if (typeof cellIndex === 'number') {
+                feedback.notePlaced(cellIndex);
+              }
+            }
+          }),
+      },
+      {
+        name: 'scenery',
+        load: () =>
+          scenery.load().then(() => {
+            view.scene.add(scenery.update(model.toSnapshot()));
+          }),
+      },
+      {
+        name: 'karts',
+        critical: true,
+        load: () =>
+          Promise.all([karts.load(), kartPreview.load()]).then(() => {
+            view.scene.add(karts.group);
+            view.scene.add(confetti.points);
+            renderKartPreviews();
+          }),
+      },
+    ],
+    onStateChange: (snapshot) => {
+      go.setReady(snapshot.raceReady);
+      go.setRetrying(snapshot.cue);
+    },
+  });
+  if (new URLSearchParams(window.location.search).has('debug')) {
+    (window as unknown as Record<string, unknown>).__raceItBoot = () => readiness.snapshot();
+  }
+  readiness.start();
 
   // Single per-frame pass: build feedback (build mode only) plus race
   // presentation (owns engine ticking), then render (scene owns rAF).

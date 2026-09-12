@@ -1,0 +1,12 @@
+"Crowd Cheering" by SoundsExciting
+Source: https://freesound.org/people/SoundsExciting/sounds/365132/
+Retrieved: 2026-09-11 (public preview audio from the Freesound CDN)
+License: Creative Commons 0 (CC0 1.0 Universal) - public domain dedication
+https://creativecommons.org/publicdomain/zero/1.0/
+
+You can copy, modify, distribute and perform the sound, even for commercial
+purposes, all without the need of asking permission to the author.
+
+File in this project: crowdCheer.ogg - trimmed (~3 s), mono, Vorbis-encoded
+build asset for the Race-It photo-finish celebration. First non-Kenney audio
+asset in the project (see conductor/tech-stack.md).

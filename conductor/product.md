@@ -20,6 +20,11 @@ Preschoolers ages 3–5 (with a parent installing/curating). No reading ability 
 - Auto scenery (trees, grandstands, barriers) on empty non-adjacent cells so the table feels like a physical toy set; never blocks placing track.
 - Toy micro-feedback: pieces pop in when placed; remove mode wiggles pieces with a red tint; soft contact shadow and chunky wood rim under the board.
 
+### Boot & Loading
+- The table is on screen immediately and fills in stages — track pieces pop in first, then scenery and karts — so there is never a blank or blocked screen.
+- GO stays asleep (a calm, gently breathing pill) until the race-critical toys are loaded, then wakes ready for the next tap.
+- If loading hiccups, GO shows a gentle wordless retry cue; a tap tries again — retries continue quietly in the background, and the build table stays fully usable throughout.
+
 ### The Race
 - Kid taps 2–4 cars to enter and picks each car's color from big swatches (defaults work with one tap).
 - Traffic-light countdown (3… 2… 1… GO!) with sound; racing is fully automatic — kid is a pure spectator.
@@ -29,9 +34,10 @@ Preschoolers ages 3–5 (with a parent installing/curating). No reading ability 
 - One lap: first car to cross the start/finish line (F1-style — the start line doubles as the finish line; the finish piece is a decorative banner) wins; race length ~30–45 seconds.
 - Mid-race pause button → Resume / Quit-to-builder (with a confirm step).
 - Finish: confetti burst, winning car victory spin, giant "🏆 [COLOR] WINS!" (color word + icon), one huge RACE AGAIN button.
+- Photo-finish drama: when the finish is close, the final stretch dips into a brief slow-motion with one soft screen flash, a crowd cheer at the crossing, and a gentle camera push before the celebration — ordinary finishes are unchanged.
 
 ### Audio
-- Kenney CC0 sounds: countdown beeps, engine hum, victory jingle, plus one upbeat playful music loop.
+- CC0 sounds: Kenney countdown beeps, engine hum, victory jingle, one upbeat playful music loop, plus a Freesound crowd-cheer one-shot for photo finishes.
 - Corner mute button.
 
 ## Non-Functional Requirements
@@ -40,7 +46,7 @@ Preschoolers ages 3–5 (with a parent installing/curating). No reading ability 
 - **Performance:** 60 fps target on the device floor with automatic graceful degradation — the game lowers render quality (pixel-ratio cap, then batched instanced tiles) when frame rate drops and recovers when it improves; no settings or user action needed.
 - **UI:** Wordless, icon-only; large touch targets; toddler-proof against accidental exits.
 - **Hosting:** Customer's own server, served over HTTPS (required for PWA install); static bundle deployment.
-- **Assets:** Kenney Racing Kit (track pieces/scenery), Kenney Car Kit (karts), Kenney audio packs — all CC0.
+- **Assets:** Kenney Racing Kit (track pieces/scenery), Kenney Car Kit (karts), Kenney audio packs plus one CC0 crowd-cheer one-shot (Freesound) — all CC0.
 
 ## Out of Scope (v1)
 Player-controlled cars, lap counts > 1, camera zoom/pan, drag-and-drop placement, fixed car personalities, user profiles/cloud sync, text-based UI.
