@@ -39,6 +39,12 @@ Vanilla TypeScript + Three.js, no UI framework, no game engine. A lean static PW
 - **Tier levers** — every tier caps the renderer pixel ratio (2 / 1.5 / 1); the `low` tier additionally batches road tiles per piece type through `InstancedMesh` (`src/render/piece-renderer.ts` — `setRenderMode('individual' | 'instanced')`, visuals and toy feedback identical via `syncInstances`). Applied once per frame from the single `view.onFrame` loop in `src/main.ts`.
 - **Measured (headless, full 144-piece board):** high/mid 652 draw calls; low 232 draw calls (64% fewer); 21,986 triangles constant across tiers.
 
+## Boot & Loading (added 2026-09-12)
+- **Asset readiness tracker** — `src/asset-readiness.ts`: named asset groups load independently and retry gently in the background (exponential backoff 500 ms → 10 s cap, retried indefinitely; a wordless *retry cue* appears after 3 consecutive failures or 8 s without a success). `pieces` and `karts` are race-critical groups; `scenery` is decorative and never blocks the race.
+- **Staged table reveal** — the table appears immediately; track pieces pop in first, then scenery and karts join as they arrive (existing toy-feedback pop-in; no blocking spinner, no dead screen).
+- **GO readiness gate** — `src/ui/go-button.ts` starts *sleeping* (dim, breathing) and only wakes once every race-critical group is ready; if loads stall, GO shows a retry pulse and a tap forces an immediate attempt. Blocked-track validity gating is unchanged.
+- **Debug** — `?debug` additionally exposes `__raceItBoot()` (readiness snapshot) alongside the existing hooks.
+
 ## Runtime & Hosting
 - **Runtime:** modern evergreen mobile browsers — iOS Safari 16+, Android Chrome 110+.
 - **Hosting:** containerized static PWA served by **nginx:alpine** over **HTTPS** on the customer's **Coolify** instance (required for service worker/PWA install). No backend, no database.
