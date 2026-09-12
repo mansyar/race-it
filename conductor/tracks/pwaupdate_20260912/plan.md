@@ -38,3 +38,6 @@
 - [x] Task 5.2: manual verification — user-confirmed 2026-09-12: preview boot + full build→race→trophy→again loop; no update UI anywhere; `?race`/`?perf`/`?debug` intact (`pwa.status()` idle, `buildLabel` null); offline preview boot OK; headed two-build update-flow run behaved as designed.
 - [x] Task 5.3: final docs — `tech-stack.md` synced against final code (af6c7f6; DoD checklist — implemented to spec, 54 files/615 tests incl. 29 new, coverage 97.24/88.38/97.05/97.47, lint clean, notes attached, manual verification tracked in 5.2).
 - [ ] Task: Phase Verification & Checkpoint.
+
+## Phase: Review Fixes
+- [x] Task: Apply review suggestions 204390a
