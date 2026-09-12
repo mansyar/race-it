@@ -34,7 +34,7 @@
 - [ ] Task: Phase Verification & Checkpoint — manual two-build scenario once + CI-config green.
 
 ## Phase 5 — Quality Gates & Documentation [checkpoint: ]
-- [ ] Task 5.1: quality gates — `pnpm build`; `CI=true pnpm test` + coverage (>80% on `src/pwa/*`); `pnpm lint`; full Playwright suite (chromium + installability + update-flow); record numbers.
-- [ ] Task 5.2: manual verification — offline boot, full build→race→trophy→again loop, no update UI anywhere, `?race`/`?perf`/`?debug`; real two-serve no-reload check.
+- [x] Task 5.1: quality gates — verified 2026-09-12: `pnpm build` green (63 precache entries, 2359.04 KiB); 54 files / 615 tests passed; coverage all files 97.24/88.38/97.05/97.47 (src/pwa ≥83.33 on every metric); `pnpm lint` 128 files, 2 pre-existing warnings; full Playwright CI-config suite 13/13 passed (2.3m) incl. update-flow + installability.
+- [~] Task 5.2: manual verification — offline boot, full build→race→trophy→again loop, no update UI anywhere, `?race`/`?perf`/`?debug`; real two-serve no-reload check.
 - [ ] Task 5.3: final docs — `tech-stack.md` synced against final code; completion checklist per workflow.
 - [ ] Task: Phase Verification & Checkpoint.
