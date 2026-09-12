@@ -22,11 +22,11 @@
 - [x] Task 1.1: document the audio warmth design in `tech-stack.md` — warmed `PlayableAudio` pool (`SFX_POOL_SIZE`), `warm()`/`warmSnapshot()` surface, pre-created music element reuse across races, non-critical `audio` readiness group in `main.ts`, `__raceItAudio` debug hook, no new dependencies; commit before implementation per workflow. (09c5811)
 - [x] Task: Phase Verification & Checkpoint (Refer to workflow.md) — doc review.
 
-## Phase 2 — Warm Pool Core (FR-1, FR-2, FR-4)
+## Phase 2 — Warm Pool Core (FR-1, FR-2, FR-4) [checkpoint: 200d479]
 - [x] Task 2.1: warm tests first (Red) — extend `src/audio/audio-director.test.ts` (injected fake factory + fake timers): `warm()` loads every pooled element and resolves only when all report ready; rejects when any fails; snapshot `idle → warming → ready | failed` + attempt counts; re-warm is idempotent (ready untouched, failed re-attempted); one-shots reuse pre-created elements round-robin with guarded `currentTime` reset (no factory calls during play); volume/countdown-rate rules unchanged; `play()` rejections swallowed with no unhandled promise; music element created once, `startMusic` resets to top + plays, `stopMusic` pauses and keeps it warm, next race reuses it; mute/unmute and suspend/resume semantics preserved. (7821445)
 - [x] Task 2.2: implement in `src/audio/audio-director.ts` (Green) — additive `load?`/`readyState?`/`preload?` on `PlayableAudio`, default factory `preload='auto'`, single-flight `warm()` + `warmSnapshot()`, bounded pool, music reuse; existing behavior tests stay green (intentional updates only). (200d479)
 - [x] Task 2.3: coverage ≥80% on the module + refactor under green; `$env:CI='true'; pnpm test` + `pnpm lint` clean; commit. (200d479)
-- [ ] Task: Phase Verification & Checkpoint (Refer to workflow.md) — table-walk the warm/play/music state matrix with the user.
+- [x] Task: Phase Verification & Checkpoint (Refer to workflow.md) — table-walk the warm/play/music state matrix with the user.
 
 ## Phase 3 — Boot Wiring, Debug Hook & E2E (FR-3)
 - [ ] Task 3.1: audio E2E first (Red) — new `e2e/audio.spec.ts` (`?debug`; `page.route` on `.ogg`):
