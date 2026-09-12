@@ -23,8 +23,8 @@
 ## Phase 2 — GO Readiness States (FR-3, FR-4 cue)
 - [x] Task 2.1: go-button tests first (Red) (7f084ec) — extend `src/ui/go-button.test.ts`: starts sleeping (`data-boot="sleeping"`, `aria-disabled="true"`, sleeping visual class); `setReady(true)` → `data-boot="ready"`, enabled for valid tracks only; taps while sleeping never fire `onGo` (blocked feedback only); `setRetrying(true)` → `data-boot="retry"` + retry pulse; retry tap fires `onRetry`, never `onGo`; awake/valid/invalid semantics unchanged once ready; existing tests updated to the new contract (intentional).
 - [x] Task 2.2: implement the additive states in `src/ui/go-button.ts` (Green) (a38cbbd) — `setReady`, `setRetrying`, `onRetry` callback, `data-boot` output; tap routing order (retry → blocked → go).
-- [~] Task 2.3: CSS contract tests first (Red) — extend `src/style.test.ts`: sleeping dots element/state present; retry cue uses the existing ≥64px pill; sleeping dims but never hides; `data-boot` selectors exist for all three states.
-- [ ] Task 2.4: style the states in `src/style.css` (Green) — wordless dots (sleeping) and pulsing retry cue; no layout shift; existing valid/pulsing rules untouched.
+- [x] Task 2.3: CSS contract tests first (Red) (ba0a816) — extend `src/style.test.ts`: sleeping dots element/state present; retry cue uses the existing ≥64px pill; sleeping dims but never hides; `data-boot` selectors exist for all three states.
+- [x] Task 2.4: style the states in `src/style.css` (Green) (d17429e) — wordless dots (sleeping) and pulsing retry cue; no layout shift; existing valid/pulsing rules untouched.
 - [ ] Task: Phase Verification & Checkpoint (Refer to workflow.md)
 
 ## Phase 3 — Boot Wiring & E2E (FR-2, FR-3, FR-4, FR-5)
