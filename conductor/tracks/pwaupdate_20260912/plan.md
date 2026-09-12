@@ -20,9 +20,9 @@
 - [ ] Task: Phase Verification & Checkpoint — table-walk the gate matrix with the user; confirm constants.
 
 ## Phase 3 — Registration Switch & App Wiring [checkpoint: ]
-- [ ] Task 3.1: registration switch — `vite.config.ts`: `registerType: 'prompt'`, disable injected registration (`injectRegister: null`), keep workbox globs unchanged; add `vite-plugin-pwa/client` to `tsconfig.json` types; verify the generated `sw.js` honors SKIP_WAITING (adjust workbox config if the plugin does not add it).
-- [ ] Task 3.2: wire in `src/main.ts` — app-owned `registerSW` (immediate) → controller; screen signal from existing seams (picker visibility + `onBuildUiChange`); quiet input tracker on window; launch/foreground (`onVisible`/`onRestore`) and online/offline triggers; apply → `updateServiceWorker(true)`; `?debug` exposes controller status + tiny build-label seam for the e2e (harmless when unset).
-- [ ] Task 3.3: regression pass — dev + preview boot clean (SW registered only in preview), offline preview boot intact, race loop untouched, `?race`/`?perf`/`?debug` intact.
+- [x] Task 3.1: registration switch — `vite.config.ts`: `registerType: 'prompt'`, disable injected registration (`injectRegister: null`), keep workbox globs unchanged; add `vite-plugin-pwa/client` to `tsconfig.json` types; verify the generated `sw.js` honors SKIP_WAITING (adjust workbox config if the plugin does not add it). (bbcbd18)
+- [x] Task 3.2: wire in `src/main.ts` — app-owned raw SW registration → controller (virtual register module dropped: workbox-window unresolvable under pnpm without a new runtime dep — tech-stack amendment f99bd2a); screen signal from existing seams (picker visibility + `onBuildUiChange`); quiet input tracker on window; launch/foreground (`onVisible`/`onRestore`) and online triggers; apply → post SKIP_WAITING to the waiting worker + reload on activation; `?debug` exposes controller status + tiny build-label seam for the e2e (harmless when unset). (1cca5a6)
+- [~] Task 3.3: regression pass — dev + preview boot clean (SW registered only in preview), offline preview boot intact, race loop untouched, `?race`/`?perf`/`?debug` intact.
 - [ ] Task: Phase Verification & Checkpoint — browser check with user.
 
 ## Phase 4 — Two-Build Update E2E [checkpoint: ]
