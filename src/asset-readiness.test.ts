@@ -2,6 +2,7 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import {
   type AssetGroupDefinition,
   type AssetReadinessSnapshot,
+  ATTEMPT_TIMEOUT_MS,
   createAssetReadiness,
   RETRY_BASE_DELAY_MS,
   RETRY_MAX_DELAY_MS,
@@ -328,6 +329,67 @@ describe('createAssetReadiness', () => {
     expect(stateOf(snapshot, 'pieces').stalled).toBe(false);
     expect(snapshot.raceReady).toBe(true);
     expect(snapshot.cue).toBe(false);
+  });
+
+  it('treats a load that never settles as failed and retries it', async () => {
+    const attempts: Deferred<void>[] = [];
+    const load = vi.fn(() => {
+      const attempt = deferred<void>();
+      attempts.push(attempt);
+      return attempt.promise;
+    });
+    const readiness = createAssetReadiness({ groups: [group('pieces', load, true)] });
+
+    readiness.start();
+    expect(stateOf(readiness.snapshot(), 'pieces').status).toBe('loading');
+
+    await vi.advanceTimersByTimeAsync(ATTEMPT_TIMEOUT_MS - 1);
+    expect(stateOf(readiness.snapshot(), 'pieces').status).toBe('loading');
+
+    await vi.advanceTimersByTimeAsync(1);
+    expect(stateOf(readiness.snapshot(), 'pieces').status).toBe('failed');
+    expect(stateOf(readiness.snapshot(), 'pieces').attempts).toBe(1);
+
+    await vi.advanceTimersByTimeAsync(RETRY_BASE_DELAY_MS);
+    expect(load).toHaveBeenCalledTimes(2);
+    attemptAt(attempts, 1).resolve();
+    await flush();
+    expect(stateOf(readiness.snapshot(), 'pieces').status).toBe('ready');
+  });
+
+  it('ignores a late settlement from an attempt that already timed out', async () => {
+    const attempts: Deferred<void>[] = [];
+    const load = vi.fn(() => {
+      const attempt = deferred<void>();
+      attempts.push(attempt);
+      return attempt.promise;
+    });
+    const readiness = createAssetReadiness({ groups: [group('pieces', load, true)] });
+
+    readiness.start();
+    await vi.advanceTimersByTimeAsync(ATTEMPT_TIMEOUT_MS);
+    expect(stateOf(readiness.snapshot(), 'pieces').status).toBe('failed');
+
+    // The abandoned attempt settles late; the tracker must ignore it.
+    attemptAt(attempts, 0).resolve();
+    await flush();
+    const snapshot = readiness.snapshot();
+    expect(stateOf(snapshot, 'pieces').status).toBe('failed');
+    expect(stateOf(snapshot, 'pieces').attempts).toBe(1);
+  });
+
+  it('leaves no watchdog behind when an attempt settles in time', async () => {
+    const load = vi.fn(() => Promise.resolve());
+    const readiness = createAssetReadiness({ groups: [group('pieces', load, true)] });
+
+    readiness.start();
+    await flush();
+    expect(stateOf(readiness.snapshot(), 'pieces').status).toBe('ready');
+
+    await vi.advanceTimersByTimeAsync(ATTEMPT_TIMEOUT_MS);
+    await flush();
+    expect(load).toHaveBeenCalledTimes(1);
+    expect(stateOf(readiness.snapshot(), 'pieces').status).toBe('ready');
   });
 
   it('makes start idempotent', async () => {

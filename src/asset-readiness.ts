@@ -67,6 +67,9 @@ export const STALL_ATTEMPTS = 3;
 /** Time without success before a group is considered stalled. */
 export const STALL_AFTER_MS = 8000;
 
+/** Treat a load attempt that hasn't settled after this long as failed. */
+export const ATTEMPT_TIMEOUT_MS = 10_000;
+
 interface MutableGroup {
   readonly name: string;
   readonly critical: boolean;
@@ -148,14 +151,36 @@ export function createAssetReadiness(options: AssetReadinessOptions): AssetReadi
 
   function attempt(group: MutableGroup): void {
     if (group.status === 'loading' || group.status === 'ready') {
+      // Defensive: callers only attempt idle/failed groups. `loading` guards
+      // single-flight for forced retries; `ready` guards stale timers.
       return;
     }
     clearTimer(group);
     group.status = 'loading';
     notify();
+    let settled = false;
+    group.timer = setTimeout(() => {
+      if (settled) {
+        return;
+      }
+      settled = true;
+      fail(group);
+    }, ATTEMPT_TIMEOUT_MS);
     group.load().then(
-      () => succeed(group),
-      () => fail(group),
+      () => {
+        if (settled) {
+          return;
+        }
+        settled = true;
+        succeed(group);
+      },
+      () => {
+        if (settled) {
+          return;
+        }
+        settled = true;
+        fail(group);
+      },
     );
   }
 
