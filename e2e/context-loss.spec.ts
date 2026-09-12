@@ -108,8 +108,25 @@ async function startRace(page: Page): Promise<void> {
  * later decrease can be attributed to an edit.
  */
 async function waitForPieces(page: Page): Promise<number> {
-  await expect.poll(() => pieceCount(page), { timeout: 15_000 }).toBeGreaterThan(0);
-  await page.waitForTimeout(800);
+  // Poll until the piece count is both non-zero and stable across two
+  // consecutive animation frames — a real "loading is quiet" condition (the
+  // loader adds the whole snapshot at once), so a later decrease is
+  // attributable to an edit rather than a still-running load.
+  await expect
+    .poll(
+      async () => {
+        const first = await pieceCount(page);
+        if (first === 0) return -1;
+        await page.evaluate(
+          () =>
+            new Promise((resolve) => requestAnimationFrame(() => requestAnimationFrame(resolve))),
+        );
+        const second = await pieceCount(page);
+        return first === second ? first : -1;
+      },
+      { timeout: 15_000 },
+    )
+    .toBeGreaterThan(0);
   return pieceCount(page);
 }
 
@@ -177,7 +194,9 @@ test('a context loss during a race holds it; restore + Resume finishes it', asyn
   page.on('pageerror', (error) => errors.push(String(error)));
 
   await startRace(page);
-  await page.waitForTimeout(3500); // let the countdown finish and the pack roll
+  // Condition: the countdown has finished — the traffic light has gone green
+  // (`setGo` in race-presentation); the race cannot have ended yet (30-45 s).
+  await expect(page.locator('.traffic-light-disc.green.lit')).toBeVisible();
 
   await contextExtension(page, 'lose');
 
