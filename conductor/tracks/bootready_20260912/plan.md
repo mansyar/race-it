@@ -27,7 +27,7 @@
 - [x] Task 2.4: style the states in `src/style.css` (Green) (d17429e) — wordless dots (sleeping) and pulsing retry cue; no layout shift; existing valid/pulsing rules untouched.
 - [ ] Task: Phase Verification & Checkpoint (Refer to workflow.md)
 
-## Phase 3 — Boot Wiring & E2E (FR-2, FR-3, FR-4, FR-5)
+## Phase 3 — Boot Wiring & E2E (FR-2, FR-3, FR-4, FR-5) [checkpoint: 40f23b0]
 - [x] Task 3.1: boot E2E first (Red) (26f924a) — new `e2e/boot.spec.ts`: (a) slow-load — `page.route` delays piece/kart GLBs; assert GO sleeps (`data-boot`, `aria-disabled`) and a GO tap never opens the picker; release → stages land, GO wakes, race starts; (b) failure — abort kart GLBs, observe >1 retry attempts and the retry cue after stall; tap forces an attempt; un-abort → recovery → ready; no unhandled errors. Confirm the spec fails against the pre-change revision.
 - [x] Task 3.2: wire `main.ts` (Green) (25668f4) — readiness groups (`pieces`, `scenery`, `karts` = kart renderer + preview), decouple scenery from pieces, staged reveals with the existing toy-feedback pop-in (both render modes), GO gate + retry wiring, `__raceItBoot` under `?debug`; `?race`/`?perf`/`?debug`, lifecycle, audio and quality flows untouched.
 - [x] Task 3.3: regression pass (25668f4) — full e2e suite (smoke, lifecycle, postrace, landscape, shelf, perf, installability) green against the new gate; touch a spec only if its enable-wait is genuinely stale.
