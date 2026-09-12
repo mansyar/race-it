@@ -42,3 +42,6 @@
 - [x] Task 4.2: manual verification — iOS Safari + Android Chrome: first palette tap / GO / countdown music audibly instant after boot; flaky first load warms silently and recovers; mute toggle; backgrounding mid-race; installed PWA; portrait + landscape. — deferred to the next Ship track per user (needs HTTPS deploy + real devices); automated coverage stands.
 - [x] Task 4.3: final docs — `tech-stack.md` synced against final code; completion checklist per workflow. (ff3c02a)
 - [x] Task: Phase Verification & Checkpoint (Refer to workflow.md).
+
+## Phase: Review Fixes
+- [x] Task: Apply review suggestions 14862b5
