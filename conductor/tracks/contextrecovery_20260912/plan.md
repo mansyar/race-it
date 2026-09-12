@@ -13,8 +13,8 @@
 - [x] Task: Phase Verification & Checkpoint (Refer to workflow.md) — doc review.
 
 ## Phase 2 — Context-Loss Guard Core (pure) [checkpoint: ]
-- [~] Task 2.1: guard tests first (Red) — `src/render/context-loss.test.ts` (fake timers, injected event target / clock / storage): loss → lost callback + grace timer; restore within grace → restored callback, timer cleared, no failure; grace expiry while visible → a single failed callback; loss while hidden defers grace/report to first visible; failed fires at most once; reload attempts capped (≤2) with the counter read/written via injected storage and reset on stable; `dispose()` detaches listeners and clears timers; loss handler calls `preventDefault()` defensively.
-- [ ] Task 2.2: implement `src/render/context-loss.ts` (Green) — observable state machine, `GRACE_MS ≈ 3 s` centralized and injectable, JSDoc public API, no globals.
+- [x] Task 2.1: guard tests first (Red) — `src/render/context-loss.test.ts` (fake timers, injected event target / clock / storage): loss → lost callback + grace timer; restore within grace → restored callback, timer cleared, no failure; grace expiry while visible → a single failed callback; loss while hidden defers grace/report to first visible; failed fires at most once; reload attempts capped (≤2) with the counter read/written via injected storage and reset on stable; `dispose()` detaches listeners and clears timers; loss handler calls `preventDefault()` defensively. (8501916)
+- [x] Task 2.2: implement `src/render/context-loss.ts` (Green) — observable state machine, `GRACE_MS ≈ 3 s` centralized and injectable, JSDoc public API, no globals. (2da1fe5)
 - [ ] Task: Phase Verification & Checkpoint — table-walk the transition matrix with the user.
 
 ## Phase 3 — App Wiring & Context E2E [checkpoint: ]
