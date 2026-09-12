@@ -20,6 +20,11 @@ Preschoolers ages 3–5 (with a parent installing/curating). No reading ability 
 - Auto scenery (trees, grandstands, barriers) on empty non-adjacent cells so the table feels like a physical toy set; never blocks placing track.
 - Toy micro-feedback: pieces pop in when placed; remove mode wiggles pieces with a red tint; soft contact shadow and chunky wood rim under the board.
 
+### Boot & Loading
+- The table is on screen immediately and fills in stages — track pieces pop in first, then scenery and karts — so there is never a blank or blocked screen.
+- GO stays asleep (a calm, gently breathing pill) until the race-critical toys are loaded, then wakes ready for the next tap.
+- If loading hiccups, GO shows a gentle wordless retry cue; a tap tries again — retries continue quietly in the background, and the build table stays fully usable throughout.
+
 ### The Race
 - Kid taps 2–4 cars to enter and picks each car's color from big swatches (defaults work with one tap).
 - Traffic-light countdown (3… 2… 1… GO!) with sound; racing is fully automatic — kid is a pure spectator.

@@ -178,3 +178,56 @@ describe('style.css Build Again button contract', () => {
     expect(hasMinTargetSize('.build-again-button', 64)).toBe(true);
   });
 });
+
+describe('style.css GO readiness contract', () => {
+  /** Brace-balanced body of the `@keyframes <name>` block, or null. */
+  function keyframesBlock(name: string): string | null {
+    const marker = new RegExp(`@keyframes\\s+${name}\\b`);
+    const match = marker.exec(uncommented);
+    if (!match) {
+      return null;
+    }
+    let depth = 0;
+    for (let i = match.index; i < uncommented.length; i += 1) {
+      if (uncommented[i] === '{') {
+        depth += 1;
+      } else if (uncommented[i] === '}') {
+        depth -= 1;
+        if (depth === 0) {
+          return uncommented.slice(match.index, i + 1);
+        }
+      }
+    }
+    return null;
+  }
+
+  it('breathes the sleeping GO with a calm opacity-only animation', () => {
+    const rule = ruleBody('.go-button button[data-boot="sleeping"]');
+    expect(rule, 'missing .go-button button[data-boot="sleeping"] rule').not.toBeNull();
+    expect(/(^|[;\s])animation:\s*go-breathe\b/.test(rule ?? '')).toBe(true);
+    const frames = keyframesBlock('go-breathe');
+    expect(frames, 'missing @keyframes go-breathe').not.toBeNull();
+    expect(frames ?? '').toMatch(/opacity/);
+    expect(frames ?? '').not.toMatch(/transform/);
+  });
+
+  it('pulses the retry cue so it reads as tappable', () => {
+    const rule = ruleBody('.go-button button[data-boot="retry"]');
+    expect(rule, 'missing .go-button button[data-boot="retry"] rule').not.toBeNull();
+    expect(/(^|[;\s])animation:\s*go-pulse\b/.test(rule ?? '')).toBe(true);
+  });
+
+  it('never hides or shrinks the sleeping GO: it dims but stays tappable', () => {
+    const rule = ruleBody('.go-button button[data-boot="sleeping"]') ?? '';
+    expect(/display:\s*none/.test(rule)).toBe(false);
+    expect(/visibility:\s*hidden/.test(rule)).toBe(false);
+    expect(/pointer-events:\s*none/.test(rule)).toBe(false);
+    expect(hasMinTargetSize('.go-button button', 64)).toBe(true);
+  });
+
+  it('keeps the retry cue tappable', () => {
+    const rule = ruleBody('.go-button button[data-boot="retry"]') ?? '';
+    expect(/pointer-events:\s*none/.test(rule)).toBe(false);
+    expect(/display:\s*none/.test(rule)).toBe(false);
+  });
+});
