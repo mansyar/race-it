@@ -33,7 +33,7 @@
 - [x] Task 3.3: regression pass (25668f4) — full e2e suite (smoke, lifecycle, postrace, landscape, shelf, perf, installability) green against the new gate; touch a spec only if its enable-wait is genuinely stale.
 - [ ] Task: Phase Verification & Checkpoint (Refer to workflow.md)
 
-## Phase 4 — Quality Gates, Performance & Manual Verification (AC 3–6)
+## Phase 4 — Quality Gates, Performance & Manual Verification (AC 3–6) [checkpoint: 5348a94]
 - [x] Task 4.1: gates (25668f4) — `$env:CI='true'; pnpm test -- --coverage` (≥80% on changed modules), `pnpm lint`, `pnpm build`, `pnpm exec playwright test`; perf sanity via the existing perf spec (`?perf` draw calls unchanged; no new per-frame work; no new asset requests).
-- [~] Task 4.2: manual device/network checklist — throttled first load (staged reveal, no dead states), airplane-mode first visit (retry cue + recovery when network returns), portrait + landscape, `?race`/`?perf`/`?debug` intact. (User-assisted per `workflow.md`; recorded in the checkpoint note.)
+- [x] Task 4.2: manual device/network checklist (25668f4) — throttled first load (staged reveal, no dead states), airplane-mode first visit (retry cue + recovery when network returns), portrait + landscape, `?race`/`?perf`/`?debug` intact. (User-assisted per `workflow.md`; recorded in the checkpoint note.)
 - [ ] Task: Phase Verification & Checkpoint (Refer to workflow.md)
